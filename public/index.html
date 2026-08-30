@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Automation Control Panel</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i class="fa-brands fa-whatsapp icon-logo"></i>
+                <h1>WA<span>Automation</span></h1>
+            </div>
+            <div class="connection-pill" id="connection-pill">
+                <span class="status-dot pulsing" id="status-dot"></span>
+                <span class="status-text" id="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="dashboard-grid">
+            
+            <!-- Connection & QR Card -->
+            <div class="card glass-card qr-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-qrcode"></i> Authentication Status</h2>
+                </div>
+                <div class="card-body qr-container-parent">
+                    <!-- Disconnected View -->
+                    <div id="view-disconnected" class="status-view hidden">
+                        <div class="status-icon err-color">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </div>
+                        <h3>Disconnected</h3>
+                        <p>Bot is offline. Reconnect automatically or verify environment variables.</p>
+                    </div>
+
+                    <!-- Connecting View -->
+                    <div id="view-connecting" class="status-view hidden">
+                        <div class="status-icon loading-spin">
+                            <i class="fa-solid fa-circle-notch"></i>
+                        </div>
+                        <h3>Establishing Connection</h3>
+                        <p>Connecting to WhatsApp servers. Please wait...</p>
+                    </div>
+
+                    <!-- QR Ready View -->
+                    <div id="view-qr-ready" class="status-view hidden">
+                        <h3>Scan QR Code</h3>
+                        <p>Open WhatsApp on your phone, go to Linked Devices, and scan this code to login.</p>
+                        <div class="qr-code-wrapper">
+                            <img id="qr-image" src="" alt="WhatsApp QR Code">
+                        </div>
+                        <span class="qr-expiry-notice"><i class="fa-solid fa-rotate"></i> Code refreshes automatically</span>
+                    </div>
+
+                    <!-- Connected View -->
+                    <div id="view-connected" class="status-view hidden">
+                        <div class="status-icon success-color pulse-success">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <h3>WhatsApp Linked</h3>
+                        <p id="linked-phone-notice">Your bot is connected and running 24/7 in the background.</p>
+                        <button id="btn-test-msg" class="btn btn-secondary">
+                            <i class="fa-solid fa-paper-plane"></i> Send Test Message
+                        </button>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span id="db-status-pill" class="db-status-pill">
+                        <i class="fa-solid fa-database"></i> Database: Connecting...
+                    </span>
+                </div>
+            </div>
+
+            <!-- Configuration Form Card -->
+            <div class="card glass-card config-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-sliders"></i> Bot Configurations</h2>
+                </div>
+                <div class="card-body">
+                    <form id="config-form">
+                        
+                        <!-- Target Phone Number -->
+                        <div class="form-group">
+                            <label for="input-target-number">
+                                <i class="fa-solid fa-phone"></i> Target Phone Number
+                            </label>
+                            <input type="text" id="input-target-number" placeholder="e.g. 919876543210 (include country code, no +)" required>
+                            <small class="form-help">The specific contact to send the morning message to, and monitor for PDF files.</small>
+                        </div>
+
+                        <!-- Target Group (Selector & Manual toggle) -->
+                        <div class="form-group">
+                            <div class="form-label-row">
+                                <label for="select-target-group">
+                                    <i class="fa-solid fa-users"></i> Forward PDF to Group
+                                </label>
+                                <span class="manual-toggle" id="toggle-group-mode">
+                                    <i class="fa-solid fa-keyboard"></i> Manual Input
+                                </span>
+                            </div>
+                            
+                            <!-- Dropdown Select mode (Default) -->
+                            <div id="group-select-container">
+                                <select id="select-target-group">
+                                    <option value="" disabled selected>Select a group...</option>
+                                </select>
+                                <small class="form-help text-muted" id="groups-loading-help">Loading groups list from connected WhatsApp...</small>
+                            </div>
+                            
+                            <!-- Manual JID Input mode (Fallback) -->
+                            <div id="group-manual-container" class="hidden">
+                                <input type="text" id="input-target-group" placeholder="e.g. 120363294829375829@g.us">
+                                <small class="form-help">Enter the exact WhatsApp Group JID (e.g. <code>120363xxx@g.us</code>)</small>
+                            </div>
+                        </div>
+
+                        <!-- Morning Message Text -->
+                        <div class="form-group">
+                            <label for="input-morning-message">
+                                <i class="fa-solid fa-comment-dots"></i> Daily Morning Message
+                            </label>
+                            <input type="text" id="input-morning-message" value="hlo" required>
+                            <small class="form-help">The text message sent automatically every day.</small>
+                        </div>
+
+                        <!-- Schedule Time -->
+                        <div class="form-group">
+                            <label for="input-schedule-time">
+                                <i class="fa-solid fa-clock"></i> Schedule Time (Indian Standard Time - IST)
+                            </label>
+                            <div class="time-input-wrapper">
+                                <input type="time" id="input-schedule-time" value="09:00" required>
+                                <span class="timezone-tag">IST (GMT+5:30)</span>
+                            </div>
+                            <small class="form-help">The exact time (in Indian Time Zone) the message triggers daily.</small>
+                        </div>
+
+                        <!-- Action Button -->
+                        <button type="submit" id="btn-save-config" class="btn btn-primary">
+                            <i class="fa-solid fa-circle-check"></i> Save and Apply Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Logs -->
+        <div class="card glass-card logs-card">
+            <div class="card-header logs-header">
+                <h2><i class="fa-solid fa-terminal"></i> Bot Action Logs</h2>
+                <button id="btn-clear-terminal" class="btn-icon" title="Clear logs view"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+            <div class="card-body log-console-wrapper">
+                <div id="log-console" class="log-console">
+                    <div class="log-line system-msg">[System] Console initialized. Awaiting connection logs...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <i id="toast-icon" class="fa-solid fa-circle-info"></i>
+        <span id="toast-message">Message details go here</span>
+    </div>
+
+    <script>
+        // DOM Elements
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const connectionPill = document.getElementById('connection-pill');
+        const dbStatusPill = document.getElementById('db-status-pill');
+        
+        // Views
+        const viewDisconnected = document.getElementById('view-disconnected');
+        const viewConnecting = document.getElementById('view-connecting');
+        const viewQrReady = document.getElementById('view-qr-ready');
+        const viewConnected = document.getElementById('view-connected');
+        const qrImage = document.getElementById('qr-image');
+        
+        // Config Form Fields
+        const configForm = document.getElementById('config-form');
+        const inputTargetNumber = document.getElementById('input-target-number');
+        const selectTargetGroup = document.getElementById('select-target-group');
+        const inputTargetGroup = document.getElementById('input-target-group');
+        const inputMorningMessage = document.getElementById('input-morning-message');
+        const inputScheduleTime = document.getElementById('input-schedule-time');
+        const btnSaveConfig = document.getElementById('btn-save-config');
+        const btnTestMsg = document.getElementById('btn-test-msg');
+        
+        // Group Mode Toggle
+        const toggleGroupMode = document.getElementById('toggle-group-mode');
+        const groupSelectContainer = document.getElementById('group-select-container');
+        const groupManualContainer = document.getElementById('group-manual-container');
+        const groupsLoadingHelp = document.getElementById('groups-loading-help');
+        
+        // Terminal log console
+        const logConsole = document.getElementById('log-console');
+        const btnClearTerminal = document.getElementById('btn-clear-terminal');
+        
+        // Toast
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
+
+        // State Variables
+        let manualGroupMode = false;
+        let lastConnectionState = '';
+        let availableGroups = [];
+
+        // Toggle manual Group Input JID
+        toggleGroupMode.addEventListener('click', () => {
+            manualGroupMode = !manualGroupMode;
+            if (manualGroupMode) {
+                groupSelectContainer.classList.add('hidden');
+                groupManualContainer.classList.remove('hidden');
+                toggleGroupMode.innerHTML = '<i class="fa-solid fa-list"></i> Select Dropdown';
+                inputTargetGroup.setAttribute('required', 'true');
+            } else {
+                groupSelectContainer.classList.remove('hidden');
+                groupManualContainer.classList.add('hidden');
+                toggleGroupMode.innerHTML = '<i class="fa-solid fa-keyboard"></i> Manual Input';
+                inputTargetGroup.removeAttribute('required');
+            }
+        });
+
+        // Clear log terminal
+        btnClearTerminal.addEventListener('click', () => {
+            logConsole.innerHTML = '<div class="log-line system-msg">[System] Log cleared. Logs continue to capture in background.</div>';
+        });
+
+        // Show Toast helper
+        function showToast(message, type = 'info') {
+            toastMessage.innerText = message;
+            toast.className = 'toast'; // reset
+            
+            if (type === 'success') {
+                toast.classList.add('toast-success');
+                toastIcon.className = 'fa-solid fa-circle-check';
+            } else if (type === 'error') {
+                toast.classList.add('toast-error');
+                toastIcon.className = 'fa-solid fa-circle-exclamation';
+            } else {
+                toast.classList.add('toast-info');
+                toastIcon.className = 'fa-solid fa-circle-info';
+            }
+            
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 4000);
+        }
+
+        // Fetch Status and update UI (Polling)
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                // Update Connection Pill
+                updateConnectionState(data.connectionStatus, data.qrCode);
+                
+                // Update Database Pill
+                if (data.isDatabase) {
+                    dbStatusPill.className = 'db-status-pill db-connected';
+                    dbStatusPill.innerHTML = '<i class="fa-solid fa-database"></i> Database: PostgreSQL (Persistent)';
+                } else {
+                    dbStatusPill.className = 'db-status-pill db-fallback';
+                    dbStatusPill.innerHTML = '<i class="fa-solid fa-folder-open"></i> Session Store: Local Files (Ephemeral)';
+                }
+                
+                // Initial form fields load (if form is pristine and user hasn't typed anything yet)
+                if (!configForm.dataset.loaded) {
+                    inputTargetNumber.value = data.config.targetNumber;
+                    inputMorningMessage.value = data.config.morningMessage;
+                    inputScheduleTime.value = data.config.scheduleTime;
+                    
+                    // If target group exists, determine JID and group mode
+                    if (data.config.targetGroup) {
+                        inputTargetGroup.value = data.config.targetGroup;
+                        // We will set select option if matches later after groups load
+                    }
+                    configForm.dataset.loaded = 'true';
+                }
+
+                // Update Group Dropdown Selector
+                if (JSON.stringify(availableGroups) !== JSON.stringify(data.groups)) {
+                    availableGroups = data.groups;
+                    updateGroupDropdown(data.config.targetGroup);
+                }
+
+                // Update Logs
+                updateLogs(data.logs);
+
+            } catch (err) {
+                console.error("Error polling bot status:", err);
+                updateConnectionState('disconnected', null);
+                dbStatusPill.className = 'db-status-pill db-disconnected';
+                dbStatusPill.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Server Offline';
+            }
+        }
+
+        // Update connection states visually
+        function updateConnectionState(status, qrCode) {
+            if (lastConnectionState === status && (status !== 'qr_ready' || qrImage.src === qrCode)) return;
+            lastConnectionState = status;
+
+            // Reset view visibilities
+            viewDisconnected.classList.add('hidden');
+            viewConnecting.classList.add('hidden');
+            viewQrReady.classList.add('hidden');
+            viewConnected.classList.add('hidden');
+            
+            // Connection Pill states
+            statusDot.className = 'status-dot';
+            connectionPill.className = 'connection-pill';
+
+            if (status === 'disconnected') {
+                statusDot.classList.add('status-off');
+                connectionPill.classList.add('pill-off');
+                statusText.innerText = 'Disconnected';
+                viewDisconnected.classList.remove('hidden');
+                btnTestMsg.setAttribute('disabled', 'true');
+            } else if (status === 'connecting') {
+                statusDot.classList.add('status-warn', 'pulsing');
+                connectionPill.classList.add('pill-warn');
+                statusText.innerText = 'Connecting...';
+                viewConnecting.classList.remove('hidden');
+                btnTestMsg.setAttribute('disabled', 'true');
+            } else if (status === 'qr_ready') {
+                statusDot.classList.add('status-warn', 'pulsing');
+                connectionPill.classList.add('pill-warn');
+                statusText.innerText = 'Pending Link';
+                
+                if (qrCode) {
+                    qrImage.src = qrCode;
+                    viewQrReady.classList.remove('hidden');
+                } else {
+                    viewConnecting.classList.remove('hidden');
+                }
+                btnTestMsg.setAttribute('disabled', 'true');
+            } else if (status === 'connected') {
+                statusDot.classList.add('status-on', 'pulsing');
+                connectionPill.classList.add('pill-on');
+                statusText.innerText = 'Connected';
+                viewConnected.classList.remove('hidden');
+                btnTestMsg.removeAttribute('disabled');
+            }
+        }
+
+        // Populate groups dropdown list
+        function updateGroupDropdown(selectedGroupJid) {
+            // Store current selected value
+            const currentSelected = selectTargetGroup.value || selectedGroupJid;
+            
+            // Clear current options (except placeholder)
+            selectTargetGroup.innerHTML = '<option value="" disabled>Select a group...</option>';
+            
+            if (availableGroups.length === 0) {
+                selectTargetGroup.innerHTML += '<option value="" disabled>No groups loaded yet</option>';
+                groupsLoadingHelp.innerText = lastConnectionState === 'connected' 
+                    ? "Scanning groups... If empty, send a message in a group first." 
+                    : "Connect WhatsApp first to load your groups.";
+                
+                // If there's an existing JID in config but groups are empty, fallback to manual mode
+                if (selectedGroupJid && !manualGroupMode) {
+                    manualGroupMode = true;
+                    groupSelectContainer.classList.add('hidden');
+                    groupManualContainer.classList.remove('hidden');
+                    toggleGroupMode.innerHTML = '<i class="fa-solid fa-list"></i> Select Dropdown';
+                    inputTargetGroup.value = selectedGroupJid;
+                    inputTargetGroup.setAttribute('required', 'true');
+                }
+                return;
+            }
+
+            groupsLoadingHelp.innerText = `Successfully loaded ${availableGroups.length} groups.`;
+            
+            let matched = false;
+            availableGroups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.jid;
+                option.text = group.name;
+                if (group.jid === currentSelected) {
+                    option.selected = true;
+                    matched = true;
+                }
+                selectTargetGroup.appendChild(option);
+            });
+
+            // If the selected JID does not match any group in the list, auto switch to manual input
+            if (selectedGroupJid && !matched && !manualGroupMode) {
+                manualGroupMode = true;
+                groupSelectContainer.classList.add('hidden');
+                groupManualContainer.classList.remove('hidden');
+                toggleGroupMode.innerHTML = '<i class="fa-solid fa-list"></i> Select Dropdown';
+                inputTargetGroup.value = selectedGroupJid;
+                inputTargetGroup.setAttribute('required', 'true');
+            }
+        }
+
+        // Render terminal logs
+        function updateLogs(logs) {
+            if (!logs || logs.length === 0) return;
+            
+            // Create list of strings to match
+            const logContent = logs.map(log => {
+                // Style lines based on contents
+                let cssClass = '';
+                if (log.includes('Successfully') || log.includes('established')) cssClass = 'log-success';
+                else if (log.includes('Error') || log.includes('Failed')) cssClass = 'log-error';
+                else if (log.includes('Scheduler') || log.includes('Scheduling')) cssClass = 'log-warn';
+                else if (log.includes('Received')) cssClass = 'log-info';
+                
+                return `<div class="log-line ${cssClass}">${escapeHtml(log)}</div>`;
+            }).reverse().join('');
+            
+            logConsole.innerHTML = logContent;
+            
+            // Auto scroll to bottom
+            logConsole.scrollTop = logConsole.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Save Configuration Form
+        configForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const targetNumber = inputTargetNumber.value.trim();
+            const morningMessage = inputMorningMessage.value.trim();
+            const scheduleTime = inputScheduleTime.value;
+            
+            let targetGroup = '';
+            if (manualGroupMode) {
+                targetGroup = inputTargetGroup.value.trim();
+            } else {
+                targetGroup = selectTargetGroup.value;
+            }
+
+            if (!targetGroup) {
+                showToast("Please specify a target group!", "error");
+                return;
+            }
+
+            btnSaveConfig.setAttribute('disabled', 'true');
+            btnSaveConfig.innerHTML = '<i class="fa-solid fa-spinner loading-spin"></i> Saving...';
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        targetNumber,
+                        targetGroup,
+                        morningMessage,
+                        scheduleTime
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast("Configuration saved and applied!", "success");
+                } else {
+                    showToast(`Error: ${result.error}`, "error");
+                }
+            } catch (err) {
+                console.error("Save config error:", err);
+                showToast("Network error. Failed to save configuration.", "error");
+            } finally {
+                btnSaveConfig.removeAttribute('disabled');
+                btnSaveConfig.innerHTML = '<i class="fa-solid fa-circle-check"></i> Save and Apply Settings';
+            }
+        });
+
+        // Send Test Message
+        btnTestMsg.addEventListener('click', async () => {
+            btnTestMsg.setAttribute('disabled', 'true');
+            btnTestMsg.innerHTML = '<i class="fa-solid fa-spinner loading-spin"></i> Sending...';
+
+            try {
+                const response = await fetch('/api/test-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showToast("Test message sent successfully!", "success");
+                } else {
+                    showToast(`Error: ${result.error}`, "error");
+                }
+            } catch (err) {
+                console.error("Test message error:", err);
+                showToast("Failed to send test message due to network error.", "error");
+            } finally {
+                btnTestMsg.removeAttribute('disabled');
+                btnTestMsg.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Test Message';
+            }
+        });
+
+        // Initialize polling
+        fetchStatus();
+        setInterval(fetchStatus, 2000);
+    </script>
+</body>
+</html>
