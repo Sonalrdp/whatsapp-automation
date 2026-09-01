@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cortex WA AutoBot - Multi-User Login and Authentication">
+  <title>Login | Cortex WA AutoBot</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Core adminHMD CSS -->
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/vendors/bootstrap-icons/bootstrap-icons.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <!-- Custom Theme Extensions -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Official Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body class="auth-body">
+  <!-- Theme Toggle Top Right -->
+  <button class="icon-button theme-toggle position-fixed top-0 end-0 m-3" type="button" data-theme-toggle aria-label="Switch color theme" title="Switch color theme">
+    <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
+  </button>
+
+  <main class="auth-card-modern">
+    <!-- Header & Branding -->
+    <div class="auth-header">
+      <a class="auth-brand-logo" href="login.html">
+        <span class="brand-icon-wa"><i class="bi bi-whatsapp"></i></span>
+        <h2>Cortex <span>WA AutoBot</span></h2>
+      </a>
+      <p class="text-muted small mb-2">Multi-User WhatsApp Automation Platform</p>
+      <div class="badge text-bg-warning-subtle text-warning border border-warning-subtle py-1 px-3 mb-2 d-inline-flex align-items-center gap-1" style="font-size: 0.76rem;">
+        <i class="bi bi-gift-fill"></i> Free 7-Day Trial (15 msgs/day) on Sign Up
+      </div>
+    </div>
+
+    <!-- Official Google Sign-In -->
+    <div class="google-btn-container">
+      <div id="g_id_onload"
+           data-client_id="438922701114-d4k71rd817gglqa510pv9kj06vjhnup2.apps.googleusercontent.com"
+           data-context="signin"
+           data-ux_mode="popup"
+           data-callback="handleGoogleLoginResponse"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-shape="rectangular"
+           data-theme="outline"
+           data-text="signin_with"
+           data-size="large"
+           data-logo_alignment="left"
+           data-width="380">
+      </div>
+    </div>
+
+    <div class="auth-divider">
+      <span>Or Sign In With Email</span>
+    </div>
+
+    <!-- Auth Method Tabs -->
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" id="tab-btn-password" type="button">
+        <i class="bi bi-key-fill me-1"></i> Password
+      </button>
+      <button class="auth-tab-btn" id="tab-btn-otp" type="button">
+        <i class="bi bi-shield-check me-1"></i> Email OTP
+      </button>
+    </div>
+
+    <!-- 1. Password Login View -->
+    <form id="form-password-login" class="auth-form-view">
+      <div class="mb-3">
+        <label for="input-email-pass" class="form-label small fw-bold">Email address</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input type="email" class="form-control" id="input-email-pass" placeholder="name@example.com" value="admin.demo@gmail.com" required>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <label for="input-password" class="form-label small fw-bold">Password (8+ characters)</label>
+        </div>
+        <div class="input-group password-toggle-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" class="form-control" id="input-password" placeholder="Min 8 characters (e.g. Avoid@123)" value="Avoid@123" minlength="8" required>
+          <button type="button" class="btn-toggle-eye" id="btn-toggle-password" title="Show/Hide password">
+            <i class="bi bi-eye" id="eye-icon"></i>
+          </button>
+        </div>
+        <small class="form-text text-muted">Demo password: <code>Avoid@123</code></small>
+      </div>
+
+      <button type="submit" id="btn-submit-password" class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In to Dashboard
+      </button>
+    </form>
+
+    <!-- 2. Email OTP Login View -->
+    <div id="form-otp-login" class="auth-form-view d-none">
+      <!-- Step 1: Send OTP -->
+      <form id="form-send-otp">
+        <div class="mb-3">
+          <label for="input-email-otp" class="form-label small fw-bold">Email address</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input type="email" class="form-control" id="input-email-otp" placeholder="name@example.com" value="admin.demo@gmail.com" required>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-send-otp" class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-send"></i> Send Verification OTP
+        </button>
+      </form>
+
+      <!-- Step 2: Verify OTP (Hidden initially) -->
+      <form id="form-verify-otp" class="d-none mt-3">
+        <div id="otp-alert-box" class="demo-otp-banner">
+          <i class="bi bi-info-circle-fill text-primary me-1"></i> OTP code sent. <span id="otp-hint-text">Check your email.</span>
+        </div>
+
+        <div class="mb-3">
+          <label for="input-otp-code" class="form-label small fw-bold">6-Digit Verification Code</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+            <input type="text" class="form-control font-monospace fs-5 text-center letter-spacing-2" id="input-otp-code" placeholder="123456" maxlength="6" required>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-verify-otp" class="btn btn-success w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-check-circle-fill"></i> Verify &amp; Sign In
+        </button>
+
+        <div class="text-center mt-2">
+          <button type="button" class="btn btn-link btn-sm text-decoration-none" id="btn-resend-otp">
+            <i class="bi bi-arrow-clockwise"></i> Change email or resend
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 1-Click Quick Demo Evaluation Logins -->
+    <div class="mt-4 pt-3 border-top">
+      <p class="text-center text-muted small fw-bold mb-2">QUICK 1-CLICK DEMO ACCESS</p>
+      <div class="demo-account-cards">
+        <button type="button" class="btn-demo-login" id="btn-demo-admin">
+          <span class="badge role-badge role-badge-admin mb-1">ADMIN ROLE</span>
+          <strong>Demo Admin</strong>
+          <small class="text-muted">Full Bot &amp; QR Control</small>
+        </button>
+
+        <button type="button" class="btn-demo-login" id="btn-demo-user">
+          <span class="badge role-badge role-badge-user mb-1">USER ROLE</span>
+          <strong>Demo User</strong>
+          <small class="text-muted">Status &amp; Messages</small>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="toast-container-fixed">
+    <div id="toast" class="toast-custom hidden">
+      <i id="toast-icon" class="bi bi-info-circle-fill toast-icon"></i>
+      <span id="toast-message" class="fw-medium">Notification</span>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="assets/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+
+  <script>
+    // Elements
+    const tabBtnPassword = document.getElementById('tab-btn-password');
+    const tabBtnOtp = document.getElementById('tab-btn-otp');
+    const formPasswordLogin = document.getElementById('form-password-login');
+    const formOtpLogin = document.getElementById('form-otp-login');
+    const formSendOtp = document.getElementById('form-send-otp');
+    const formVerifyOtp = document.getElementById('form-verify-otp');
+    const inputEmailOtp = document.getElementById('input-email-otp');
+    const inputOtpCode = document.getElementById('input-otp-code');
+    const btnResendOtp = document.getElementById('btn-resend-otp');
+    const otpAlertBox = document.getElementById('otp-alert-box');
+    const otpHintText = document.getElementById('otp-hint-text');
+
+    // Password Elements
+    const inputEmailPass = document.getElementById('input-email-pass');
+    const inputPassword = document.getElementById('input-password');
+    const btnTogglePassword = document.getElementById('btn-toggle-password');
+    const eyeIcon = document.getElementById('eye-icon');
+    const btnSubmitPassword = document.getElementById('btn-submit-password');
+
+    // Demo Buttons
+    const btnDemoAdmin = document.getElementById('btn-demo-admin');
+    const btnDemoUser = document.getElementById('btn-demo-user');
+
+    // Toast
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    const toastIcon = document.getElementById('toast-icon');
+
+    function showToast(message, type = 'info') {
+      toastMessage.innerText = message;
+      toast.className = 'toast-custom';
+      
+      if (type === 'success') {
+        toast.classList.add('toast-success');
+        toastIcon.className = 'bi bi-check-circle-fill toast-icon';
+      } else if (type === 'error') {
+        toast.classList.add('toast-error');
+        toastIcon.className = 'bi bi-exclamation-triangle-fill toast-icon';
+      } else {
+        toast.classList.add('toast-info');
+        toastIcon.className = 'bi bi-info-circle-fill toast-icon';
+      }
+      
+      toast.classList.remove('hidden');
+      setTimeout(() => { toast.classList.add('hidden'); }, 4500);
+    }
+
+    function saveAuthAndRedirect(data) {
+      if (data && data.token) {
+        localStorage.setItem('cortex_token', data.token);
+        localStorage.setItem('cortex_user', JSON.stringify(data.user));
+        showToast("Authentication successful! Redirecting...", "success");
+        setTimeout(() => {
+          window.location.href = `index.html?uid=${data.user.id}`;
+        }, 600);
+      }
+    }
+
+    // Tab Switching
+    tabBtnPassword.addEventListener('click', () => {
+      tabBtnPassword.classList.add('active');
+      tabBtnOtp.classList.remove('active');
+      formPasswordLogin.classList.remove('d-none');
+      formOtpLogin.classList.add('d-none');
+    });
+
+    tabBtnOtp.addEventListener('click', () => {
+      tabBtnOtp.classList.add('active');
+      tabBtnPassword.classList.remove('active');
+      formOtpLogin.classList.remove('d-none');
+      formPasswordLogin.classList.add('d-none');
+    });
+
+    // Toggle Password Visibility
+    btnTogglePassword.addEventListener('click', () => {
+      if (inputPassword.type === 'password') {
+        inputPassword.type = 'text';
+        eyeIcon.className = 'bi bi-eye-slash';
+      } else {
+        inputPassword.type = 'password';
+        eyeIcon.className = 'bi bi-eye';
+      }
+    });
+
+    // 1. Password Form Submission
+    formPasswordLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = inputEmailPass.value.trim();
+      const password = inputPassword.value;
+
+      if (!email || !password) {
+        showToast("Please enter email and password.", "error");
+        return;
+      }
+
+      if (password.length < 8) {
+        showToast("Password must be at least 8 characters long.", "error");
+        return;
+      }
+
+      btnSubmitPassword.setAttribute('disabled', 'true');
+      btnSubmitPassword.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Signing In...';
+
+      try {
+        const res = await fetch('/api/auth/login-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          saveAuthAndRedirect(data);
+        } else {
+          showToast(data.error || "Password login failed.", "error");
+        }
+      } catch (err) {
+        console.error("Password login error:", err);
+        showToast("Network error. Please try again.", "error");
+      } finally {
+        btnSubmitPassword.removeAttribute('disabled');
+        btnSubmitPassword.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Sign In to Dashboard';
+      }
+    });
+
+    // 2. Send OTP Form Submission
+    formSendOtp.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = inputEmailOtp.value.trim();
+
+      if (!email) {
+        showToast("Please enter a valid email address.", "error");
+        return;
+      }
+
+      const btn = document.getElementById('btn-send-otp');
+      btn.setAttribute('disabled', 'true');
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending OTP...';
+
+      try {
+        const res = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(`OTP Code sent to ${email}`, "success");
+          formSendOtp.classList.add('d-none');
+          formVerifyOtp.classList.remove('d-none');
+          
+          if (data.demoOtp) {
+            otpHintText.innerHTML = `Demo Mode Code: <strong class="text-primary font-monospace fs-6">${data.demoOtp}</strong>`;
+            inputOtpCode.value = data.demoOtp;
+          } else {
+            otpHintText.innerText = "Please check your inbox.";
+          }
+          inputOtpCode.focus();
+        } else {
+          showToast(data.error || "Failed to send OTP.", "error");
+        }
+      } catch (err) {
+        console.error("Send OTP error:", err);
+        showToast("Network error. Could not send OTP.", "error");
+      } finally {
+        btn.removeAttribute('disabled');
+        btn.innerHTML = '<i class="bi bi-send"></i> Send Verification OTP';
+      }
+    });
+
+    // 3. Verify OTP Form Submission
+    formVerifyOtp.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = inputEmailOtp.value.trim();
+      const otp = inputOtpCode.value.trim();
+
+      if (!otp) {
+        showToast("Please enter the 6-digit OTP code.", "error");
+        return;
+      }
+
+      const btn = document.getElementById('btn-verify-otp');
+      btn.setAttribute('disabled', 'true');
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          saveAuthAndRedirect(data);
+        } else {
+          showToast(data.error || "Invalid OTP code.", "error");
+        }
+      } catch (err) {
+        console.error("Verify OTP error:", err);
+        showToast("Network error. Could not verify OTP.", "error");
+      } finally {
+        btn.removeAttribute('disabled');
+        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Verify &amp; Sign In';
+      }
+    });
+
+    btnResendOtp.addEventListener('click', () => {
+      formVerifyOtp.classList.add('d-none');
+      formSendOtp.classList.remove('d-none');
+      inputOtpCode.value = '';
+    });
+
+    // 4. Official Google Sign-In Callback Handler
+    window.handleGoogleLoginResponse = async function(response) {
+      if (!response || !response.credential) {
+        showToast("Google sign-in credential missing.", "error");
+        return;
+      }
+
+      showToast("Verifying Google account...", "info");
+
+      try {
+        const res = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          saveAuthAndRedirect(data);
+        } else {
+          showToast(data.error || "Google login failed.", "error");
+        }
+      } catch (err) {
+        console.error("Google sign in error:", err);
+        showToast("Network error during Google sign in.", "error");
+      }
+    };
+
+    // 5. 1-Click Demo Login Handlers
+    async function executeDemoLogin(role) {
+      showToast(`Logging in as Demo ${role.toUpperCase()}...`, "info");
+      try {
+        const res = await fetch('/api/auth/demo-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          saveAuthAndRedirect(data);
+        } else {
+          showToast(data.error || "Demo login failed.", "error");
+        }
+      } catch (err) {
+        console.error("Demo login error:", err);
+        showToast("Network error during demo login.", "error");
+      }
+    }
+
+    btnDemoAdmin.addEventListener('click', () => executeDemoLogin('admin'));
+    btnDemoUser.addEventListener('click', () => executeDemoLogin('user'));
+  </script>
+</body>
+</html>
