@@ -304,7 +304,7 @@
                     </div>
                     <div>
                       <h3 class="h6 mb-1 fw-bold">Plans &amp; Subscription</h3>
-                      <p class="text-muted small mb-0">Monthly ₹399/₹499, ₹0 / 300 msgs add-on &amp; live UPI QR payments.</p>
+                      <p class="text-muted small mb-0">Monthly ₹399/₹499, ₹99 / 200+30 msgs add-on &amp; live UPI QR payments.</p>
                     </div>
                   </div>
                 </div>
@@ -616,39 +616,70 @@
                           </div>
 
                           <div id="src-number-container">
-                            <input type="text" class="form-control" id="input-target-number" placeholder="e.g. 919876543210 (include country code, no +)">
-                            <small class="form-help">Monitors incoming messages from this specific phone contact.</small>
+                            <input type="text" class="form-control" id="input-target-number" placeholder="e.g. 919876543210 (or multiple: 919876543210, 919123456789)">
+                            <small class="form-help text-success fw-medium"><i class="bi bi-shield-check"></i> Strict filtering: Only messages sent directly from this contact number (or numbers) will trigger forwarding.</small>
                           </div>
 
                           <div id="src-group-container" class="d-none">
-                            <select class="form-select" id="select-source-group">
-                              <option value="" disabled selected>Select a source group...</option>
-                            </select>
-                            <small class="form-help">Monitors messages posted in this specific group.</small>
+                            <div class="input-group mb-1">
+                              <select class="form-select" id="select-source-group">
+                                <option value="" disabled selected>Select a source group...</option>
+                              </select>
+                              <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-src-group-manual" title="Toggle manual group JID input">
+                                <i class="bi bi-keyboard"></i>
+                              </button>
+                            </div>
+                            <input type="text" class="form-control font-monospace mt-1 d-none" id="input-source-group-manual" placeholder="e.g. 120363294829384920@g.us, 120363999999999999@g.us">
+                            <small class="form-help text-success fw-medium"><i class="bi bi-shield-check"></i> Strict filtering: Only messages posted in this specific group (or groups) will trigger forwarding.</small>
                           </div>
 
                           <div id="src-all-container" class="d-none">
-                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i> Catch-all mode: Any incoming message across your chats will be routed.</small>
+                            <small class="text-primary fw-medium"><i class="bi bi-info-circle me-1"></i> Catch-all mode: Any incoming message across your chats (both direct contacts and groups) will be checked.</small>
                           </div>
                         </div>
 
                         <!-- Destination -->
                         <div class="mb-3 p-3 rounded border bg-light bg-opacity-50">
-                          <div class="form-label-row mb-2">
+                          <div class="d-flex align-items-center justify-content-between mb-2">
                             <label class="form-label fw-bold d-flex align-items-center gap-2 mb-0">
                               <i class="bi bi-box-arrow-right text-purple"></i> 2. Destination (Where to forward)
                             </label>
-                            <button type="button" class="manual-toggle-btn" id="toggle-group-mode">
-                              <i class="bi bi-keyboard"></i> Manual Input
-                            </button>
+                            <span class="badge text-bg-secondary font-monospace" id="dest-badge">WhatsApp Group(s)</span>
                           </div>
-                          <div id="group-select-container">
-                            <select class="form-select" id="select-target-group">
-                              <option value="" disabled selected>Select a destination group...</option>
-                            </select>
-                            <small class="form-help" id="groups-loading-help">Link your WhatsApp to load available groups.</small>
+
+                          <div class="btn-group w-100 mb-2" role="group">
+                            <input type="radio" class="btn-check" name="destType" id="destTypeGroup" value="group" checked>
+                            <label class="btn btn-outline-primary btn-sm py-1" for="destTypeGroup"><i class="bi bi-people-fill me-1"></i> WhatsApp Group(s)</label>
+                            
+                            <input type="radio" class="btn-check" name="destType" id="destTypeNumber" value="number">
+                            <label class="btn btn-outline-primary btn-sm py-1" for="destTypeNumber"><i class="bi bi-telephone-fill me-1"></i> Contact Number(s)</label>
+                            
+                            <input type="radio" class="btn-check" name="destType" id="destTypeManual" value="manual">
+                            <label class="btn btn-outline-primary btn-sm py-1" for="destTypeManual"><i class="bi bi-keyboard me-1"></i> Custom / Mixed</label>
                           </div>
-                          <div id="group-manual-container" class="hidden">
+
+                          <!-- Group Picker Container (Supports Single or Multiple Groups) -->
+                          <div id="dest-group-container">
+                            <div class="input-group mb-2">
+                              <select class="form-select" id="select-target-group">
+                                <option value="" disabled selected>Select a destination group...</option>
+                              </select>
+                              <button type="button" class="btn btn-primary btn-sm px-3" id="btn-add-dest-group" title="Add group to destination list">
+                                <i class="bi bi-plus-circle"></i> Add Group
+                              </button>
+                            </div>
+                            <div id="dest-groups-badge-list" class="d-flex flex-wrap gap-1 mb-1"></div>
+                            <small class="form-help" id="groups-loading-help">Pick a group and click <strong>+ Add Group</strong> to forward to multiple groups simultaneously.</small>
+                          </div>
+
+                          <!-- Contact Numbers Container (Supports Number to Number, Group to Number) -->
+                          <div id="dest-number-container" class="d-none">
+                            <input type="text" class="form-control" id="input-target-contact-numbers" placeholder="e.g. 919876543210 (or multiple: 919876543210, 919123456789)">
+                            <small class="form-help">Enter one or multiple destination phone numbers (comma-separated with country code, no +).</small>
+                          </div>
+
+                          <!-- Custom / Manual Container (Supports any mix of Groups & Numbers) -->
+                          <div id="dest-manual-container" class="d-none">
                             <input type="text" class="form-control font-monospace" id="input-target-group" placeholder="e.g. 12036329@g.us, 919876543210, 12036399@g.us">
                             <small class="form-help">Enter comma-separated Group JIDs or Phone numbers.</small>
                           </div>
@@ -780,18 +811,41 @@
                           <label for="input-sheet-url" class="form-label fw-bold d-flex align-items-center gap-2">
                             <i class="bi bi-link-45deg text-primary"></i> Google Sheet Public URL
                           </label>
-                          <input type="url" class="form-control" id="input-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
-                          <small class="form-help">Ensure link sharing is set to "Anyone with the link can view".</small>
+                          <div class="input-group">
+                            <input type="url" class="form-control" id="input-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+                            <button class="btn btn-outline-success btn-sm px-3 fw-medium d-inline-flex align-items-center gap-1" type="button" id="btn-test-sheet-preview">
+                              <i class="bi bi-play-circle"></i> Test Connection
+                            </button>
+                          </div>
+                          <small class="form-help">Ensure link sharing is set to <strong>"Anyone with the link can view"</strong>.</small>
                         </div>
+
+                        <!-- Sheet Tab Selector (shown after Test Connection loads tab names) -->
+                        <div id="sheet-tab-selector-container" class="mb-3 d-none">
+                          <label for="select-sheet-tab" class="form-label fw-bold d-flex align-items-center gap-2">
+                            <i class="bi bi-layout-three-columns text-success"></i> Select Sheet Tab
+                          </label>
+                          <select class="form-select form-select-sm" id="select-sheet-tab">
+                            <option value="">— Default (first sheet) —</option>
+                          </select>
+                          <small class="text-muted" style="font-size: 0.72rem;">Choose which tab/sub-sheet to read data from.</small>
+                          <input type="hidden" id="input-sheet-gid" value="">
+                        </div>
+
                         <div class="row g-2 mb-3">
                           <div class="col-6">
                             <label class="form-label small fw-bold">Phone No. Column</label>
-                            <input type="text" class="form-control form-control-sm" id="input-sheet-col-phone" placeholder="e.g. A" value="A">
+                            <input type="text" class="form-control form-control-sm" id="input-sheet-col-phone" placeholder="e.g. A or Phone" value="A">
+                            <small class="text-muted" style="font-size: 0.7rem;">Column letter (A, B...) or header name</small>
                           </div>
                           <div class="col-6">
                             <label class="form-label small fw-bold">Message Column</label>
-                            <input type="text" class="form-control form-control-sm" id="input-sheet-col-msg" placeholder="e.g. B" value="B">
+                            <input type="text" class="form-control form-control-sm" id="input-sheet-col-msg" placeholder="e.g. B or Message" value="B">
+                            <small class="text-muted" style="font-size: 0.7rem;">Column letter (A, B...) or header name</small>
                           </div>
+                        </div>
+                        <div id="sheet-preview-result" class="d-none alert alert-light border small py-2 px-3 mb-3">
+                          <!-- Filled dynamically by JavaScript test connection -->
                         </div>
                       </div>
 
@@ -831,12 +885,18 @@
                             </label>
                           </div>
 
-                          <!-- 2A. Group Dropdown -->
+                          <!-- 2A. Group Picker Container (Supports Single or Multiple Groups) -->
                           <div id="sch-group-container">
-                            <select class="form-select" id="select-schedule-group">
-                              <option value="" disabled selected>Select destination group from dropdown...</option>
-                            </select>
-                            <small class="form-help">Choose which WhatsApp group will receive this broadcast/greeting.</small>
+                            <div class="input-group mb-2">
+                              <select class="form-select" id="select-schedule-group">
+                                <option value="" disabled selected>Select destination group...</option>
+                              </select>
+                              <button type="button" class="btn btn-warning text-dark btn-sm px-3 fw-bold" id="btn-add-sch-group" title="Add group to scheduled broadcast list">
+                                <i class="bi bi-plus-circle"></i> Add Group
+                              </button>
+                            </div>
+                            <div id="sch-groups-badge-list" class="d-flex flex-wrap gap-1 mb-1"></div>
+                            <small class="form-help" id="sch-groups-loading-help">Pick a group and click <strong>+ Add Group</strong> to broadcast to multiple groups simultaneously.</small>
                           </div>
 
                           <!-- 2B. Phone Number Input -->
@@ -865,25 +925,25 @@
 
                 <!-- Right Column: Interactive Live WhatsApp Preview Pane -->
                 <div class="col-12 col-lg-5">
-                  <div class="panel h-100 p-0 overflow-hidden d-flex flex-column wa-preview-panel shadow-sm">
+                  <div class="panel p-0 overflow-hidden d-flex flex-column wa-preview-panel shadow-sm">
                     <!-- Header with Source & Target badges -->
-                    <div class="p-3 wa-preview-header d-flex align-items-center gap-3 text-white z-1" style="background-color: #008069;">
-                      <i class="bi bi-arrow-left fs-5"></i>
-                      <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-success" style="width: 38px; height: 38px;">
-                        <i class="bi bi-whatsapp fs-5"></i>
+                    <div class="px-3 py-2 wa-preview-header d-flex align-items-center gap-2 text-white z-1" style="background-color: #008069;">
+                      <i class="bi bi-arrow-left" style="font-size: 0.9rem;"></i>
+                      <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-success flex-shrink-0" style="width: 28px; height: 28px;">
+                        <i class="bi bi-whatsapp" style="font-size: 0.95rem;"></i>
                       </div>
                       <div class="flex-grow-1 overflow-hidden">
                         <div class="d-flex align-items-center gap-2">
-                          <h6 class="mb-0 fw-bold text-truncate" id="preview-target-name">Target Destination</h6>
-                          <span class="badge bg-warning-subtle text-dark border border-warning small py-0" id="preview-live-badge" style="font-size: 0.65rem;">⚡ INSTANT</span>
+                          <span class="fw-bold text-truncate" style="font-size: 0.8rem;" id="preview-target-name">Target Destination</span>
+                          <span class="badge bg-warning-subtle text-dark border border-warning py-0 px-1" id="preview-live-badge" style="font-size: 0.58rem;">⚡ INSTANT</span>
                         </div>
-                        <small class="text-white-50 text-truncate d-block" style="font-size: 0.72rem;" id="preview-route-subtitle">Listening to: Contact Number</small>
+                        <small class="text-white-50 text-truncate d-block" style="font-size: 0.65rem;" id="preview-route-subtitle">Listening to: Contact Number</small>
                       </div>
                     </div>
 
                     <!-- Media Preview Switcher Tabs -->
-                    <div class="wa-preview-type-nav">
-                      <span class="small text-muted py-1 pe-1" style="font-size: 0.7rem;">Preview As:</span>
+                    <div class="wa-preview-type-nav py-1 px-2">
+                      <span class="text-muted pe-1" style="font-size: 0.65rem;">Preview:</span>
                       <button type="button" class="wa-preview-type-btn active" data-preview="pdf"><i class="bi bi-file-earmark-pdf text-danger"></i> PDF</button>
                       <button type="button" class="wa-preview-type-btn" data-preview="image"><i class="bi bi-image text-primary"></i> Photo</button>
                       <button type="button" class="wa-preview-type-btn" data-preview="video"><i class="bi bi-play-btn text-success"></i> Video</button>
@@ -891,51 +951,54 @@
                       <button type="button" class="wa-preview-type-btn" data-preview="text"><i class="bi bi-chat-text text-info"></i> Text</button>
                     </div>
                     
-                    <!-- Chat Area Mockup -->
-                    <div class="wa-preview-body p-3 flex-grow-1 d-flex flex-column" style="background-color: #efeae2; background-image: radial-gradient(#d5d0c8 1px, transparent 1px); background-size: 20px 20px;">
-                      <div class="text-center mb-3">
-                        <span class="badge text-bg-light shadow-sm text-muted small">TODAY</span>
+                    <!-- Chat Area Mockup (Small & Compact) -->
+                    <div class="wa-preview-body p-2 flex-grow-1 d-flex flex-column" style="background-color: #efeae2; background-image: radial-gradient(#d5d0c8 1px, transparent 1px); background-size: 16px 16px;">
+                      <div class="text-center mb-2">
+                        <span class="badge text-bg-light shadow-sm text-muted" style="font-size: 0.58rem; padding: 2px 6px;">TODAY</span>
                       </div>
 
                       <!-- Received Message Mock (Source) -->
-                      <div class="wa-bubble received align-self-start shadow-sm mb-3 position-relative" style="background-color: #ffffff; border-radius: 0 8px 8px 8px; max-width: 85%; padding: 6px 8px 20px 8px;">
-                         <div class="wa-bubble-sender text-danger fw-bold small mb-1" id="preview-source-sender" style="font-size: 0.75rem;">Source (+91 9876543210)</div>
-                         <div id="preview-incoming-mock" class="wa-media-mock bg-light border rounded p-2 mb-1 d-flex align-items-center gap-2">
-                           <i class="bi bi-file-earmark-pdf-fill text-danger fs-3"></i>
-                           <div class="small text-truncate">Quarterly_Report_2026.pdf<br><span class="text-muted" style="font-size: 0.65rem;">2.4 MB • PDF Document</span></div>
+                      <div class="wa-bubble received align-self-start shadow-sm mb-2 position-relative" style="background-color: #ffffff; border-radius: 0 6px 6px 6px; max-width: 85%; padding: 4px 6px 14px 6px;">
+                         <div class="wa-bubble-sender text-danger fw-bold mb-1" id="preview-source-sender" style="font-size: 0.68rem;">Source (+91 9876543210)</div>
+                         <div id="preview-incoming-mock" class="wa-media-mock bg-light border rounded p-1 mb-1 d-flex align-items-center gap-2">
+                           <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+                           <div class="text-truncate" style="font-size: 0.68rem;">a.pdf<br><span class="text-muted" style="font-size: 0.58rem;">2.4 MB • PDF Document</span></div>
                          </div>
-                         <div class="wa-timestamp position-absolute bottom-0 end-0 p-1 text-muted" style="font-size: 0.6rem;">08:59</div>
+                         <div class="wa-timestamp position-absolute bottom-0 end-0 p-1 text-muted" style="font-size: 0.55rem;">08:59</div>
                       </div>
 
                       <!-- Forwarded / Sent Message Mock (Destination) -->
-                      <div class="wa-bubble sent align-self-end shadow-sm mb-2 position-relative" id="preview-bubble" style="background-color: #d9fdd3; border-radius: 8px 0 8px 8px; max-width: 85%; padding: 6px 8px 20px 8px;">
-                         <div class="text-muted fst-italic mb-1 d-flex align-items-center gap-1" style="font-size: 0.68rem;">
+                      <div class="wa-bubble sent align-self-end shadow-sm mb-1 position-relative" id="preview-bubble" style="background-color: #d9fdd3; border-radius: 6px 0 6px 6px; max-width: 85%; padding: 4px 6px 14px 6px;">
+                         <div class="text-muted fst-italic mb-1 d-flex align-items-center gap-1" style="font-size: 0.62rem;">
                            <i class="bi bi-reply-fill" style="transform: scaleX(-1);"></i> Forwarded
                          </div>
 
                          <!-- 1. PDF Media Mock -->
-                         <div id="preview-doc-box" class="wa-media-mock bg-light border rounded p-2 mb-2 d-flex align-items-center gap-2">
-                           <i class="bi bi-file-earmark-pdf-fill text-danger fs-2"></i>
-                           <div class="small text-truncate fw-bold" id="preview-doc-box-text">Quarterly_Report_2026.pdf<br><span class="text-muted fw-normal" style="font-size: 0.65rem;">2.4 MB • PDF</span></div>
+                         <div id="preview-doc-box" class="wa-media-mock bg-light border rounded p-1 mb-1 wa-media-visible align-items-center gap-2">
+                           <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+                           <div class="text-truncate fw-bold" style="font-size: 0.68rem;" id="preview-doc-box-text">a.pdf<br><span class="text-muted fw-normal" style="font-size: 0.58rem;">2.4 MB • PDF</span></div>
                          </div>
 
-                         <!-- 2. Image Media Mock -->
-                         <div id="preview-img-box" class="wa-media-mock bg-light border rounded mb-2 overflow-hidden d-none">
-                           <img src="assets/images/wa-bg.png" class="img-fluid w-100" style="max-height: 140px; object-fit: cover;" alt="Photo">
+                         <!-- 2. Image Media Mock (Gradient card instead of broken image) -->
+                         <div id="preview-img-box" class="wa-media-mock border rounded mb-1 overflow-hidden wa-media-hidden align-items-center justify-content-center" style="height: 75px; background: linear-gradient(135deg, #128c7e 0%, #25d366 100%);">
+                           <div class="text-center text-white">
+                             <i class="bi bi-image fs-4 opacity-75"></i>
+                             <div style="font-size: 0.6rem;">Photo Attachment</div>
+                           </div>
                          </div>
 
                          <!-- 3. Video Media Mock -->
-                         <div id="preview-video-box" class="wa-media-mock bg-dark border rounded mb-2 overflow-hidden d-none position-relative d-flex align-items-center justify-content-center" style="height: 120px;">
-                           <i class="bi bi-play-circle-fill text-white fs-1 opacity-75"></i>
-                           <span class="position-absolute bottom-0 start-0 p-1 text-white small" style="font-size: 0.65rem;">0:45</span>
+                         <div id="preview-video-box" class="wa-media-mock bg-dark border rounded mb-1 overflow-hidden position-relative wa-media-hidden align-items-center justify-content-center" style="height: 70px;">
+                           <i class="bi bi-play-circle-fill text-white fs-3 opacity-75"></i>
+                           <span class="position-absolute bottom-0 start-0 px-1 text-white" style="font-size: 0.55rem;">0:45</span>
                          </div>
 
                          <!-- 4. Audio / Voice Mock -->
-                         <div id="preview-audio-box" class="wa-media-mock bg-light border rounded p-2 mb-2 d-none d-flex align-items-center gap-2">
-                           <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                             <i class="bi bi-play-fill fs-5"></i>
+                         <div id="preview-audio-box" class="wa-media-mock bg-light border rounded p-1 mb-1 wa-media-hidden align-items-center gap-2">
+                           <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 22px; height: 22px;">
+                             <i class="bi bi-play-fill" style="font-size: 0.75rem;"></i>
                            </div>
-                           <div class="wa-waveform flex-grow-1">
+                           <div class="wa-waveform flex-grow-1" style="height: 16px;">
                              <div class="bar" style="height: 40%;"></div>
                              <div class="bar" style="height: 80%;"></div>
                              <div class="bar" style="height: 60%;"></div>
@@ -944,19 +1007,18 @@
                              <div class="bar" style="height: 70%;"></div>
                              <div class="bar" style="height: 30%;"></div>
                              <div class="bar" style="height: 90%;"></div>
-                             <div class="bar" style="height: 40%;"></div>
                            </div>
-                           <span class="small text-muted" style="font-size: 0.65rem;">0:18</span>
+                           <span class="text-muted" style="font-size: 0.55rem;">0:18</span>
                          </div>
 
                          <!-- Caption / Text Content -->
-                         <div class="wa-text-content text-break" style="font-size: 0.88rem;" id="preview-text">
+                         <div class="wa-text-content text-break" style="font-size: 0.72rem;" id="preview-text">
                            Good morning! Here is today's report.
                          </div>
                          
-                         <div class="wa-timestamp position-absolute bottom-0 end-0 p-1 text-muted d-flex align-items-center gap-1" style="font-size: 0.6rem;">
+                         <div class="wa-timestamp position-absolute bottom-0 end-0 p-1 text-muted d-flex align-items-center gap-1" style="font-size: 0.55rem;">
                            <span id="preview-time">09:00</span>
-                           <i class="bi bi-check-all text-primary fs-6" style="line-height: 0.5;"></i>
+                           <i class="bi bi-check-all text-primary" style="font-size: 0.75rem; line-height: 0.5;"></i>
                          </div>
                       </div>
                     </div>
@@ -980,39 +1042,51 @@
                   <p class="text-muted small mb-4">Choose which type of automation template you want to build. You can create multiple templates of any type.</p>
                   
                   <div class="row g-3">
-                    <!-- 1. Auto-Forwarding -->
+                    <!-- 1. PDF & Media Auto-Sharing -->
                     <div class="col-12 col-md-6">
-                      <div class="template-picker-card" data-template-type="forwarding">
-                        <div class="picker-icon text-primary"><i class="bi bi-arrow-repeat"></i></div>
-                        <h6>Auto-Sharing &amp; Routing</h6>
-                        <p>Listen to specific numbers or groups, filter media types (PDF, Images, Videos, Voice, Text), and forward automatically to multiple destinations.</p>
+                      <div class="template-picker-card active" data-template-type="forwarding">
+                        <div class="d-flex align-items-center gap-2 mb-2 w-100">
+                          <span class="picker-radio-circle text-primary fs-5"><i class="bi bi-record-circle-fill"></i></span>
+                          <span class="picker-service-icon text-primary fs-5"><i class="bi bi-folder-fill"></i></span>
+                          <h6 class="mb-0 fw-bold text-primary">PDF &amp; Media Auto-Sharing</h6>
+                        </div>
+                        <p class="text-muted mb-0 small" style="line-height: 1.45; font-size: 0.8rem;">Auto-forward incoming PDFs, invoices, photos, or videos from a number/group directly to destination group(s).</p>
                       </div>
                     </div>
 
-                    <!-- 2. Bulk Message Broadcast -->
+                    <!-- 2. Scheduled Greeting / Report -->
                     <div class="col-12 col-md-6">
-                      <div class="template-picker-card" data-template-type="bulk">
-                        <div class="picker-icon text-danger"><i class="bi bi-megaphone"></i></div>
-                        <h6>Bulk Message Broadcast</h6>
-                        <p>Dispatch targeted text, image, PDF, or video messages across multiple contact numbers with real-time live preview.</p>
+                      <div class="template-picker-card" data-template-type="schedule">
+                        <div class="d-flex align-items-center gap-2 mb-2 w-100">
+                          <span class="picker-radio-circle text-muted fs-5"><i class="bi bi-circle"></i></span>
+                          <span class="picker-service-icon text-warning fs-5"><i class="bi bi-clock-history"></i></span>
+                          <h6 class="mb-0 fw-bold text-dark">Scheduled Greeting / Report</h6>
+                        </div>
+                        <p class="text-muted mb-0 small" style="line-height: 1.45; font-size: 0.8rem;">Automate daily, weekly, or recurring morning greetings and business reports delivered at precise IST times.</p>
                       </div>
                     </div>
 
                     <!-- 3. Google Sheets Automation -->
                     <div class="col-12 col-md-6">
                       <div class="template-picker-card" data-template-type="sheets">
-                        <div class="picker-icon text-success"><i class="bi bi-file-earmark-spreadsheet"></i></div>
-                        <h6>Google Sheets Sync</h6>
-                        <p>Connect a public Google Sheet spreadsheet and dynamically send personalized messages from specified row columns.</p>
+                        <div class="d-flex align-items-center gap-2 mb-2 w-100">
+                          <span class="picker-radio-circle text-muted fs-5"><i class="bi bi-circle"></i></span>
+                          <span class="picker-service-icon text-success fs-5"><i class="bi bi-file-earmark-spreadsheet-fill"></i></span>
+                          <h6 class="mb-0 fw-bold text-dark">Google Sheets Automation</h6>
+                        </div>
+                        <p class="text-muted mb-0 small" style="line-height: 1.45; font-size: 0.8rem;">Connect a spreadsheet to dynamically dispatch personalized row messages and customer alerts.</p>
                       </div>
                     </div>
 
-                    <!-- 4. Scheduled Broadcast -->
+                    <!-- 4. Bulk Campaign Broadcast -->
                     <div class="col-12 col-md-6">
-                      <div class="template-picker-card" data-template-type="schedule">
-                        <div class="picker-icon text-warning"><i class="bi bi-clock-history"></i></div>
-                        <h6>Scheduled Greeting / Broadcast</h6>
-                        <p>Automate daily, weekly, or periodic recurring greeting messages and reports delivered at precise IST times.</p>
+                      <div class="template-picker-card" data-template-type="bulk">
+                        <div class="d-flex align-items-center gap-2 mb-2 w-100">
+                          <span class="picker-radio-circle text-muted fs-5"><i class="bi bi-circle"></i></span>
+                          <span class="picker-service-icon text-info fs-5"><i class="bi bi-megaphone-fill"></i></span>
+                          <h6 class="mb-0 fw-bold text-dark">Bulk Campaign Broadcast</h6>
+                        </div>
+                        <p class="text-muted mb-0 small" style="line-height: 1.45; font-size: 0.8rem;">Send announcements, flyers, or promotions across your customer and contact lists.</p>
                       </div>
                     </div>
                   </div>
@@ -1086,19 +1160,19 @@
                 </div>
               </div>
 
-              <!-- 300 Messages Booster Card (₹50) -->
+              <!-- 200 + 30 Messages Booster Card (₹99) -->
               <div class="col-12 col-lg-4">
                 <div class="panel p-4 addon-card h-100 d-flex flex-column justify-content-between">
                   <div>
                     <div class="d-flex align-items-center gap-2 mb-2">
                       <span class="badge bg-success text-white"><i class="bi bi-lightning-charge-fill me-1"></i> POPULAR ADD-ON</span>
-                      <span class="badge text-bg-light fw-bold text-success">₹50 Only</span>
+                      <span class="badge text-bg-light fw-bold text-success">₹99 Only</span>
                     </div>
-                    <h3 class="h5 fw-bold text-success mb-2">300 Messages Booster</h3>
-                    <p class="small text-muted mb-0">Get 300 extra messages booster for only ₹50. Use them on top of your daily trial or monthly quota anytime. Never expires.</p>
+                    <h3 class="h5 fw-bold text-success mb-2">200 + 30 Messages Booster</h3>
+                    <p class="small text-muted mb-0">Get 200 + 30 extra messages booster for only ₹99. Use them on top of your daily trial or monthly quota anytime. Never expires.</p>
                   </div>
-                  <button type="button" class="btn btn-success btn-sm mt-3 w-100 py-2 fw-bold btn-open-payment" data-plan="addon_300">
-                    <i class="bi bi-qr-code me-1"></i> Buy 300 Msgs Add-on (₹50)
+                  <button type="button" class="btn btn-success btn-sm mt-3 w-100 py-2 fw-bold btn-open-payment" data-plan="addon_230">
+                    <i class="bi bi-qr-code me-1"></i> Buy 200 + 30 Msgs Add-on (₹99)
                   </button>
                 </div>
               </div>
@@ -1554,91 +1628,223 @@
         </form>
       </div>
     </div>
-  <!-- Modal: Notification Target Destination Setup -->
+  </div>
+
+  <!-- Centered Confirmation Modal ("In Between" Dialog) -->
+  <div class="modal fade" id="modal-centered-confirm" tabindex="-1" aria-labelledby="modalCenteredConfirmTitle" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+        <div class="modal-body p-4 text-center">
+          <div id="confirm-modal-icon-container" class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle" style="width: 56px; height: 56px; background: rgba(220, 38, 38, 0.1); color: #dc2626;">
+            <i id="confirm-modal-icon" class="bi bi-exclamation-triangle-fill fs-3"></i>
+          </div>
+          <h5 class="fw-bold mb-2 text-dark" id="modalCenteredConfirmTitle">Confirm Action</h5>
+          <p class="text-muted small mb-4" id="modalCenteredConfirmMessage" style="line-height: 1.5; font-size: 0.9rem;">Are you sure you want to proceed?</p>
+          <div class="d-flex align-items-center justify-content-center gap-2">
+            <button type="button" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-medium" id="btn-confirm-modal-cancel" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger px-4 py-2 rounded-pill fw-bold" id="btn-confirm-modal-confirm">
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Onboarding Wizard (Step 1: Pricing Plans -> Step 2: Notification Target Number) -->
   <div class="modal fade" id="modal-target-setup" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="targetSetupModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-        <div class="modal-header border-bottom px-4 py-3 bg-light" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
-          <div class="d-flex align-items-center gap-2">
-            <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
-              <i class="bi bi-bell-fill fs-5"></i>
+    <div class="modal-dialog modal-dialog-centered modal-xl" id="wizard-dialog-container">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+        
+        <!-- =================== STEP 1: PRICING PLANS POPUP =================== -->
+        <div id="onboarding-step-plans">
+          <div class="modal-header border-bottom px-4 py-3 bg-light d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                <i class="bi bi-gift-fill fs-5"></i>
+              </div>
+              <div>
+                <h5 class="modal-title fw-bold mb-0">Select Your Subscription Plan</h5>
+                <small class="text-muted">Start immediately with your Free Trial or choose high-volume message delivery</small>
+              </div>
             </div>
-            <div>
-              <h5 class="modal-title fw-bold mb-0" id="targetSetupModalTitle">Notification Destination Setup</h5>
-              <small class="text-muted">Where do you want to receive automated notifications and alerts?</small>
-            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <button type="button" class="btn-close" id="btn-close-target-modal" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
 
-        <div class="modal-body p-4">
-          <p class="text-muted small mb-3">
-            Choose whether the bot should deliver notifications directly to your mobile number or to a designated WhatsApp group:
-          </p>
-
-          <div class="row g-3 mb-3">
-            <!-- Option 1: Mobile Phone Number -->
-            <div class="col-12 col-md-6">
-              <div class="card h-100 p-3 border-2 target-option-card border-primary" id="card-option-number" style="cursor: pointer; border-radius: 12px; background: rgba(37, 99, 235, 0.02);">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <input class="form-check-input mt-0" type="radio" name="target-choice-type" id="radio-choice-number" value="number" checked>
-                  <label class="form-check-label fw-bold cursor-pointer" for="radio-choice-number">
-                    <i class="bi bi-telephone-fill text-teal me-1"></i> Phone Number
-                  </label>
-                </div>
-                <p class="text-muted small mb-3">Receive notifications directly on your individual WhatsApp number.</p>
-                
-                <div id="target-number-input-box">
-                  <label class="form-label small fw-bold mb-1">Target Phone Number</label>
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text font-monospace"><i class="bi bi-phone"></i> +</span>
-                    <input type="text" class="form-control font-monospace" id="modal-input-target-number" placeholder="919135779897" value="">
-                  </div>
-                  <small class="text-muted" style="font-size: 0.72rem;">Country code + mobile number (e.g. 919135779897)</small>
-                </div>
+          <div class="modal-body p-4">
+            <!-- Duration Selector Tabs -->
+            <div class="text-center mb-4">
+              <div class="pricing-duration-nav d-inline-flex">
+                <button type="button" class="duration-btn active" data-duration="1m">Monthly (1 Month)</button>
+                <button type="button" class="duration-btn" data-duration="3m">Quarterly (3 Months) <span class="badge text-bg-warning ms-1" style="font-size: 0.65rem;">Save 10%</span></button>
+                <button type="button" class="duration-btn" data-duration="6m">Half-Yearly (6 Months) <span class="badge text-bg-success ms-1" style="font-size: 0.65rem;">Save 18%</span></button>
+                <button type="button" class="duration-btn" data-duration="12m">Annual (1 Year) <span class="badge text-bg-primary ms-1" style="font-size: 0.65rem;">Save 25%</span></button>
               </div>
             </div>
 
-            <!-- Option 2: WhatsApp Group -->
-            <div class="col-12 col-md-6">
-              <div class="card h-100 p-3 border target-option-card" id="card-option-group" style="cursor: pointer; border-radius: 12px;">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <input class="form-check-input mt-0" type="radio" name="target-choice-type" id="radio-choice-group" value="group">
-                  <label class="form-check-label fw-bold cursor-pointer" for="radio-choice-group">
-                    <i class="bi bi-people-fill text-purple me-1"></i> WhatsApp Group
-                  </label>
-                </div>
-                <p class="text-muted small mb-2">Post notifications to an existing WhatsApp group.</p>
-                
-                <div id="target-group-select-box" style="opacity: 0.6;">
-                  <div class="mb-2 p-2 rounded bg-light border small d-flex align-items-center justify-content-between">
-                    <span id="modal-wa-link-status"><i class="bi bi-circle-fill text-secondary me-1" style="font-size: 0.55rem;"></i> WhatsApp: Checking...</span>
-                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" id="btn-modal-link-wa" style="font-size: 0.74rem;">
-                      <i class="bi bi-qr-code"></i> Link Account
-                    </button>
+            <!-- Pricing Comparison Cards (Exact layout from user screenshot) -->
+            <div class="row g-3 justify-content-center">
+              <!-- 1. Free Trial Card -->
+              <div class="col-12 col-md-4">
+                <div class="panel plan-card p-4 h-100 d-flex flex-column justify-content-between border border-2 border-primary bg-primary bg-opacity-10 shadow-sm" style="border-radius: 14px;">
+                  <div>
+                    <span class="badge text-bg-dark mb-2">FREE SIGNUP</span>
+                    <h3 class="h5 fw-bold mb-1">Free Trial</h3>
+                    <p class="text-muted small mb-3">Ideal to test WhatsApp linking &amp; automated daily greeting schedules.</p>
+                    <div class="mb-3">
+                      <span class="price-currency fs-4 fw-bold">₹</span><span class="price-val fs-2 fw-bold text-dark">0</span>
+                      <span class="text-muted">/ 7 Days</span>
+                    </div>
+                    <ul class="list-unstyled small mb-4 text-start">
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>15 Messages / Day Fixed</strong></li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>7-Day Full Feature Trial</li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>PDF Auto-Forwarding</li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>IST Timezone Morning Scheduler</li>
+                    </ul>
                   </div>
+                  <button type="button" class="btn btn-primary w-100 fw-bold py-2 btn-choose-plan" data-plan="free_trial">
+                    <i class="bi bi-check-circle-fill me-1"></i> Active Default on Signup
+                  </button>
+                </div>
+              </div>
 
-                  <label class="form-label small fw-bold mb-1">Select Notification Group</label>
-                  <select class="form-select form-select-sm" id="modal-select-target-group" disabled>
-                    <option value="">-- Choose Group --</option>
-                  </select>
+              <!-- 2. Starter Plan Card -->
+              <div class="col-12 col-md-4">
+                <div class="panel plan-card p-4 h-100 d-flex flex-column justify-content-between border" style="border-radius: 14px; position: relative;">
+                  <span class="badge bg-primary text-white position-absolute top-0 end-0 m-3 px-2 py-1" style="font-size: 0.7rem;">POPULAR</span>
+                  <div>
+                    <span class="badge text-bg-primary mb-2">STARTER</span>
+                    <h3 class="h5 fw-bold mb-1" id="popup-starter-title">Starter Plan</h3>
+                    <p class="text-muted small mb-3" id="popup-starter-desc">1,000 messages for personal &amp; business automation.</p>
+                    <div class="mb-3">
+                      <span class="price-currency fs-4 fw-bold">₹</span><span class="price-val fs-2 fw-bold text-dark" id="popup-starter-price">399</span>
+                      <span class="text-muted" id="popup-starter-period">/ 1 Month</span>
+                    </div>
+                    <ul class="list-unstyled small mb-4 text-start">
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong id="popup-starter-quota">1,000 Messages Quota</strong></li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>No Daily Limit (Uncapped)</li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Isolated WhatsApp Daemon</li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>High-Speed Delivery</li>
+                    </ul>
+                  </div>
+                  <button type="button" class="btn btn-outline-primary w-100 fw-bold py-2 btn-choose-plan" id="popup-btn-starter" data-plan="starter_monthly">
+                    <i class="bi bi-qr-code me-1"></i> Choose Starter (₹399)
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. Pro Plan Card -->
+              <div class="col-12 col-md-4">
+                <div class="panel plan-card p-4 h-100 d-flex flex-column justify-content-between border border-2 border-success" style="border-radius: 14px; position: relative;">
+                  <span class="badge bg-success text-white position-absolute top-0 end-0 m-3 px-2 py-1" style="font-size: 0.7rem;">BEST VALUE</span>
+                  <div>
+                    <span class="badge text-bg-success mb-2">PRO AUTOMATION</span>
+                    <h3 class="h5 fw-bold mb-1" id="popup-pro-title">Pro Plan</h3>
+                    <p class="text-muted small mb-3" id="popup-pro-desc">1,500 messages with high-priority message dispatch.</p>
+                    <div class="mb-3">
+                      <span class="price-currency fs-4 fw-bold">₹</span><span class="price-val fs-2 fw-bold text-dark" id="popup-pro-price">499</span>
+                      <span class="text-muted" id="popup-pro-period">/ 1 Month</span>
+                    </div>
+                    <ul class="list-unstyled small mb-4 text-start">
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong id="popup-pro-quota">1,500 Messages Quota</strong></li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>No Daily Limit (Uncapped)</li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Priority Baileys Connection</li>
+                      <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>24/7 Live Monitoring &amp; Logging</li>
+                    </ul>
+                  </div>
+                  <button type="button" class="btn btn-outline-success w-100 fw-bold py-2 btn-choose-plan" id="popup-btn-pro" data-plan="pro_monthly">
+                    <i class="bi bi-qr-code me-1"></i> Choose Pro (₹499)
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-0" style="border-radius: 10px;">
-            <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0"></i>
-            <div><strong>Quota Notice:</strong> Notifications sent to your target contact/group do <em>not</em> count against your plan message quota. Quota is only consumed when running broadcasts or campaigns from the <strong>Trigger</strong> section.</div>
+          <div class="modal-footer border-top px-4 py-3 bg-light d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Skip for Now</button>
+            <button type="button" class="btn btn-primary px-4 fw-bold btn-choose-plan" data-plan="free_trial">
+              Next: Setup Notification Target Number <i class="bi bi-arrow-right ms-1"></i>
+            </button>
           </div>
         </div>
 
-        <div class="modal-footer border-top px-4 py-3 bg-light d-flex justify-content-between">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary px-4 fw-bold" id="btn-save-target-destination">
-            <i class="bi bi-check-circle-fill me-1"></i> Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>
-          </button>
+        <!-- =================== STEP 2: NOTIFICATION TARGET SETUP =================== -->
+        <div id="onboarding-step-target" class="d-none">
+          <div class="modal-header border-bottom px-4 py-3 bg-light d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-circle p-2 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                <i class="bi bi-bell-fill fs-5"></i>
+              </div>
+              <div>
+                <h5 class="modal-title fw-bold mb-0">Set Notification Target Number</h5>
+                <small class="text-muted">Real-time alerts for all sent messages</small>
+              </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body p-4" style="max-width: 650px; margin: 0 auto;">
+            <p class="text-muted small mb-3">
+              Enter your WhatsApp number to receive instant, real-time audit notifications whenever the bot sends or forwards any message:
+            </p>
+
+            <!-- Enter Number Input (Only Number) -->
+            <div class="mb-3">
+              <label for="modal-input-target-number" class="form-label small fw-bold mb-1 d-flex align-items-center gap-1">
+                <i class="bi bi-whatsapp text-success"></i> WhatsApp Phone Number (With Country Code)
+              </label>
+              <div class="input-group input-group-lg">
+                <span class="input-group-text font-monospace bg-light fw-bold text-success">
+                  <i class="bi bi-whatsapp me-1"></i> +
+                </span>
+                <input type="text" class="form-control font-monospace fs-5" id="modal-input-target-number" placeholder="919135779897" value="">
+              </div>
+              <small class="text-muted" style="font-size: 0.72rem;">Enter country code + mobile number (e.g. 919135779897, without the + sign)</small>
+            </div>
+
+            <!-- Real-Time Alert Preview Card (Image 3 exact replica) -->
+            <div class="rounded-3 p-3 mb-3 text-start" style="background: #18191c; color: #f3f4f6; border: 1px solid rgba(255,255,255,0.08);">
+              <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
+                <span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size: 0.72rem;">
+                  <i class="bi bi-broadcast me-1"></i> REAL-TIME NOTIFICATION PREVIEW
+                </span>
+                <span class="text-muted small" style="font-size: 0.7rem;">Live WhatsApp Alert</span>
+              </div>
+
+              <div class="font-monospace small" style="font-size: 0.82rem; line-height: 1.6;">
+                <div class="text-warning fw-bold mb-1">🔔 [Cortex AutoBot Alert]</div>
+                <div><span class="text-success fw-bold">✅ Action:</span> Message Successfully Forwarded</div>
+                <div><span class="text-warning-emphasis">📂 Type:</span> PDF ("invoice.pdf")</div>
+                <div><span class="text-info">👤 Source:</span> +919876543210</div>
+                <div><span class="text-purple">👥 Delivered To:</span> 2 destination(s)</div>
+                <div class="text-muted">⏰ Time: 09:00:12 IST</div>
+                <div class="mt-2 pt-1 text-secondary fst-italic" style="font-size: 0.73rem;">All sent message information is delivered to this notification target number.</div>
+              </div>
+            </div>
+
+            <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-0 text-start" style="border-radius: 10px; font-size: 0.75rem;">
+              <i class="bi bi-shield-check fs-5 text-primary flex-shrink-0"></i>
+              <div>Audit notifications sent to your target number do <strong>NOT</strong> consume your plan message quota.</div>
+            </div>
+          </div>
+
+          <div class="modal-footer border-top px-4 py-3 bg-light d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary px-3" id="btn-back-to-plans-step">
+              <i class="bi bi-arrow-left me-1"></i> Back to Plans
+            </button>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary px-3" id="btn-skip-target-modal" data-bs-dismiss="modal">
+                <i class="bi bi-slash-circle me-1"></i> Skip for Now
+              </button>
+              <button type="button" class="btn btn-success px-4 fw-bold d-inline-flex align-items-center gap-2" id="btn-save-target-destination">
+                <i class="bi bi-check-circle-fill"></i> Save Notification Number <i class="bi bi-arrow-right"></i>
+              </button>
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -1832,27 +2038,72 @@
       }
     };
 
-    // Duration Button Click Listeners
+    // Duration Button Click Listeners (Synchronizes both page & popup cards!)
     document.querySelectorAll('.duration-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
         const dur = btn.getAttribute('data-duration');
+        
+        // Sync active state across all duration bars (both in modal and on page)
+        document.querySelectorAll('.duration-btn').forEach(b => {
+          if (b.getAttribute('data-duration') === dur) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+
         const data = pricingDurationMatrix[dur];
         if (data) {
-          cardStarterTitle.innerText = data.starter.title;
-          cardStarterDesc.innerText = data.starter.desc;
-          cardStarterPrice.innerText = data.starter.price;
-          cardStarterPeriod.innerText = data.starter.period;
-          cardStarterQuota.innerText = data.starter.quota;
+          // 1. Update background sheet cards
+          if (cardStarterTitle) cardStarterTitle.innerText = data.starter.title;
+          if (cardStarterDesc) cardStarterDesc.innerText = data.starter.desc;
+          if (cardStarterPrice) cardStarterPrice.innerText = data.starter.price;
+          if (cardStarterPeriod) cardStarterPeriod.innerText = data.starter.period;
+          if (cardStarterQuota) cardStarterQuota.innerText = data.starter.quota;
 
-          cardProTitle.innerText = data.pro.title;
-          cardProDesc.innerText = data.pro.desc;
-          cardProPrice.innerText = data.pro.price;
-          cardProPeriod.innerText = data.pro.period;
-          cardProQuota.innerText = data.pro.quota;
+          if (cardProTitle) cardProTitle.innerText = data.pro.title;
+          if (cardProDesc) cardProDesc.innerText = data.pro.desc;
+          if (cardProPrice) cardProPrice.innerText = data.pro.price;
+          if (cardProPeriod) cardProPeriod.innerText = data.pro.period;
+          if (cardProQuota) cardProQuota.innerText = data.pro.quota;
 
+          // 2. Update popup modal cards!
+          const popupStarterTitle = document.getElementById('popup-starter-title');
+          const popupStarterDesc = document.getElementById('popup-starter-desc');
+          const popupStarterPrice = document.getElementById('popup-starter-price');
+          const popupStarterPeriod = document.getElementById('popup-starter-period');
+          const popupStarterQuota = document.getElementById('popup-starter-quota');
+          const popupBtnStarter = document.getElementById('popup-btn-starter');
+
+          const popupProTitle = document.getElementById('popup-pro-title');
+          const popupProDesc = document.getElementById('popup-pro-desc');
+          const popupProPrice = document.getElementById('popup-pro-price');
+          const popupProPeriod = document.getElementById('popup-pro-period');
+          const popupProQuota = document.getElementById('popup-pro-quota');
+          const popupBtnPro = document.getElementById('popup-btn-pro');
+
+          if (popupStarterTitle) popupStarterTitle.innerText = data.starter.title;
+          if (popupStarterDesc) popupStarterDesc.innerText = data.starter.desc;
+          if (popupStarterPrice) popupStarterPrice.innerText = data.starter.price;
+          if (popupStarterPeriod) popupStarterPeriod.innerText = data.starter.period;
+          if (popupStarterQuota) popupStarterQuota.innerText = data.starter.quota;
+          if (popupBtnStarter) {
+            popupBtnStarter.setAttribute('data-plan', data.starter.id);
+            popupBtnStarter.innerHTML = `<i class="bi bi-qr-code me-1"></i> Choose Starter (₹${data.starter.price})`;
+          }
+
+          if (popupProTitle) popupProTitle.innerText = data.pro.title;
+          if (popupProDesc) popupProDesc.innerText = data.pro.desc;
+          if (popupProPrice) popupProPrice.innerText = data.pro.price;
+          if (popupProPeriod) popupProPeriod.innerText = data.pro.period;
+          if (popupProQuota) popupProQuota.innerText = data.pro.quota;
+          if (popupBtnPro) {
+            popupBtnPro.setAttribute('data-plan', data.pro.id);
+            popupBtnPro.innerHTML = `<i class="bi bi-qr-code me-1"></i> Choose Pro (₹${data.pro.price})`;
+          }
+
+          // 3. Update payment trigger buttons
           const starterPayBtn = document.querySelector('.btn-open-payment[data-plan^="starter"]');
           if (starterPayBtn) {
             starterPayBtn.setAttribute('data-plan', data.starter.id);
@@ -1882,8 +2133,8 @@
       
       // Look up plan details
       let matchedPlan = null;
-      if (planId === 'addon_300') {
-        matchedPlan = { title: '300 Messages Booster Add-on', price: 50, quota: '+300 Extra Messages', period: 'Never Expires' };
+      if (planId === 'addon_230' || planId === 'addon_300') {
+        matchedPlan = { title: '200 + 30 Messages Booster Add-on', price: 99, quota: '+230 Extra Messages (200 + 30 Bonus)', period: 'Never Expires' };
       } else {
         for (const dur in pricingDurationMatrix) {
           if (pricingDurationMatrix[dur].starter.id === planId) matchedPlan = pricingDurationMatrix[dur].starter;
@@ -2375,12 +2626,19 @@
             });
           });
 
-          // Attach delete user listeners
+          // Attach delete user listeners with centered confirm dialog
           document.querySelectorAll('.btn-delete-user').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               const userId = btn.getAttribute('data-user-id');
               const userEmail = btn.getAttribute('data-user-email');
-              if (confirm(`Are you sure you want to delete user "${userEmail}" and their WhatsApp bot session?`)) {
+              const confirmed = await showConfirmDialog({
+                title: "Delete User & Session",
+                message: `Are you sure you want to delete user "${userEmail}" and their WhatsApp bot session?`,
+                confirmText: "OK",
+                cancelText: "Cancel",
+                type: "danger"
+              });
+              if (confirmed) {
                 await deleteUserAction(userId);
               }
             });
@@ -2495,23 +2753,91 @@
     // WhatsApp Dashboard Per-User Logic
     // -----------------------------------------------------------------------
     
-    let manualGroupMode = false;
     let lastConnectionState = '';
     let availableGroups = [];
+    let selectedDestGroups = [];
 
-    toggleGroupMode.addEventListener('click', () => {
-      manualGroupMode = !manualGroupMode;
-      if (manualGroupMode) {
-        groupSelectContainer.classList.add('hidden');
-        groupManualContainer.classList.remove('hidden');
-        toggleGroupMode.innerHTML = '<i class="bi bi-list-ul"></i> Select Dropdown';
-        inputTargetGroup.setAttribute('required', 'true');
-      } else {
-        groupSelectContainer.classList.remove('hidden');
-        groupManualContainer.classList.add('hidden');
-        toggleGroupMode.innerHTML = '<i class="bi bi-keyboard"></i> Manual Input';
-        inputTargetGroup.removeAttribute('required');
+    function updateDestTypeUI(type) {
+      const destGrpBox = document.getElementById('dest-group-container');
+      const destNumBox = document.getElementById('dest-number-container');
+      const destManBox = document.getElementById('dest-manual-container');
+      const destBadge = document.getElementById('dest-badge');
+
+      if (destGrpBox) destGrpBox.classList.toggle('d-none', type !== 'group');
+      if (destNumBox) destNumBox.classList.toggle('d-none', type !== 'number');
+      if (destManBox) destManBox.classList.toggle('d-none', type !== 'manual');
+
+      if (destBadge) {
+        if (type === 'group') destBadge.innerText = 'WhatsApp Group(s)';
+        else if (type === 'number') destBadge.innerText = 'Contact Number(s)';
+        else if (type === 'manual') destBadge.innerText = 'Custom / Mixed';
       }
+      if (typeof updateLivePreview === 'function') updateLivePreview();
+    }
+
+    document.querySelectorAll('input[name="destType"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        updateDestTypeUI(e.target.value);
+      });
+    });
+
+    function renderDestGroupBadges() {
+      const listEl = document.getElementById('dest-groups-badge-list');
+      if (!listEl) return;
+      listEl.innerHTML = selectedDestGroups.map((jid, idx) => {
+        const found = availableGroups.find(g => g.jid === jid);
+        const label = found ? found.name : jid;
+        return `
+          <span class="badge text-bg-primary d-flex align-items-center gap-1 py-1 px-2">
+            <i class="bi bi-people-fill"></i> ${escapeHtml(label)}
+            <button type="button" class="btn-close btn-close-white btn-remove-dest-group p-0" style="font-size: 0.5rem;" data-index="${idx}"></button>
+          </span>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.btn-remove-dest-group').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const i = parseInt(btn.dataset.index, 10);
+          selectedDestGroups.splice(i, 1);
+          renderDestGroupBadges();
+          if (typeof updateLivePreview === 'function') updateLivePreview();
+        });
+      });
+    }
+
+    document.getElementById('btn-add-dest-group')?.addEventListener('click', () => {
+      const sel = document.getElementById('select-target-group');
+      if (sel && sel.value) {
+        if (!selectedDestGroups.includes(sel.value)) {
+          selectedDestGroups.push(sel.value);
+          renderDestGroupBadges();
+          if (typeof updateLivePreview === 'function') updateLivePreview();
+        }
+      }
+    });
+
+    document.getElementById('select-target-group')?.addEventListener('change', (e) => {
+      if (e.target.value && selectedDestGroups.length === 0) {
+        selectedDestGroups.push(e.target.value);
+        renderDestGroupBadges();
+        if (typeof updateLivePreview === 'function') updateLivePreview();
+      }
+    });
+
+    document.getElementById('btn-toggle-src-group-manual')?.addEventListener('click', () => {
+      const manualInput = document.getElementById('input-source-group-manual');
+      if (manualInput) {
+        manualInput.classList.toggle('d-none');
+        if (!manualInput.classList.contains('d-none')) manualInput.focus();
+      }
+    });
+
+    document.getElementById('input-target-contact-numbers')?.addEventListener('input', () => {
+      if (typeof updateLivePreview === 'function') updateLivePreview();
+    });
+    document.getElementById('input-target-group')?.addEventListener('input', () => {
+      if (typeof updateLivePreview === 'function') updateLivePreview();
     });
 
     btnClearTerminal.addEventListener('click', () => {
@@ -2535,6 +2861,74 @@
       
       toast.classList.remove('hidden');
       setTimeout(() => { toast.classList.add('hidden'); }, 4500);
+    }
+
+    function showConfirmDialog({ title = "Confirm Action", message = "Are you sure?", confirmText = "OK", cancelText = "Cancel", type = "danger" }) {
+      return new Promise((resolve) => {
+        const modalEl = document.getElementById('modal-centered-confirm');
+        const titleEl = document.getElementById('modalCenteredConfirmTitle');
+        const msgEl = document.getElementById('modalCenteredConfirmMessage');
+        const confirmBtn = document.getElementById('btn-confirm-modal-confirm');
+        const cancelBtn = document.getElementById('btn-confirm-modal-cancel');
+        const iconContainer = document.getElementById('confirm-modal-icon-container');
+        const iconEl = document.getElementById('confirm-modal-icon');
+
+        if (!modalEl || !window.bootstrap) {
+          resolve(window.confirm(message));
+          return;
+        }
+
+        if (titleEl) titleEl.innerText = title;
+        if (msgEl) msgEl.innerText = message;
+        if (confirmBtn) confirmBtn.innerText = confirmText;
+        if (cancelBtn) cancelBtn.innerText = cancelText;
+
+        if (type === 'danger') {
+          if (confirmBtn) confirmBtn.className = 'btn btn-danger px-4 py-2 rounded-pill fw-bold';
+          if (iconContainer) {
+            iconContainer.style.background = 'rgba(220, 38, 38, 0.1)';
+            iconContainer.style.color = '#dc2626';
+          }
+          if (iconEl) iconEl.className = 'bi bi-exclamation-triangle-fill fs-3';
+        } else if (type === 'warning') {
+          if (confirmBtn) confirmBtn.className = 'btn btn-warning px-4 py-2 rounded-pill fw-bold text-dark';
+          if (iconContainer) {
+            iconContainer.style.background = 'rgba(234, 88, 12, 0.1)';
+            iconContainer.style.color = '#ea580c';
+          }
+          if (iconEl) iconEl.className = 'bi bi-exclamation-circle-fill fs-3';
+        } else {
+          if (confirmBtn) confirmBtn.className = 'btn btn-primary px-4 py-2 rounded-pill fw-bold';
+          if (iconContainer) {
+            iconContainer.style.background = 'rgba(37, 99, 235, 0.1)';
+            iconContainer.style.color = '#2563eb';
+          }
+          if (iconEl) iconEl.className = 'bi bi-info-circle-fill fs-3';
+        }
+
+        const modal = new bootstrap.Modal(modalEl);
+
+        let resolved = false;
+        confirmBtn.onclick = () => {
+          resolved = true;
+          modal.hide();
+          resolve(true);
+        };
+        cancelBtn.onclick = () => {
+          if (!resolved) {
+            resolved = true;
+            resolve(false);
+          }
+        };
+        modalEl.addEventListener('hidden.bs.modal', () => {
+          if (!resolved) {
+            resolved = true;
+            resolve(false);
+          }
+        }, { once: true });
+
+        modal.show();
+      });
     }
 
     async function fetchStatus() {
@@ -2613,7 +3007,10 @@
         }
 
         if (data.config) {
-          if (data.config.destinationType === 'group' && data.config.targetGroup) {
+          if (data.config.notificationTargetNumber) {
+            metricContactVal.innerText = '+' + data.config.notificationTargetNumber;
+            if (metricContactMeta) metricContactMeta.innerText = 'Notification Target';
+          } else if (data.config.destinationType === 'group' && data.config.targetGroup) {
             const matchedGrp = (data.groups || []).find(g => g.jid === data.config.targetGroup);
             metricContactVal.innerText = matchedGrp ? matchedGrp.name : data.config.targetGroup;
             if (metricContactMeta) metricContactMeta.innerText = 'WhatsApp Group';
@@ -2626,11 +3023,13 @@
           }
 
           // Check if user has no target configured and needs onboarding prompt
-          const hasTargetConfigured = !!(data.config.targetNumber || data.config.targetGroup);
+          const hasTargetConfigured = !!(data.config.notificationTargetNumber || data.config.targetNumber || data.config.targetGroup);
           const onboardingDone = currentUser && localStorage.getItem('cortex_target_configured_' + currentUser.id) === 'true';
-          if (!hasTargetConfigured && !onboardingDone && !window.targetModalShown) {
+          const isNewSignup = sessionStorage.getItem('cortex_new_user_onboarding') === 'true';
+          if ((!hasTargetConfigured || isNewSignup) && !onboardingDone && !window.targetModalShown) {
             window.targetModalShown = true;
-            setTimeout(() => { openTargetSetupModal(true); }, 700);
+            sessionStorage.removeItem('cortex_new_user_onboarding');
+            setTimeout(() => { openTargetSetupModal(true); }, 500);
           }
         }
 
@@ -2911,20 +3310,61 @@
 
         let routeSummary = '';
         if (t.type === 'forwarding') {
-          const src = t.sourceType === 'all' ? 'All Chats' : (t.sourceType === 'group' ? (t.sourceGroup || 'Group') : `+${t.targetNumber || 'Not set'}`);
-          const dest = t.destinations || t.targetGroup || 'No destination';
-          routeSummary = `<span>${escapeHtml(src)}</span> <i class="bi bi-arrow-right text-muted mx-1"></i> <span class="text-truncate">${escapeHtml(dest)}</span>`;
+          let src = '';
+          if (t.sourceType === 'all') {
+            src = '<span class="badge text-bg-info text-dark"><i class="bi bi-globe"></i> All Chats</span>';
+          } else if (t.sourceType === 'group') {
+            const grpNames = (t.sourceGroup || '').split(',').map(s => {
+              const matched = (availableGroups || []).find(g => g.jid === s.trim());
+              return matched ? matched.name : s.trim();
+            }).filter(Boolean).join(', ');
+            src = `<span class="badge text-bg-warning text-dark"><i class="bi bi-people-fill"></i> ${escapeHtml(grpNames || 'Group')}</span>`;
+          } else {
+            src = `<span class="badge text-bg-success"><i class="bi bi-telephone-fill"></i> +${escapeHtml(t.targetNumber || 'Number')}</span>`;
+          }
+
+          let dest = '';
+          const rawDest = t.destinations || t.targetGroup || '';
+          if (!rawDest) {
+            dest = '<span class="badge text-bg-secondary">No destination</span>';
+          } else {
+            const parts = rawDest.split(',').map(s => s.trim()).filter(Boolean);
+            const formattedParts = parts.map(p => {
+              if (p.includes('@g.us')) {
+                const matched = (availableGroups || []).find(g => g.jid === p);
+                return `<span class="badge text-bg-primary"><i class="bi bi-people-fill"></i> ${escapeHtml(matched ? matched.name : 'Group')}</span>`;
+              } else {
+                return `<span class="badge text-bg-info"><i class="bi bi-telephone-fill"></i> +${escapeHtml(p.replace(/[^\d]/g, ''))}</span>`;
+              }
+            });
+            dest = formattedParts.join(' ');
+          }
+          routeSummary = `<div class="d-flex align-items-center flex-wrap gap-1">${src} <i class="bi bi-arrow-right text-muted mx-1"></i> ${dest}</div>`;
         } else if (t.type === 'bulk') {
           const lines = (t.bulkContacts || '').split('\n').filter(Boolean).length;
           routeSummary = `<i class="bi bi-people me-1"></i> ${lines} Contacts • Format: ${(t.bulkMsgType || 'text').toUpperCase()}`;
         } else if (t.type === 'sheets') {
           routeSummary = `<i class="bi bi-link-45deg me-1"></i> ${escapeHtml(t.sheetUrl ? 'Google Sheet Connected' : 'No Sheet Link')}`;
         } else if (t.type === 'schedule') {
-          routeSummary = `<i class="bi bi-chat-heart me-1"></i> ${escapeHtml(t.morningMessage ? t.morningMessage.substring(0, 32) + '...' : 'Greeting message')}`;
+          let dest = '';
+          const rawDest = t.destinations || t.targetGroup || '';
+          if (rawDest) {
+            const parts = rawDest.split(',').map(s => s.trim()).filter(Boolean);
+            const formattedParts = parts.map(p => {
+              if (p.includes('@g.us')) {
+                const matched = (availableGroups || []).find(g => g.jid === p);
+                return `<span class="badge text-bg-warning text-dark"><i class="bi bi-people-fill"></i> ${escapeHtml(matched ? matched.name : 'Group')}</span>`;
+              } else {
+                return `<span class="badge text-bg-info"><i class="bi bi-telephone-fill"></i> +${escapeHtml(p.replace(/[^\d]/g, ''))}</span>`;
+              }
+            });
+            dest = ` <i class="bi bi-arrow-right text-muted mx-1"></i> ${formattedParts.join(' ')}`;
+          }
+          routeSummary = `<div class="d-flex align-items-center flex-wrap gap-1"><span class="badge text-bg-secondary"><i class="bi bi-clock-history"></i> Scheduled</span> <span>${escapeHtml(t.morningMessage ? t.morningMessage.substring(0, 24) + '...' : 'Greeting message')}</span>${dest}</div>`;
         }
 
         const mediaBadges = (t.shareTypes || []).map(st => {
-          return `<span class="badge text-bg-light border small text-muted" style="font-size: 0.65rem;">${st.toUpperCase()}</span>`;
+          return `<span class="badge text-bg-light border text-secondary small" style="font-size: 0.68rem; font-weight: 600; padding: 0.22rem 0.45rem; border-radius: 6px;">${st.toUpperCase()}</span>`;
         }).join(' ');
 
         // Timing badge
@@ -2938,47 +3378,55 @@
         }
 
         return `
-          <div class="template-card ${isPaused ? 'paused' : ''}" data-id="${t.id}">
-            <div class="template-card-header">
-              <div class="d-flex align-items-center gap-2">
-                <div class="template-icon-circle ${typeClass}">
-                  <i class="bi ${iconName}"></i>
-                </div>
-                <div>
-                  <h6 class="fw-bold mb-0 text-truncate" style="max-width: 170px;">${escapeHtml(t.name || 'Untitled Rule')}</h6>
-                  <span class="badge text-bg-secondary small" style="font-size: 0.65rem;">${getTypeLabel(t.type)}</span>
-                </div>
+          <div class="template-card template-linear-row ${isPaused ? 'paused' : ''}" data-id="${t.id}">
+            <!-- 1. Left: Icon + Rule Name & Type -->
+            <div class="linear-rule-info d-flex align-items-center gap-2">
+              <div class="template-icon-circle ${typeClass}">
+                <i class="bi ${iconName}"></i>
               </div>
-              <div class="form-check form-switch fs-6 mb-0" title="${isPaused ? 'Click to Activate' : 'Click to Pause'}">
-                <input class="form-check-input toggle-template-active" type="checkbox" data-id="${t.id}" ${!isPaused ? 'checked' : ''}>
+              <div class="text-nowrap overflow-hidden">
+                <h6 class="fw-bold mb-0 text-dark text-truncate" title="${escapeHtml(t.name || 'Untitled Rule')}">${escapeHtml(t.name || 'Untitled Rule')}</h6>
+                <span class="badge text-bg-secondary small" style="font-size: 0.65rem;">${getTypeLabel(t.type)}</span>
               </div>
             </div>
 
-            <div class="d-flex align-items-center gap-2 mb-2">
+            <!-- 2. Timing Mode (Image 1: INSTANT REAL-TIME) -->
+            <div class="linear-timing-col d-flex align-items-center">
               ${timingBadge}
             </div>
 
-            <div class="template-route-tag">
-              ${routeSummary}
+            <!-- 3. Source -> Destination Route Tag (Image 2: Route box) -->
+            <div class="linear-route-col d-flex align-items-center">
+              <div class="template-route-tag mb-0">
+                ${routeSummary}
+              </div>
             </div>
 
-            ${mediaBadges ? `<div class="d-flex flex-wrap gap-1 mb-2">${mediaBadges}</div>` : ''}
+            <!-- 4. Media Badges / "which type of this" (Image 3: PDF, DOCUMENT, IMAGE, etc.) -->
+            <div class="linear-media-col d-flex align-items-center flex-wrap gap-1">
+              ${mediaBadges || '<span class="badge text-bg-light border text-muted small" style="font-size: 0.68rem;">ALL TYPES</span>'}
+            </div>
 
-            <div class="template-card-footer">
-              <button type="button" class="btn btn-outline-success btn-sm btn-trigger-template" data-id="${t.id}" title="Run / Execute Now">
-                <i class="bi bi-play-fill"></i> Run Now
-              </button>
-              <div class="d-flex align-items-center gap-1">
-                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 btn-edit-template" data-id="${t.id}" title="Edit Template">
-                  <i class="bi bi-pencil-fill"></i> Edit
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 btn-duplicate-template" data-id="${t.id}" title="Duplicate / Clone">
-                  <i class="bi bi-copy"></i>
-                </button>
-                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 btn-delete-template" data-id="${t.id}" title="Delete Template">
-                  <i class="bi bi-trash"></i>
-                </button>
+            <!-- 5. Right Action Group: Toggle Switch right before Run Now button! -->
+            <div class="linear-actions-col d-flex align-items-center gap-2">
+              <!-- Active / Pause Trigger Toggle Switch (Before Run Now) -->
+              <div class="form-check form-switch fs-5 mb-0 me-1" title="${isPaused ? 'Click to Activate' : 'Click to Pause'}">
+                <input class="form-check-input toggle-template-active" type="checkbox" data-id="${t.id}" ${!isPaused ? 'checked' : ''}>
               </div>
+
+              <!-- Action Buttons -->
+              <button type="button" class="btn btn-outline-success btn-sm btn-trigger-template d-inline-flex align-items-center gap-1 px-2 py-1 fw-bold" data-id="${t.id}" title="Run / Execute Now">
+                <i class="bi bi-play-fill fs-6"></i> <span>Run Now</span>
+              </button>
+              <button type="button" class="btn btn-outline-primary btn-sm btn-edit-template d-inline-flex align-items-center gap-1 px-2 py-1 fw-medium" data-id="${t.id}" title="Edit Template">
+                <i class="bi bi-pencil-fill"></i> <span>Edit</span>
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm p-1 px-2 btn-duplicate-template" data-id="${t.id}" title="Duplicate / Clone">
+                <i class="bi bi-copy"></i>
+              </button>
+              <button type="button" class="btn btn-outline-danger btn-sm p-1 px-2 btn-delete-template" data-id="${t.id}" title="Delete Template">
+                <i class="bi bi-trash"></i>
+              </button>
             </div>
           </div>
         `;
@@ -3090,7 +3538,53 @@
 
     document.getElementById('input-schedule-frequency')?.addEventListener('change', updateScheduleFrequencyUI);
 
-    // Schedule Dest Type UI Toggle (To Whom)
+    // Schedule Dest Type UI Toggle & Multi-Group Management (To Whom)
+    let selectedScheduleGroups = [];
+
+    function renderScheduleGroupBadges() {
+      const listEl = document.getElementById('sch-groups-badge-list');
+      if (!listEl) return;
+      listEl.innerHTML = selectedScheduleGroups.map((jid, idx) => {
+        const found = (availableGroups || []).find(g => g.jid === jid);
+        const label = found ? found.name : jid;
+        return `
+          <span class="badge text-bg-warning text-dark d-flex align-items-center gap-1 py-1 px-2">
+            <i class="bi bi-people-fill"></i> ${escapeHtml(label)}
+            <button type="button" class="btn-close btn-remove-sch-group p-0" style="font-size: 0.5rem;" data-index="${idx}"></button>
+          </span>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.btn-remove-sch-group').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const i = parseInt(btn.dataset.index, 10);
+          selectedScheduleGroups.splice(i, 1);
+          renderScheduleGroupBadges();
+          if (typeof updateLivePreview === 'function') updateLivePreview();
+        });
+      });
+    }
+
+    document.getElementById('btn-add-sch-group')?.addEventListener('click', () => {
+      const sel = document.getElementById('select-schedule-group');
+      if (sel && sel.value) {
+        if (!selectedScheduleGroups.includes(sel.value)) {
+          selectedScheduleGroups.push(sel.value);
+          renderScheduleGroupBadges();
+          if (typeof updateLivePreview === 'function') updateLivePreview();
+        }
+      }
+    });
+
+    document.getElementById('select-schedule-group')?.addEventListener('change', (e) => {
+      if (e.target.value && selectedScheduleGroups.length === 0) {
+        selectedScheduleGroups.push(e.target.value);
+        renderScheduleGroupBadges();
+        if (typeof updateLivePreview === 'function') updateLivePreview();
+      }
+    });
+
     function updateScheduleDestTypeUI(type) {
       const schGrpBox = document.getElementById('sch-group-container');
       const schNumBox = document.getElementById('sch-number-container');
@@ -3100,8 +3594,9 @@
       if (schNumBox) schNumBox.classList.toggle('d-none', type !== 'number');
 
       if (badge) {
-        badge.innerText = type === 'group' ? 'WhatsApp Group' : 'Contact Number';
+        badge.innerText = type === 'group' ? 'WhatsApp Group(s)' : 'Contact Number(s)';
       }
+      renderScheduleGroupBadges();
       updateLivePreview();
     }
 
@@ -3180,10 +3675,38 @@
           if (sel) sel.value = tpl.sourceGroup;
         }
 
-        if (tpl.destinations || tpl.targetGroup) {
-          const destVal = tpl.destinations || tpl.targetGroup;
-          if (selectTargetGroup) selectTargetGroup.value = destVal;
-          inputTargetGroup.value = destVal;
+        const destVal = tpl.destinations || tpl.targetGroup || '';
+        selectedDestGroups = [];
+        if (destVal) {
+          const parts = destVal.split(',').map(s => s.trim()).filter(Boolean);
+          const hasGroup = parts.some(p => p.includes('@g.us'));
+          const hasNumber = parts.some(p => !p.includes('@'));
+
+          if (hasGroup && !hasNumber) {
+            const r = document.getElementById('destTypeGroup');
+            if (r) r.checked = true;
+            updateDestTypeUI('group');
+            selectedDestGroups = [...parts];
+            renderDestGroupBadges();
+            if (selectTargetGroup && parts[0]) selectTargetGroup.value = parts[0];
+          } else if (hasNumber && !hasGroup) {
+            const r = document.getElementById('destTypeNumber');
+            if (r) r.checked = true;
+            updateDestTypeUI('number');
+            const destNumInput = document.getElementById('input-target-contact-numbers');
+            if (destNumInput) destNumInput.value = destVal;
+          } else {
+            const r = document.getElementById('destTypeManual');
+            if (r) r.checked = true;
+            updateDestTypeUI('manual');
+            const destManInput = document.getElementById('input-target-group');
+            if (destManInput) destManInput.value = destVal;
+          }
+        } else {
+          const r = document.getElementById('destTypeGroup');
+          if (r) r.checked = true;
+          updateDestTypeUI('group');
+          renderDestGroupBadges();
         }
 
         const savedShareTypes = (tpl.shareTypes && Array.isArray(tpl.shareTypes)) ? tpl.shareTypes : [];
@@ -3209,12 +3732,22 @@
         const schDestRadio = document.querySelector(`input[name="scheduleDestType"][value="${schDestType}"]`);
         if (schDestRadio) schDestRadio.checked = true;
 
+        selectedScheduleGroups = [];
         if (schDestType === 'group') {
-          const selSch = document.getElementById('select-schedule-group');
-          if (selSch && tpl.destinations) selSch.value = tpl.destinations;
+          const destVal = tpl.destinations || tpl.targetGroup || '';
+          if (destVal) {
+            const parts = destVal.split(',').map(s => s.trim()).filter(Boolean);
+            selectedScheduleGroups = [...parts];
+            renderScheduleGroupBadges();
+            const selSch = document.getElementById('select-schedule-group');
+            if (selSch && parts[0]) selSch.value = parts[0];
+          } else {
+            renderScheduleGroupBadges();
+          }
         } else {
           const numSch = document.getElementById('input-schedule-number');
           if (numSch) numSch.value = tpl.destinations || tpl.targetNumber || '';
+          renderScheduleGroupBadges();
         }
         updateScheduleDestTypeUI(schDestType);
 
@@ -3238,6 +3771,23 @@
         const sheetColMsgEl = document.getElementById('input-sheet-col-msg');
         if (sheetColMsgEl) sheetColMsgEl.value = tpl.sheetColMsg || 'B';
 
+        // Restore the saved sheet GID + reset tab dropdown to force fresh load on next Test
+        const gidEl = document.getElementById('input-sheet-gid');
+        if (gidEl) gidEl.value = tpl.sheetGid || '';
+        const tabSel = document.getElementById('select-sheet-tab');
+        if (tabSel) {
+          tabSel.innerHTML = '<option value="">— Default (first sheet) —</option>';
+          if (tpl.sheetGid && tpl.sheetTabName) {
+            const opt = document.createElement('option');
+            opt.value = tpl.sheetGid;
+            opt.textContent = tpl.sheetTabName;
+            tabSel.appendChild(opt);
+            tabSel.value = tpl.sheetGid;
+          }
+        }
+        const tabContainer = document.getElementById('sheet-tab-selector-container');
+        if (tabContainer) tabContainer.classList.toggle('d-none', !(tpl.sheetGid && tpl.sheetTabName));
+
         updateDispatchModeUI(dispatchMode);
 
       } else {
@@ -3260,12 +3810,21 @@
 
         // Reset fields
         inputTargetNumber.value = '';
-        inputTargetGroup.value = '';
+        selectedDestGroups = [];
+        renderDestGroupBadges();
+        const defDestR = document.getElementById('destTypeGroup');
+        if (defDestR) defDestR.checked = true;
+        updateDestTypeUI('group');
+        const destNumInput = document.getElementById('input-target-contact-numbers');
+        if (destNumInput) destNumInput.value = '';
+        const destManInput = document.getElementById('input-target-group');
+        if (destManInput) destManInput.value = '';
         if (selectTargetGroup) selectTargetGroup.value = '';
         inputMorningMessage.value = 'Good morning! Here is today\'s report.';
         if (document.getElementById('input-schedule-time')) document.getElementById('input-schedule-time').value = '09:00';
-        if (document.getElementById('input-schedule-number')) document.getElementById('input-schedule-number').value = '';
         if (document.getElementById('select-schedule-group')) document.getElementById('select-schedule-group').value = '';
+        selectedScheduleGroups = [];
+        renderScheduleGroupBadges();
         
         const defSchDestRadio = document.getElementById('schDestGroup');
         if (defSchDestRadio) {
@@ -3307,6 +3866,136 @@
     document.getElementById('btn-back-to-templates')?.addEventListener('click', closeTemplateEditor);
     document.getElementById('btn-cancel-template')?.addEventListener('click', closeTemplateEditor);
 
+    async function runSheetTestConnection(sheetGidOverride) {
+      const btn = document.getElementById('btn-test-sheet-preview');
+      const sheetUrl = document.getElementById('input-sheet-url')?.value.trim();
+      const phoneCol = document.getElementById('input-sheet-col-phone')?.value.trim() || 'A';
+      const msgCol = document.getElementById('input-sheet-col-msg')?.value.trim() || 'B';
+      const resultBox = document.getElementById('sheet-preview-result');
+      const tabContainer = document.getElementById('sheet-tab-selector-container');
+      const tabSelect = document.getElementById('select-sheet-tab');
+      const gidInput = document.getElementById('input-sheet-gid');
+
+      if (!sheetUrl) {
+        showToast('Please enter your Google Sheet URL first.', 'error');
+        return;
+      }
+
+      const sheetGid = sheetGidOverride ?? gidInput?.value ?? null;
+
+      const originalHtml = btn.innerHTML;
+      btn.setAttribute('disabled', 'true');
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Testing...';
+      if (resultBox) {
+        resultBox.classList.remove('d-none');
+        resultBox.innerHTML = '<div class="text-muted"><span class="spinner-border spinner-border-sm text-primary"></span> Connecting to Google Sheet...</div>';
+      }
+
+      try {
+        // STEP 1: Load sheet tab names (only when first connecting, not when switching tabs)
+        if (!sheetGidOverride && tabSelect && tabSelect.options.length <= 1) {
+          try {
+            const namesRes = await fetch('/api/templates/sheet-names', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+              body: JSON.stringify({ sheetUrl })
+            });
+            const namesData = await namesRes.json();
+            if (namesData.success && namesData.sheets && namesData.sheets.length > 0) {
+              // Populate tab dropdown
+              tabSelect.innerHTML = '<option value="">— Default (first sheet) —</option>';
+              namesData.sheets.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.gid;
+                opt.textContent = s.name;
+                tabSelect.appendChild(opt);
+              });
+              if (tabContainer) tabContainer.classList.remove('d-none');
+
+              // If only one sheet tab, auto-select it
+              if (namesData.sheets.length === 1) {
+                tabSelect.value = namesData.sheets[0].gid;
+                if (gidInput) gidInput.value = namesData.sheets[0].gid;
+              }
+            }
+          } catch (tabErr) {
+            // Non-fatal: tab detection failed, continue with default
+            console.warn('Sheet tab detection failed:', tabErr.message);
+          }
+        }
+
+        // STEP 2: Preview rows from the selected sheet tab
+        const selectedGid = tabSelect?.value || sheetGid || null;
+        const res = await fetch('/api/templates/test-sheet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ sheetUrl, sheetColPhone: phoneCol, sheetColMsg: msgCol, sheetGid: selectedGid })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ Connected! Found ${data.validRecipientCount} valid contact(s).`, 'success');
+          if (resultBox) {
+            let sampleRowsHtml = '';
+            if (data.previewRows && data.previewRows.length > 0) {
+              sampleRowsHtml = data.previewRows.map(r => `
+                <div class="p-1 px-2 rounded bg-white border mb-1 font-monospace" style="font-size: 0.75rem;">
+                  <strong class="text-success">+${r.phone}</strong> <span class="text-muted">➔</span> <span class="text-secondary">${escapeHtml(r.message)}</span>
+                </div>
+              `).join('');
+            }
+            const activeTabName = tabSelect?.options[tabSelect.selectedIndex]?.text || 'Default';
+            resultBox.innerHTML = `
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
+                  <i class="bi bi-check-circle-fill me-1"></i> Connected — <em>${activeTabName}</em>
+                </span>
+                <span class="text-muted font-monospace">${data.validRecipientCount} / ${data.totalRowsDetected} valid rows</span>
+              </div>
+              <div class="small fw-bold text-dark mb-1">Sample Row Previews (Phone: ${phoneCol.toUpperCase()}, Msg: ${msgCol.toUpperCase()}):</div>
+              ${sampleRowsHtml || '<div class="text-muted small">No valid phone numbers found in selected columns.</div>'}
+            `;
+          }
+        } else {
+          showToast(data.error || 'Failed to connect to Google Sheet.', 'error');
+          if (resultBox) {
+            resultBox.innerHTML = `
+              <div class="text-danger fw-medium d-flex align-items-start gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+                <div>
+                  <strong>Error:</strong> ${escapeHtml(data.error || 'Connection failed')}
+                  <div class="mt-1 text-muted" style="font-size: 0.78rem;">
+                    💡 <em>Go to your Google Sheet → <strong>Share</strong> → change General access to <strong>"Anyone with the link can view"</strong>.</em>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+        }
+      } catch (err) {
+        showToast('Network error testing Google Sheet.', 'error');
+        if (resultBox) {
+          resultBox.innerHTML = `<div class="text-danger">Network error connecting to backend: ${escapeHtml(err.message)}</div>`;
+        }
+      } finally {
+        btn.removeAttribute('disabled');
+        btn.innerHTML = originalHtml;
+      }
+    }
+
+    document.getElementById('btn-test-sheet-preview')?.addEventListener('click', () => runSheetTestConnection(null));
+
+    // When user selects a different sheet tab — re-run preview for that tab
+    document.getElementById('select-sheet-tab')?.addEventListener('change', function() {
+      const gidInput = document.getElementById('input-sheet-gid');
+      if (gidInput) gidInput.value = this.value;
+      // Store the tab name as a data attribute on the hidden input so we can restore it later
+      if (gidInput && this.value) {
+        gidInput.dataset.tabName = this.options[this.selectedIndex]?.text || '';
+      }
+      runSheetTestConnection(this.value || null);
+    });
+
     // Modal Picker interactions
     const modalTemplatePickerEl = document.getElementById('modalTemplatePicker');
     document.getElementById('btn-open-template-picker')?.addEventListener('click', () => {
@@ -3319,6 +4008,27 @@
     });
 
     document.querySelectorAll('.template-picker-card').forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        document.querySelectorAll('.template-picker-card').forEach(c => {
+          c.classList.remove('active');
+          const radio = c.querySelector('.picker-radio-circle');
+          const title = c.querySelector('h6');
+          if (radio) {
+            radio.className = 'picker-radio-circle text-muted fs-5';
+            radio.innerHTML = '<i class="bi bi-circle"></i>';
+          }
+          if (title) title.className = 'mb-0 fw-bold text-dark';
+        });
+        card.classList.add('active');
+        const radio = card.querySelector('.picker-radio-circle');
+        const title = card.querySelector('h6');
+        if (radio) {
+          radio.className = 'picker-radio-circle text-primary fs-5';
+          radio.innerHTML = '<i class="bi bi-record-circle-fill"></i>';
+        }
+        if (title) title.className = 'mb-0 fw-bold text-primary';
+      });
+
       card.addEventListener('click', () => {
         const type = card.dataset.templateType || 'forwarding';
         const modalInstance = bootstrap.Modal.getInstance(modalTemplatePickerEl);
@@ -3342,21 +4052,34 @@
       const activeSrcRadio = document.querySelector('input[name="sourceType"]:checked');
       const sourceType = activeSrcRadio ? activeSrcRadio.value : 'number';
       const targetNumber = inputTargetNumber.value.trim();
-      const sourceGroup = document.getElementById('select-source-group')?.value || '';
+      let sourceGroup = document.getElementById('select-source-group')?.value || '';
+      const srcGroupManual = document.getElementById('input-source-group-manual')?.value.trim();
+      if (srcGroupManual) sourceGroup = srcGroupManual;
 
       let targetGroup = '';
       if (type === 'schedule') {
         const schDestType = document.querySelector('input[name="scheduleDestType"]:checked')?.value || 'group';
         if (schDestType === 'group') {
-          targetGroup = document.getElementById('select-schedule-group')?.value || '';
+          if (selectedScheduleGroups.length > 0) {
+            targetGroup = selectedScheduleGroups.join(', ');
+          } else {
+            targetGroup = document.getElementById('select-schedule-group')?.value || '';
+          }
         } else {
           targetGroup = document.getElementById('input-schedule-number')?.value.trim() || '';
         }
       } else {
-        if (manualGroupMode) {
-          targetGroup = inputTargetGroup.value.trim();
+        const activeDestRadio = document.querySelector('input[name="destType"]:checked')?.value || 'group';
+        if (activeDestRadio === 'group') {
+          if (selectedDestGroups.length > 0) {
+            targetGroup = selectedDestGroups.join(', ');
+          } else {
+            targetGroup = selectTargetGroup.value || '';
+          }
+        } else if (activeDestRadio === 'number') {
+          targetGroup = document.getElementById('input-target-contact-numbers')?.value.trim() || '';
         } else {
-          targetGroup = selectTargetGroup.value || '';
+          targetGroup = document.getElementById('input-target-group')?.value.trim() || '';
         }
       }
 
@@ -3397,6 +4120,8 @@
         sheetUrl: document.getElementById('input-sheet-url')?.value.trim(),
         sheetColPhone: document.getElementById('input-sheet-col-phone')?.value.trim(),
         sheetColMsg: document.getElementById('input-sheet-col-msg')?.value.trim(),
+        sheetGid: document.getElementById('input-sheet-gid')?.value.trim() || null,
+        sheetTabName: document.getElementById('input-sheet-gid')?.dataset.tabName || null,
         updatedAt: new Date().toISOString()
       };
 
@@ -3524,7 +4249,14 @@
       const tpl = userTemplates.find(t => t.id === id);
       if (!tpl) return;
 
-      if (!confirm(`Are you sure you want to delete template "${tpl.name}"?`)) return;
+      const confirmed = await showConfirmDialog({
+        title: "Delete Template Rule",
+        message: `Are you sure you want to delete template "${tpl.name}"?`,
+        confirmText: "OK",
+        cancelText: "Cancel",
+        type: "danger"
+      });
+      if (!confirmed) return;
 
       userTemplates = userTemplates.filter(t => t.id !== id);
 
@@ -3628,19 +4360,21 @@
         }
       }
 
+      const tplType = inputTemplateType.value || 'forwarding';
       const activeSrcRadio = document.querySelector('input[name="sourceType"]:checked');
       const srcMode = activeSrcRadio ? activeSrcRadio.value : 'number';
       const customPrefixVal = document.getElementById('input-custom-prefix')?.value.trim() || '';
 
       if (srcMode === 'number') {
         const num = inputTargetNumber.value.trim() || '919876543210';
-        if (previewRouteSubtitle) previewRouteSubtitle.innerText = `Listening to: +${num}`;
-        if (previewSourceSender) previewSourceSender.innerText = `Source (+${num})`;
+        if (previewRouteSubtitle) previewRouteSubtitle.innerText = `Listening strictly to: +${num}`;
+        if (previewSourceSender) previewSourceSender.innerText = `Contact (+${num})`;
       } else if (srcMode === 'group') {
         const selGroup = document.getElementById('select-source-group');
-        const grpName = (selGroup && selGroup.selectedOptions[0] && selGroup.selectedOptions[0].text) || 'Selected Source Group';
-        if (previewRouteSubtitle) previewRouteSubtitle.innerText = `Listening to: ${grpName}`;
-        if (previewSourceSender) previewSourceSender.innerText = `Source Group (${grpName})`;
+        const grpManual = document.getElementById('input-source-group-manual')?.value.trim();
+        const grpName = grpManual || ((selGroup && selGroup.selectedOptions[0] && selGroup.selectedOptions[0].text) || 'Selected Source Group');
+        if (previewRouteSubtitle) previewRouteSubtitle.innerText = `Listening strictly to: ${grpName}`;
+        if (previewSourceSender) previewSourceSender.innerText = `Group (${grpName})`;
       } else {
         if (previewRouteSubtitle) previewRouteSubtitle.innerText = `Listening to: All Incoming Chats`;
         if (previewSourceSender) previewSourceSender.innerText = `Any Incoming Sender`;
@@ -3650,31 +4384,43 @@
         if (tplType === 'schedule') {
           const schDestType = document.querySelector('input[name="scheduleDestType"]:checked')?.value || 'group';
           if (schDestType === 'group') {
-            const selSch = document.getElementById('select-schedule-group');
-            previewTargetName.innerText = (selSch && selSch.selectedOptions[0] && selSch.value) ? selSch.selectedOptions[0].text : 'Select Destination Group';
+            if (selectedScheduleGroups.length > 0) {
+              const names = selectedScheduleGroups.map(jid => {
+                const found = (availableGroups || []).find(g => g.jid === jid);
+                return found ? found.name : jid;
+              });
+              previewTargetName.innerText = names.join(', ');
+            } else {
+              const selSch = document.getElementById('select-schedule-group');
+              previewTargetName.innerText = (selSch && selSch.selectedOptions[0] && selSch.value) ? selSch.selectedOptions[0].text : 'Select Destination Group(s)';
+            }
           } else {
             const num = document.getElementById('input-schedule-number')?.value.trim();
             previewTargetName.innerText = num ? `+${num}` : 'Target Contact Number';
           }
         } else {
-          if (manualGroupMode) {
-            previewTargetName.innerText = inputTargetGroup.value.trim() || 'Custom Destination';
-          } else {
-            if (selectTargetGroup && selectTargetGroup.selectedOptions[0] && selectTargetGroup.value) {
+          const activeDestRadio = document.querySelector('input[name="destType"]:checked')?.value || 'group';
+          if (activeDestRadio === 'group') {
+            if (selectedDestGroups.length > 0) {
+              const names = selectedDestGroups.map(jid => {
+                const found = availableGroups.find(g => g.jid === jid);
+                return found ? found.name : jid;
+              });
+              previewTargetName.innerText = names.join(', ');
+            } else if (selectTargetGroup && selectTargetGroup.selectedOptions[0] && selectTargetGroup.value) {
               previewTargetName.innerText = selectTargetGroup.selectedOptions[0].text;
             } else {
               previewTargetName.innerText = 'Target Destination Group';
             }
+          } else if (activeDestRadio === 'number') {
+            const num = document.getElementById('input-target-contact-numbers')?.value.trim();
+            previewTargetName.innerText = num ? `Contact (+${num})` : 'Target Contact Number';
+          } else {
+            const val = document.getElementById('input-target-group')?.value.trim();
+            previewTargetName.innerText = val || 'Custom Destination';
           }
         }
       }
-
-      if (previewDocBox) previewDocBox.classList.add('d-none');
-      if (previewImgBox) previewImgBox.classList.add('d-none');
-      if (previewVideoBox) previewVideoBox.classList.add('d-none');
-      if (previewAudioBox) previewAudioBox.classList.add('d-none');
-
-      const tplType = inputTemplateType.value || 'forwarding';
 
       if (tplType === 'forwarding' || tplType === 'schedule') {
         const baseMsg = inputMorningMessage ? inputMorningMessage.value.trim() : '';
@@ -3685,39 +4431,65 @@
         const keywordFn = document.getElementById('input-keyword-filter')?.value.trim() || '';
         const sampleFileName = customFn || (keywordFn ? (keywordFn.split(',')[0].trim()) : 'a.pdf');
 
+        // Toggle media visibility strictly by active tab
+        const hideMedia = (el) => {
+          if (!el) return;
+          el.classList.add('wa-media-hidden');
+          el.classList.remove('wa-media-visible');
+        };
+        const showMedia = (el) => {
+          if (!el) return;
+          el.classList.remove('wa-media-hidden');
+          el.classList.add('wa-media-visible');
+        };
+
+        hideMedia(previewDocBox);
+        hideMedia(previewImgBox);
+        hideMedia(previewVideoBox);
+        hideMedia(previewAudioBox);
+
         if (currentPreviewType === 'pdf' && previewDocBox) {
-          previewDocBox.classList.remove('d-none');
+          showMedia(previewDocBox);
           const previewDocBoxText = document.getElementById('preview-doc-box-text');
           if (previewDocBoxText) {
-            previewDocBoxText.innerHTML = `${escapeHtml(sampleFileName)}<br><span class="text-muted fw-normal" style="font-size: 0.65rem;">2.4 MB • PDF Document</span>`;
+            previewDocBoxText.innerHTML = `${escapeHtml(sampleFileName)}<br><span class="text-muted fw-normal" style="font-size: 0.58rem;">2.4 MB • PDF Document</span>`;
           }
           if (previewIncomingMock) {
-            previewIncomingMock.innerHTML = `<i class="bi bi-file-earmark-pdf-fill text-danger fs-3"></i><div class="small text-truncate">${escapeHtml(sampleFileName)}<br><span class="text-muted" style="font-size: 0.65rem;">2.4 MB • PDF Document</span></div>`;
+            previewIncomingMock.innerHTML = `<i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i><div class="text-truncate" style="font-size: 0.68rem;">${escapeHtml(sampleFileName)}<br><span class="text-muted" style="font-size: 0.58rem;">2.4 MB • PDF Document</span></div>`;
           }
         } else if (currentPreviewType === 'image' && previewImgBox) {
-          previewImgBox.classList.remove('d-none');
-          if (previewIncomingMock) previewIncomingMock.innerHTML = `<i class="bi bi-image text-primary fs-3"></i><div class="small text-truncate">Photo_Attachment.jpg<br><span class="text-muted" style="font-size: 0.65rem;">1.2 MB • Photo</span></div>`;
+          showMedia(previewImgBox);
+          if (previewIncomingMock) previewIncomingMock.innerHTML = `<i class="bi bi-image text-primary fs-5"></i><div class="text-truncate" style="font-size: 0.68rem;">Photo_Attachment.jpg<br><span class="text-muted" style="font-size: 0.58rem;">1.2 MB • Photo</span></div>`;
         } else if (currentPreviewType === 'video' && previewVideoBox) {
-          previewVideoBox.classList.remove('d-none');
-          if (previewIncomingMock) previewIncomingMock.innerHTML = `<i class="bi bi-play-btn text-success fs-3"></i><div class="small text-truncate">Video_Clip.mp4<br><span class="text-muted" style="font-size: 0.65rem;">8.6 MB • Video</span></div>`;
+          showMedia(previewVideoBox);
+          if (previewIncomingMock) previewIncomingMock.innerHTML = `<i class="bi bi-play-btn text-success fs-5"></i><div class="text-truncate" style="font-size: 0.68rem;">Video_Clip.mp4<br><span class="text-muted" style="font-size: 0.58rem;">8.6 MB • Video</span></div>`;
         } else if (currentPreviewType === 'audio' && previewAudioBox) {
-          previewAudioBox.classList.remove('d-none');
-          if (previewIncomingMock) previewIncomingMock.innerHTML = `<i class="bi bi-mic text-warning fs-3"></i><div class="small text-truncate">Voice_Note.opus<br><span class="text-muted" style="font-size: 0.65rem;">0:18 • Audio Message</span></div>`;
+          showMedia(previewAudioBox);
+          if (previewIncomingMock) previewIncomingMock.innerHTML = `<i class="bi bi-mic text-warning fs-5"></i><div class="text-truncate" style="font-size: 0.68rem;">Voice_Note.opus<br><span class="text-muted" style="font-size: 0.58rem;">0:18 • Audio Message</span></div>`;
         } else if (currentPreviewType === 'text') {
-          if (previewIncomingMock) previewIncomingMock.innerHTML = `<i class="bi bi-chat-left-text text-info fs-3"></i><div class="small text-truncate">Important notification update<br><span class="text-muted" style="font-size: 0.65rem;">Text Message</span></div>`;
+          if (previewIncomingMock) previewIncomingMock.innerHTML = `<i class="bi bi-chat-left-text text-info fs-5"></i><div class="text-truncate" style="font-size: 0.68rem;">Important message update<br><span class="text-muted" style="font-size: 0.58rem;">Text Message</span></div>`;
         }
 
       } else if (tplType === 'bulk') {
         const bulkMsgVal = document.getElementById('input-bulk-message')?.value || "Type your bulk campaign message here...";
         previewText.innerText = bulkMsgVal;
         
+        hideMedia(previewDocBox);
+        hideMedia(previewImgBox);
+        hideMedia(previewVideoBox);
+        hideMedia(previewAudioBox);
+
         const selectedType = document.querySelector('input[name="bulkMsgType"]:checked')?.value || 'text';
-        if (selectedType === 'image' && previewImgBox) previewImgBox.classList.remove('d-none');
-        else if (selectedType === 'pdf' && previewDocBox) previewDocBox.classList.remove('d-none');
-        else if (selectedType === 'video' && previewVideoBox) previewVideoBox.classList.remove('d-none');
+        if (selectedType === 'image' && previewImgBox) showMedia(previewImgBox);
+        else if (selectedType === 'pdf' && previewDocBox) showMedia(previewDocBox);
+        else if (selectedType === 'video' && previewVideoBox) showMedia(previewVideoBox);
       } else if (tplType === 'sheets') {
         const msgCol = document.getElementById('input-sheet-col-msg')?.value || 'B';
         previewText.innerHTML = `<em>[Dynamic message dispatched from Google Sheet Column ${msgCol}]</em>`;
+        hideMedia(previewDocBox);
+        hideMedia(previewImgBox);
+        hideMedia(previewVideoBox);
+        hideMedia(previewAudioBox);
       }
     }
 
@@ -3772,9 +4544,15 @@
       btnTestMsgCard.addEventListener('click', () => triggerTestMessage(btnTestMsgCard));
     }
 
-    // Reset / Relink WhatsApp Session
     async function restartSession() {
-      if (!confirm("Are you sure you want to reset your WhatsApp link and generate a new QR code?")) return;
+      const confirmed = await showConfirmDialog({
+        title: "Reset WhatsApp Link",
+        message: "Are you sure you want to reset your WhatsApp link and generate a new QR code?",
+        confirmText: "OK",
+        cancelText: "Cancel",
+        type: "warning"
+      });
+      if (!confirmed) return;
       showToast("Resetting WhatsApp session...", "info");
       try {
         const response = await fetch('/api/session/restart', {
@@ -3888,27 +4666,91 @@
       });
     }
 
+    // Wire up Onboarding Service Cards
+    document.querySelectorAll('.onboarding-service-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.onboarding-service-card').forEach(c => {
+          c.classList.remove('active', 'border-primary');
+          c.style.background = '';
+          const lbl = c.querySelector('label');
+          if (lbl) {
+            lbl.classList.remove('text-primary');
+            lbl.classList.add('text-dark');
+          }
+        });
+        card.classList.add('active', 'border-primary');
+        card.style.background = 'rgba(37, 99, 235, 0.04)';
+        const lbl = card.querySelector('label');
+        if (lbl) {
+          lbl.classList.remove('text-dark');
+          lbl.classList.add('text-primary');
+        }
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+      });
+    });
+
+    const onboardingStepPlans = document.getElementById('onboarding-step-plans');
+    const onboardingStepTarget = document.getElementById('onboarding-step-target');
+    const wizardDialogContainer = document.getElementById('wizard-dialog-container');
+    const btnBackToPlansStep = document.getElementById('btn-back-to-plans-step');
+    const btnSkipTargetModal = document.getElementById('btn-skip-target-modal');
+
+    function switchOnboardingStep(step) {
+      if (step === 1) {
+        if (onboardingStepPlans) onboardingStepPlans.classList.remove('d-none');
+        if (onboardingStepTarget) onboardingStepTarget.classList.add('d-none');
+        if (wizardDialogContainer) {
+          wizardDialogContainer.classList.add('modal-xl');
+          wizardDialogContainer.classList.remove('modal-lg');
+        }
+      } else {
+        if (onboardingStepPlans) onboardingStepPlans.classList.add('d-none');
+        if (onboardingStepTarget) onboardingStepTarget.classList.remove('d-none');
+        if (wizardDialogContainer) {
+          wizardDialogContainer.classList.remove('modal-xl');
+          wizardDialogContainer.classList.add('modal-lg');
+        }
+        setTimeout(() => {
+          if (modalInputTargetNumber) modalInputTargetNumber.focus();
+        }, 200);
+      }
+    }
+
+    document.querySelectorAll('.btn-choose-plan').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchOnboardingStep(2);
+      });
+    });
+
+    if (btnBackToPlansStep) {
+      btnBackToPlansStep.addEventListener('click', () => switchOnboardingStep(1));
+    }
+
     function openTargetSetupModal(firstTime = false) {
       isFirstTimeOnboarding = firstTime;
       const modal = getTargetSetupModal();
       if (!modal) return;
 
+      // When opening from dashboard (not first-time onboarding), skip directly to
+      // the notification number setup step — no need to show subscription plans again.
+      if (firstTime) {
+        switchOnboardingStep(1);
+      } else {
+        switchOnboardingStep(2);
+      }
+
+      // Show/hide "Back to Plans" button — only relevant during first-time onboarding
+      const backBtn = document.getElementById('btn-back-to-plans-step');
+      if (backBtn) backBtn.classList.toggle('d-none', !firstTime);
+
       const currentContact = metricContactVal ? metricContactVal.innerText : '';
       if (currentContact && currentContact.startsWith('+')) {
-        radioChoiceNumber.checked = true;
-        modalInputTargetNumber.value = currentContact.replace('+', '').trim();
-      } else if (currentContact && currentContact !== 'Not Set' && currentContact !== 'Not Configured') {
-        radioChoiceGroup.checked = true;
+        if (modalInputTargetNumber) modalInputTargetNumber.value = currentContact.replace('+', '').trim();
       }
 
-      if (modalWaLinkStatus) {
-        const isConn = (currentConnectionStatus === 'connected');
-        modalWaLinkStatus.innerHTML = isConn 
-          ? `<i class="bi bi-check-circle-fill text-success me-1"></i> WhatsApp: <strong class="text-success">Connected</strong>` 
-          : `<i class="bi bi-exclamation-circle-fill text-warning me-1"></i> WhatsApp: <strong class="text-secondary">Not Linked</strong>`;
-      }
-
-      populateModalGroupDropdown();
+      populateModalGroupDropdown('');
       syncTargetChoiceUi();
       modal.show();
     }
@@ -3917,83 +4759,66 @@
       cardTargetContact.addEventListener('click', () => openTargetSetupModal(false));
     }
 
-    if (btnModalLinkWa) {
-      btnModalLinkWa.addEventListener('click', () => {
+    if (btnSkipTargetModal) {
+      btnSkipTargetModal.addEventListener('click', () => {
+        if (currentUser) {
+          localStorage.setItem('cortex_target_configured_' + currentUser.id, 'true');
+          localStorage.setItem('cortex_onboarding_completed_' + currentUser.id, 'true');
+        }
         const modal = getTargetSetupModal();
         if (modal) modal.hide();
-        switchSheet('whatsapp-link');
-        showToast("Scan the QR code to link your WhatsApp account.", "info");
+        showToast("Notification Target skipped. You can configure it anytime from your dashboard.", "info");
       });
     }
 
     if (btnSaveTargetDestination) {
       btnSaveTargetDestination.addEventListener('click', async () => {
-        const isNumber = radioChoiceNumber.checked;
-        const numberVal = modalInputTargetNumber.value.trim().replace(/\D/g, '');
-        const groupVal = modalSelectTargetGroup.value.trim();
+        const numberVal = modalInputTargetNumber ? modalInputTargetNumber.value.trim().replace(/\D/g, '') : '';
 
-        if (isNumber) {
-          if (!numberVal || numberVal.length < 8) {
-            showToast("Please enter a valid phone number with country code (e.g. 919135779897).", "error");
-            modalInputTargetNumber.focus();
-            return;
-          }
-        } else {
-          if (!groupVal) {
-            showToast("Please select a destination WhatsApp group.", "error");
-            modalSelectTargetGroup.focus();
-            return;
-          }
+        if (!numberVal || numberVal.length < 8) {
+          showToast("Please enter a valid WhatsApp Phone Number with country code (e.g. 919135779897).", "error");
+          if (modalInputTargetNumber) modalInputTargetNumber.focus();
+          return;
         }
 
         btnSaveTargetDestination.setAttribute('disabled', 'true');
         btnSaveTargetDestination.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
 
         try {
-          const configPayload = {
-            destinationType: isNumber ? 'number' : 'group',
-            targetNumber: isNumber ? numberVal : '',
-            sourceNumber: isNumber ? numberVal : '',
-            targetGroup: isNumber ? '' : groupVal,
-            destinations: isNumber ? '' : groupVal
-          };
-
-          const res = await fetch('/api/config', {
-            method: 'POST',
+          // Use the dedicated PATCH endpoint so we don't overwrite existing templates/triggers
+          const res = await fetch('/api/config/notification-target', {
+            method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify(configPayload)
+            body: JSON.stringify({ notificationTargetNumber: numberVal })
           });
 
           const data = await res.json();
           if (data.success) {
-            showToast("Notification target saved successfully!", "success");
             if (currentUser) {
               localStorage.setItem('cortex_target_configured_' + currentUser.id, 'true');
+              localStorage.setItem('cortex_onboarding_completed_' + currentUser.id, 'true');
             }
 
             const modal = getTargetSetupModal();
             if (modal) modal.hide();
 
-            // If first time signup onboarding: ask and show Plans & Subscription!
-            if (isFirstTimeOnboarding || sessionStorage.getItem('cortex_show_plans_on_setup') === 'true') {
-              sessionStorage.removeItem('cortex_show_plans_on_setup');
-              switchSheet('subscription-plans');
-              showToast("Notification destination set! Review your subscription plan below.", "info");
-            }
+            if (metricContactVal) metricContactVal.innerText = '+' + numberVal;
+            if (metricContactMeta) metricContactMeta.innerText = 'Notification Target';
 
+            showToast("Notification Target saved! You will receive real-time alerts whenever messages are sent.", "success");
             fetchStatus();
           } else {
             showToast(data.error || "Failed to save notification target.", "error");
           }
         } catch (err) {
-          console.error("Save target destination error:", err);
-          showToast("Network error saving target destination.", "error");
+          console.error("Save notification target error:", err);
+          showToast("Network error saving notification target.", "error");
         } finally {
           btnSaveTargetDestination.removeAttribute('disabled');
-          btnSaveTargetDestination.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>';
+          btnSaveTargetDestination.innerHTML = '<i class="bi bi-check-circle-fill"></i> Save &amp; Connect WhatsApp <i class="bi bi-arrow-right"></i>';
         }
       });
     }

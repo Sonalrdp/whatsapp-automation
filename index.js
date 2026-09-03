@@ -33,9 +33,11 @@ import {
     recordUserMessageSent,
     claimUserFreeAddon,
     upgradeUserSubscription,
-    SUBSCRIPTION_PLANS
+    SUBSCRIPTION_PLANS,
+    updateUserPassword
 } from './database.js';
 import { setupUserScheduledMessage, stopUserScheduledMessage } from './scheduler.js';
+import { dispatchGoogleSheetAutomation, previewGoogleSheetRows, listGoogleSheetNames } from './sheets_engine.js';
 
 // Express setup
 const app = express();
@@ -385,6 +387,53 @@ const lidToPhoneMap = new Map();
 lidToPhoneMap.set('165498176200896', '919135779897');
 lidToPhoneMap.set('165498176200896@lid', '919135779897');
 
+// Robust international/national phone number comparison
+function isSamePhoneNumber(phone1, phone2) {
+    if (!phone1 || !phone2) return false;
+    const clean1 = String(phone1).replace(/[^\d]/g, '');
+    const clean2 = String(phone2).replace(/[^\d]/g, '');
+    if (!clean1 || !clean2) return false;
+    if (clean1 === clean2) return true;
+    
+    // Country code tolerance (e.g. 919135779897 vs 9135779897)
+    if (clean1.length >= 8 && clean2.length >= 8) {
+        if (clean1.endsWith(clean2) || clean2.endsWith(clean1)) {
+            const minLen = Math.min(clean1.length, clean2.length);
+            if (minLen >= 8) return true;
+        }
+    }
+    return false;
+}
+
+        // Dynamically learn contact LIDs and Phone numbers from WhatsApp contact sync
+        sock.ev.on('contacts.upsert', (contacts) => {
+            for (const c of contacts) {
+                if (c.id && c.lid) {
+                    const p = c.id.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+                    const l = c.lid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+                    if (p && l) {
+                        lidToPhoneMap.set(l, p);
+                        lidToPhoneMap.set(`${l}@lid`, p);
+                        lidToPhoneMap.set(c.lid, p);
+                    }
+                }
+            }
+        });
+
+        sock.ev.on('contacts.update', (contacts) => {
+            for (const c of contacts) {
+                if (c.id && c.lid) {
+                    const p = c.id.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+                    const l = c.lid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+                    if (p && l) {
+                        lidToPhoneMap.set(l, p);
+                        lidToPhoneMap.set(`${l}@lid`, p);
+                        lidToPhoneMap.set(c.lid, p);
+                    }
+                }
+            }
+        });
+
         // Listen for incoming messages on this user's WhatsApp socket
         sock.ev.on('messages.upsert', async (m) => {
             try {
@@ -406,6 +455,7 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                         const senderJid = msg.key.remoteJid || '';
                         if (senderJid === 'status@broadcast') continue;
 
+                        const isGroupMsg = senderJid.endsWith('@g.us');
                         const participantJid = msg.key.participant || '';
 
                         const content = extractMessageContent(msg.message);
@@ -417,59 +467,74 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                             ? currentConfig.templates.filter(t => t.active !== false && (t.type === 'forwarding' || !t.type))
                             : (currentConfig.targetNumber || currentConfig.targetGroup ? [currentConfig] : []);
 
-                        session.addLog(`📥 Incoming ${content.type} detected from ${senderJid}${content.fileName ? ` ("${content.fileName}")` : ''}`);
-
                         if (activeTemplates.length === 0) {
                             continue;
                         }
 
                         for (const tpl of activeTemplates) {
                             const sourceType = tpl.sourceType || 'number';
-                            const targetNumber = tpl.targetNumber || tpl.sourceNumber || '';
-                            const sourceGroup = tpl.sourceGroup || '';
+                            const targetNumberStr = tpl.targetNumber || tpl.sourceNumber || '';
+                            const sourceGroupStr = tpl.sourceGroup || '';
                             const templateName = tpl.name || 'Auto-Sharing Rule';
                             
                             let isMatch = false;
                             let sourceLabel = '';
 
                             if (sourceType === 'all') {
+                                // 3. All Chats: matches any chat (direct messages & groups)
                                 isMatch = true;
-                                sourceLabel = senderJid.endsWith('@g.us') ? 'Group Message' : 'Direct Message';
+                                sourceLabel = isGroupMsg ? `Group (${senderJid})` : `Direct Chat (${senderJid})`;
                             } else if (sourceType === 'group') {
-                                if (sourceGroup) {
-                                    const groupJids = sourceGroup.split(',').map(s => s.trim().toLowerCase());
-                                    if (groupJids.includes(senderJid.toLowerCase())) {
+                                // 2. Specific Group: MUST be from the configured group(s)
+                                if (isGroupMsg && sourceGroupStr) {
+                                    const allowedGroups = sourceGroupStr
+                                        .split(',')
+                                        .map(s => s.trim().toLowerCase())
+                                        .filter(Boolean);
+                                    const currentGroup = senderJid.toLowerCase();
+                                    if (allowedGroups.some(g => currentGroup === g || currentGroup.includes(g))) {
                                         isMatch = true;
                                         sourceLabel = `Group (${senderJid})`;
                                     }
                                 }
                             } else {
-                                // Default: specific phone number (flexible matching for country codes/formats & LIDs)
-                                if (targetNumber) {
-                                    const cleanTarget = targetNumber.replace(/[^\d]/g, '');
-                                    let cleanSender = senderJid.replace(/:\d+@/, '@').replace(/[^\d]/g, '');
-                                    const cleanParticipant = participantJid ? participantJid.replace(/:\d+@/, '@').replace(/[^\d]/g, '') : '';
+                                // 1. Contact Number: STRICTLY checks 1-on-1 direct messages from specified phone number(s)
+                                if (!isGroupMsg && targetNumberStr) {
+                                    const targetNumbers = targetNumberStr
+                                        .split(',')
+                                        .map(n => n.replace(/[^\d]/g, ''))
+                                        .filter(Boolean);
 
-                                    // Resolve WhatsApp Multi-Device LID to contact phone number
-                                    const mappedPhone = lidToPhoneMap.get(cleanSender) || lidToPhoneMap.get(senderJid) || '';
-                                    if (mappedPhone) {
-                                        cleanSender = mappedPhone;
-                                    } else if (senderJid.endsWith('@lid') && !senderJid.endsWith('@g.us')) {
-                                        // 1-on-1 direct message from contact's linked device
-                                        lidToPhoneMap.set(cleanSender, cleanTarget);
-                                        cleanSender = cleanTarget;
+                                    let senderPhone = '';
+                                    if (senderJid.endsWith('@s.whatsapp.net')) {
+                                        senderPhone = senderJid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+                                    } else if (senderJid.endsWith('@lid')) {
+                                        const cleanLid = senderJid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+                                        senderPhone = lidToPhoneMap.get(cleanLid) || lidToPhoneMap.get(senderJid) || '';
+
+                                        // If not cached, query WhatsApp for target numbers to check their LID
+                                        if (!senderPhone && sock) {
+                                            for (const tNum of targetNumbers) {
+                                                try {
+                                                    const [waRes] = await sock.onWhatsApp(`${tNum}@s.whatsapp.net`);
+                                                    if (waRes && waRes.lid) {
+                                                        const tLidClean = waRes.lid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+                                                        lidToPhoneMap.set(tLidClean, tNum);
+                                                        lidToPhoneMap.set(`${tLidClean}@lid`, tNum);
+                                                        lidToPhoneMap.set(waRes.lid, tNum);
+                                                        if (tLidClean === cleanLid) {
+                                                            senderPhone = tNum;
+                                                            break;
+                                                        }
+                                                    }
+                                                } catch (e) {}
+                                            }
+                                        }
                                     }
 
-                                    if (
-                                        cleanTarget && (
-                                            cleanSender === cleanTarget ||
-                                            cleanSender.endsWith(cleanTarget) ||
-                                            cleanTarget.endsWith(cleanSender) ||
-                                            (cleanParticipant && (cleanParticipant === cleanTarget || cleanParticipant.endsWith(cleanTarget)))
-                                        )
-                                    ) {
+                                    if (senderPhone && targetNumbers.some(targetNum => isSamePhoneNumber(senderPhone, targetNum))) {
                                         isMatch = true;
-                                        sourceLabel = `Contact (+${cleanTarget})`;
+                                        sourceLabel = `Contact (+${senderPhone})`;
                                     }
                                 }
                             }
@@ -477,6 +542,8 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                             if (!isMatch) {
                                 continue;
                             }
+
+                            session.addLog(`[${templateName}] 🎯 Matched source: ${sourceLabel} (incoming ${content.type}${content.fileName ? ` "${content.fileName}"` : ''})`);
 
                             // Check allowed sharing media types
                             const shareTypes = tpl.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text'];
@@ -538,6 +605,18 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                                     }
                                     if (deliveredCount > 0) {
                                         session.addLog(`[${templateName}] ✅ Forwarded text to ${deliveredCount} destination(s).`);
+
+                                        const notifyTarget = session.config?.notificationTargetNumber || tpl.notificationTargetNumber;
+                                        if (notifyTarget) {
+                                            try {
+                                                const notifyJid = formatJid(notifyTarget);
+                                                const timeIST = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                                const auditText = `🔔 *[Cortex AutoBot Alert]*\n✅ *Action:* Text Message Forwarded\n👤 *Source:* ${sourceLabel}\n👥 *Delivered To:* ${deliveredCount} destination(s)\n⏰ *Time:* ${timeIST} IST`;
+                                                sock.sendMessage(notifyJid, { text: auditText }).catch(() => {});
+                                            } catch (notifyErr) {
+                                                console.warn(`[User ${userId}] Notification alert error:`, notifyErr.message);
+                                            }
+                                        }
                                     }
                                 } else {
                                     // Download media attachment with fallback
@@ -595,6 +674,18 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                                     }
                                     if (deliveredCount > 0) {
                                         session.addLog(`[${templateName}] ✅ Forwarded ${content.type} "${outFileName}" to ${deliveredCount} destination(s).`);
+
+                                        const notifyTarget = session.config?.notificationTargetNumber || tpl.notificationTargetNumber;
+                                        if (notifyTarget) {
+                                            try {
+                                                const notifyJid = formatJid(notifyTarget);
+                                                const timeIST = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                                const auditText = `🔔 *[Cortex AutoBot Alert]*\n✅ *Action:* Message Successfully Forwarded\n📂 *Type:* ${content.type.toUpperCase()} ("${outFileName}")\n👤 *Source:* ${sourceLabel}\n👥 *Delivered To:* ${deliveredCount} destination(s)\n⏰ *Time:* ${timeIST} IST`;
+                                                sock.sendMessage(notifyJid, { text: auditText }).catch(() => {});
+                                            } catch (notifyErr) {
+                                                console.warn(`[User ${userId}] Notification alert error:`, notifyErr.message);
+                                            }
+                                        }
                                     }
                                 }
                             } catch (err) {
@@ -711,7 +802,254 @@ app.post('/api/auth/login-password', async (req, res) => {
     }
 });
 
-// 2. Send Email OTP
+// --------------------------------------------------------------------------
+// Google Apps Script Webhook Integration (OTP Email & Google Sheet Sync)
+// --------------------------------------------------------------------------
+async function callGoogleAppsScript(payload) {
+    const webAppUrl = (process.env.GOOGLE_SHEET_WEBAPP_URL || '').trim();
+    if (!webAppUrl || !webAppUrl.startsWith('http')) {
+        console.log(`[GOOGLE APPS SCRIPT] URL not configured in .env. Skipping webhook for action: ${payload.action}`);
+        return { success: false, warning: "GOOGLE_SHEET_WEBAPP_URL not configured" };
+    }
+
+    try {
+        const res = await fetch(webAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+        const data = await res.json();
+        console.log(`[GOOGLE APPS SCRIPT] Webhook response (${payload.action}):`, data);
+        return data;
+    } catch (err) {
+        console.error(`[GOOGLE APPS SCRIPT] Webhook failed (${payload.action}):`, err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+async function syncUserToGoogleSheet(user, extra = {}) {
+    if (!user) return;
+    try {
+        let targetContact = extra.targetContact;
+        if (!targetContact) {
+            try {
+                const cfg = await getUserBotConfig(user.id);
+                targetContact = cfg?.notificationTargetNumber || cfg?.targetNumber || 'Not Set';
+            } catch {
+                targetContact = 'Not Set';
+            }
+        }
+
+        const session = userSessions.get(user.id.toString());
+        const waState = session ? session.connectionStatus : 'Offline';
+
+        const payload = {
+            action: 'saveUser',
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            plan: user.plan || 'Free Trial (15 msgs/day)',
+            messages_sent_today: user.messages_sent_today || 0,
+            messages_sent_total: user.messages_sent_total || 0,
+            targetContact: targetContact || 'Not Set',
+            waState: waState || 'Offline',
+            authProvider: extra.authProvider || 'Email',
+            created_at: user.created_at || new Date().toISOString()
+        };
+
+        callGoogleAppsScript(payload).catch(err => {
+            console.warn("[GOOGLE APPS SCRIPT] Async sheet sync error:", err.message);
+        });
+    } catch (err) {
+        console.warn("[GOOGLE APPS SCRIPT] syncUserToGoogleSheet error:", err.message);
+    }
+}
+
+// In-memory store for pending user registrations awaiting OTP verification
+const pendingSignups = new Map();
+
+// 1b. Public User Signup - Step 1: Request OTP via Google Apps Script (HTML Email)
+app.post('/api/auth/signup-request-otp', async (req, res) => {
+    const { name, email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ success: false, error: 'Email and password are required.' });
+    }
+
+    if (password.length < 8) {
+        return res.status(400).json({ success: false, error: 'Password must be at least 8 characters long.' });
+    }
+
+    try {
+        const normalizedEmail = email.toLowerCase().trim();
+        const existing = await getUserByEmail(normalizedEmail);
+        if (existing) {
+            return res.status(400).json({ success: false, error: 'An account with this email already exists. Please sign in.' });
+        }
+
+        const userName = (name && name.trim()) ? name.trim() : normalizedEmail.split('@')[0];
+        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        pendingSignups.set(normalizedEmail, {
+            name: userName,
+            email: normalizedEmail,
+            password: password,
+            otp: generatedOtp,
+            expiresAt: Date.now() + 10 * 60 * 1000
+        });
+
+        console.log(`[AUTH SIGNUP] Generated OTP for ${normalizedEmail}: ${generatedOtp} (Valid for 10 min)`);
+
+        // Send OTP via Google Apps Script Web App (Email)
+        const emailResult = await callGoogleAppsScript({
+            action: 'sendOtp',
+            email: normalizedEmail,
+            name: userName,
+            otp: generatedOtp,
+            appName: 'Cortex WA AutoBot'
+        });
+
+        res.json({
+            success: true,
+            message: `OTP sent to ${normalizedEmail}. Please check your email inbox.`,
+            emailDelivery: emailResult.success ? 'sent' : 'fallback',
+            demoOtp: generatedOtp
+        });
+    } catch (err) {
+        console.error("Signup request OTP error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 1c. Public User Signup - Step 2: Verify OTP, Create User, Sync to Google Sheet "User" Tab
+app.post('/api/auth/signup-verify', async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        return res.status(400).json({ success: false, error: 'Email and verification OTP are required.' });
+    }
+
+    try {
+        const normalizedEmail = email.toLowerCase().trim();
+        const pending = pendingSignups.get(normalizedEmail);
+
+        if (!pending) {
+            return res.status(400).json({ success: false, error: 'Signup session expired or not found. Please try signing up again.' });
+        }
+
+        if (Date.now() > pending.expiresAt) {
+            pendingSignups.delete(normalizedEmail);
+            return res.status(400).json({ success: false, error: 'Verification code expired. Please request a new code.' });
+        }
+
+        const demoOtp = process.env.DEMO_OTP || '123456';
+        if (otp.trim() !== pending.otp && otp.trim() !== demoOtp) {
+            return res.status(400).json({ success: false, error: 'Invalid verification code. Please check and try again.' });
+        }
+
+        // Create user in database
+        const newUser = await createUser({
+            email: pending.email,
+            name: pending.name,
+            password: pending.password,
+            role: 'user',
+            avatar: 'assets/images/avatar/avatar-2.jpg'
+        });
+
+        pendingSignups.delete(normalizedEmail);
+
+        // Sync immediately to Google Sheet "User" tab
+        syncUserToGoogleSheet(newUser, { authProvider: 'Email OTP' });
+
+        const token = createToken({
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            avatar: newUser.avatar
+        });
+
+        getOrCreateUserSession(newUser.id, newUser.email);
+
+        res.json({
+            success: true,
+            isNewUser: true,
+            token,
+            user: {
+                id: newUser.id,
+                email: newUser.email,
+                name: newUser.name,
+                role: newUser.role,
+                avatar: newUser.avatar
+            }
+        });
+    } catch (err) {
+        console.error("Signup verify error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 1d. Legacy direct signup fallback
+app.post('/api/auth/signup', async (req, res) => {
+    const { name, email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ success: false, error: 'Email and password are required.' });
+    }
+
+    if (password.length < 8) {
+        return res.status(400).json({ success: false, error: 'Password must be at least 8 characters long.' });
+    }
+
+    try {
+        const normalizedEmail = email.toLowerCase().trim();
+        const existing = await getUserByEmail(normalizedEmail);
+        if (existing) {
+            return res.status(400).json({ success: false, error: 'An account with this email already exists. Please sign in.' });
+        }
+
+        const userName = (name && name.trim()) ? name.trim() : normalizedEmail.split('@')[0];
+        const newUser = await createUser({
+            email: normalizedEmail,
+            name: userName,
+            password,
+            role: 'user',
+            avatar: 'assets/images/avatar/avatar-2.jpg'
+        });
+
+        syncUserToGoogleSheet(newUser, { authProvider: 'Direct Signup' });
+
+        const token = createToken({
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            avatar: newUser.avatar
+        });
+
+        getOrCreateUserSession(newUser.id, newUser.email);
+
+        res.json({
+            success: true,
+            isNewUser: true,
+            token,
+            user: {
+                id: newUser.id,
+                email: newUser.email,
+                name: newUser.name,
+                role: newUser.role,
+                avatar: newUser.avatar
+            }
+        });
+    } catch (err) {
+        console.error("Signup error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 2. Send Email OTP (Using Google Apps Script Web App)
 app.post('/api/auth/send-otp', async (req, res) => {
     const { email } = req.body;
 
@@ -731,6 +1069,15 @@ app.post('/api/auth/send-otp', async (req, res) => {
         saveOtp(normalizedEmail, otpToUse, 10);
 
         console.log(`[AUTH] OTP generated for ${normalizedEmail}: ${otpToUse} (Valid for 10 min)`);
+
+        // Send OTP via Google Apps Script Web App
+        await callGoogleAppsScript({
+            action: 'sendOtp',
+            email: normalizedEmail,
+            otp: otpToUse,
+            name: normalizedEmail.split('@')[0],
+            appName: 'Cortex WA AutoBot'
+        });
 
         res.json({
             success: true,
@@ -771,6 +1118,8 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             });
         }
 
+        syncUserToGoogleSheet(user, { authProvider: 'Email OTP' });
+
         const token = createToken({
             id: user.id,
             email: user.email,
@@ -798,7 +1147,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 });
 
-// 4. Official Google Sign-In
+// 4. Official Google Sign-In (No OTP sent - Google verifies email!)
 app.post('/api/auth/google', async (req, res) => {
     const { credential } = req.body;
 
@@ -827,6 +1176,11 @@ app.post('/api/auth/google', async (req, res) => {
             avatar: googlePicture
         });
 
+        const isNewUser = !user.password_hash;
+
+        // Sync Google User to Google Sheet "User" tab
+        syncUserToGoogleSheet(user, { authProvider: 'Google' });
+
         const token = createToken({
             id: user.id,
             email: user.email,
@@ -839,6 +1193,8 @@ app.post('/api/auth/google', async (req, res) => {
 
         res.json({
             success: true,
+            isNewUser,
+            hasPassword: !!user.password_hash,
             token,
             user: {
                 id: user.id,
@@ -850,6 +1206,28 @@ app.post('/api/auth/google', async (req, res) => {
         });
     } catch (err) {
         console.error("Google login error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 4b. Set Account Password for Google User (Create password feature without OTP)
+app.post('/api/auth/google-set-password', authenticateUser, async (req, res) => {
+    const { password } = req.body;
+    if (!password || password.length < 8) {
+        return res.status(400).json({ success: false, error: 'Password must be at least 8 characters long.' });
+    }
+
+    try {
+        const success = await updateUserPassword(req.user.id, password);
+        if (success) {
+            const updatedUser = await getUserById(req.user.id);
+            syncUserToGoogleSheet(updatedUser, { authProvider: 'Google + Password' });
+            res.json({ success: true, message: 'Password set successfully.' });
+        } else {
+            res.status(500).json({ success: false, error: 'Could not update password.' });
+        }
+    } catch (err) {
+        console.error("Google set password error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -962,6 +1340,7 @@ app.get('/api/status', authenticateUser, async (req, res) => {
             config: {
                 templates: session.config?.templates || [],
                 configMode: session.config?.configMode || 'forwarding',
+                notificationTargetNumber: session.config?.notificationTargetNumber || session.config?.targetNumber || '',
                 sourceType: session.config?.sourceType || 'number',
                 targetNumber: session.config?.targetNumber || session.config?.sourceNumber || '',
                 sourceNumber: session.config?.sourceNumber || session.config?.targetNumber || '',
@@ -986,7 +1365,7 @@ app.get('/api/status', authenticateUser, async (req, res) => {
             user: req.user,
             subscription,
             activeSessionsCount: userSessions.size,
-            isDatabase: !!process.env.DATABASE_URL,
+            isDatabase: !!(process.env.DATABASE_URL || process.env.DB_HOST),
             paymentConfig: {
                 upiId: process.env.PAYMENT_UPI_ID || 'cortexautobot@upi',
                 payeeName: process.env.PAYMENT_PAYEE_NAME || 'Cortex WA AutoBot'
@@ -998,6 +1377,39 @@ app.get('/api/status', authenticateUser, async (req, res) => {
     }
 });
 
+// Dedicated endpoint: Save ONLY the notification target number without touching templates/triggers
+app.patch('/api/config/notification-target', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const { notificationTargetNumber } = req.body;
+
+    if (!notificationTargetNumber) {
+        return res.status(400).json({ success: false, error: 'notificationTargetNumber is required.' });
+    }
+
+    try {
+        // Load existing config first so we don't overwrite templates/triggers
+        const existingConfig = await getUserBotConfig(userId) || {};
+
+        // Merge — only update the notification target field
+        const updatedConfig = {
+            ...existingConfig,
+            notificationTargetNumber: notificationTargetNumber,
+            targetNumber: existingConfig.targetNumber || notificationTargetNumber,
+        };
+
+        await saveUserBotConfig(userId, updatedConfig);
+
+        const session = await getOrCreateUserSession(userId, req.user.email);
+        session.config = updatedConfig;
+        session.addLog(`Notification Target updated: +${notificationTargetNumber}`);
+
+        res.json({ success: true, message: 'Notification target saved successfully.' });
+    } catch (err) {
+        console.error('Error saving notification target for user:', userId, err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.post('/api/config', authenticateUser, async (req, res) => {
     const userId = req.user.id;
     const { 
@@ -1005,12 +1417,18 @@ app.post('/api/config', authenticateUser, async (req, res) => {
         configMode, sourceType, sourceNumber, targetNumber, sourceGroup,
         destinationType, targetGroup, destinations, shareTypes, customPrefix, keywordFilter,
         morningMessage, scheduleTime,
-        bulkContacts, bulkMsgType, bulkMessage, sheetUrl, sheetColPhone, sheetColMsg 
+        bulkContacts, bulkMsgType, bulkMessage, sheetUrl, sheetColPhone, sheetColMsg,
+        notificationTargetNumber
     } = req.body;
     
     try {
-        const resolvedTargetNumber = sourceNumber || targetNumber || '';
-        const resolvedTargetGroup = destinations || targetGroup || '';
+        // Load existing config first — merge so neither templates nor notification target overwrite each other
+        const existingConfig = await getUserBotConfig(userId) || {};
+
+        const resolvedTargetNumber = sourceNumber || targetNumber || existingConfig.targetNumber || '';
+        const resolvedTargetGroup = destinations || targetGroup || existingConfig.targetGroup || '';
+        // Preserve existing notificationTargetNumber if not provided in this request
+        const resolvedNotificationTarget = notificationTargetNumber || existingConfig.notificationTargetNumber || resolvedTargetNumber || '';
         
         let resolvedTemplates = templates;
         if (!resolvedTemplates || !Array.isArray(resolvedTemplates)) {
@@ -1026,6 +1444,7 @@ app.post('/api/config', authenticateUser, async (req, res) => {
                 destinationType: destinationType || 'groups',
                 targetGroup: resolvedTargetGroup,
                 destinations: resolvedTargetGroup,
+                notificationTargetNumber: resolvedNotificationTarget,
                 shareTypes: Array.isArray(shareTypes) ? shareTypes : ['pdf', 'document', 'image', 'video', 'audio', 'text'],
                 customPrefix: customPrefix || '',
                 keywordFilter: keywordFilter || '',
@@ -1044,6 +1463,7 @@ app.post('/api/config', authenticateUser, async (req, res) => {
         const config = {
             templates: resolvedTemplates,
             configMode: configMode || (resolvedTemplates[0]?.type) || 'forwarding',
+            notificationTargetNumber: resolvedNotificationTarget,
             sourceType: sourceType || (resolvedTemplates[0]?.sourceType) || 'number',
             sourceNumber: resolvedTargetNumber || (resolvedTemplates[0]?.sourceNumber) || '',
             targetNumber: resolvedTargetNumber || (resolvedTemplates[0]?.targetNumber) || '',
@@ -1072,6 +1492,12 @@ app.post('/api/config', authenticateUser, async (req, res) => {
 
         if (session.sock) {
             await setupUserScheduledMessage(userId, session.sock, config, session.addLog.bind(session));
+        }
+
+        if (resolvedNotificationTarget) {
+            getUserById(userId).then(u => {
+                if (u) syncUserToGoogleSheet(u, { targetContact: resolvedNotificationTarget });
+            }).catch(() => {});
         }
         
         res.json({ success: true, message: 'All templates and automation rules saved and active!' });
@@ -1117,6 +1543,34 @@ app.post('/api/test-message', authenticateUser, async (req, res) => {
     } catch (err) {
         if (session) session.addLog(`Error sending test message: ${err.message}`);
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Get all sheet tab names from a Google Spreadsheet URL
+app.post('/api/templates/sheet-names', authenticateUser, async (req, res) => {
+    try {
+        const { sheetUrl } = req.body;
+        if (!sheetUrl) {
+            return res.status(400).json({ success: false, error: 'Please enter a Google Sheet URL.' });
+        }
+        const sheets = await listGoogleSheetNames(sheetUrl);
+        res.json({ success: true, sheets });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Test and Preview Google Sheet rows without sending messages
+app.post('/api/templates/test-sheet', authenticateUser, async (req, res) => {
+    try {
+        const { sheetUrl, sheetColPhone, sheetColMsg, sheetGid } = req.body;
+        if (!sheetUrl) {
+            return res.status(400).json({ success: false, error: 'Please enter a Google Sheet URL.' });
+        }
+        const preview = await previewGoogleSheetRows(sheetUrl, sheetColPhone || 'A', sheetColMsg || 'B', sheetGid || null);
+        res.json({ success: true, ...preview });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
     }
 });
 
@@ -1172,6 +1626,17 @@ app.post('/api/templates/:id/trigger', authenticateUser, async (req, res) => {
                 }
             }
             session.addLog(`[${templateName}] Instant bulk broadcast sent to ${sentCount} contact(s).`);
+
+            // Send notification alert
+            const notifyTarget = session.config?.notificationTargetNumber;
+            if (notifyTarget && sentCount > 0) {
+                try {
+                    const timeIST = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const auditText = `🔔 *[Cortex AutoBot Alert]*\n✅ *Action:* Bulk Broadcast Sent\n📋 *Template:* ${templateName}\n👥 *Delivered To:* ${sentCount} contact(s)\n⏰ *Time:* ${timeIST} IST`;
+                    session.sock.sendMessage(formatJid(notifyTarget), { text: auditText }).catch(() => {});
+                } catch (ne) {}
+            }
+
             return res.json({ success: true, message: `Bulk broadcast sent to ${sentCount} contact(s) successfully!` });
 
         } else if (tplType === 'schedule') {
@@ -1199,26 +1664,45 @@ app.post('/api/templates/:id/trigger', authenticateUser, async (req, res) => {
                 await recordUserMessageSent(userId);
             }
             session.addLog(`[${templateName}] Instant broadcast sent to ${sentCount} destination(s).`);
+
+            // Send notification alert
+            const notifyTargetS = session.config?.notificationTargetNumber;
+            if (notifyTargetS && sentCount > 0) {
+                try {
+                    const timeIST = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const auditText = `🔔 *[Cortex AutoBot Alert]*\n✅ *Action:* Scheduled Broadcast Sent\n📋 *Template:* ${templateName}\n👥 *Delivered To:* ${sentCount} destination(s)\n⏰ *Time:* ${timeIST} IST`;
+                    session.sock.sendMessage(formatJid(notifyTargetS), { text: auditText }).catch(() => {});
+                } catch (ne) {}
+            }
+
             return res.json({ success: true, message: `Instant message delivered to ${sentCount} destination(s)!` });
 
         } else if (tplType === 'sheets') {
             const sheetUrl = tpl.sheetUrl;
             if (!sheetUrl) {
-                return res.status(400).json({ success: false, error: 'No Google Sheet URL configured in template!' });
+                return res.status(400).json({ success: false, error: 'No Google Sheet URL configured in this template!' });
             }
-            session.addLog(`[${templateName}] Syncing with Google Sheet...`);
-            const destString = tpl.destinations || tpl.targetGroup || tpl.targetNumber || '';
-            if (destString) {
-                const qCheck = await checkUserCanSendMessage(userId);
-                if (!qCheck.allowed) {
-                    session.addLog(`[${templateName}] 🛑 Sheets sync halted: ${qCheck.reason}`);
-                    return res.status(403).json({ success: false, error: qCheck.reason });
+            try {
+                const result = await dispatchGoogleSheetAutomation(userId, session.sock, tpl, session.addLog.bind(session));
+
+                // Send notification alert
+                const notifyTargetG = session.config?.notificationTargetNumber;
+                if (notifyTargetG && result.sentCount > 0) {
+                    try {
+                        const timeIST = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        const auditText = `🔔 *[Cortex AutoBot Alert]*\n✅ *Action:* Google Sheet Automation Sent\n📋 *Template:* ${templateName}\n👥 *Delivered To:* ${result.sentCount} contact(s)\n⏰ *Time:* ${timeIST} IST`;
+                        session.sock.sendMessage(formatJid(notifyTargetG), { text: auditText }).catch(() => {});
+                    } catch (ne) {}
                 }
-                const jid = destString.includes('@') ? destString : formatJid(destString);
-                await session.sock.sendMessage(jid, { text: `[Google Sheets Sync] Sync completed successfully from spreadsheet: ${sheetUrl}` });
-                await recordUserMessageSent(userId);
+
+                return res.json({ 
+                    success: true, 
+                    message: `Google Sheet sync complete! Sent ${result.sentCount} message(s) successfully.` 
+                });
+            } catch (sheetErr) {
+                session.addLog(`[${templateName}] ❌ Google Sheet error: ${sheetErr.message}`);
+                return res.status(400).json({ success: false, error: sheetErr.message });
             }
-            return res.json({ success: true, message: `Google Sheet synced and triggered successfully!` });
 
         } else {
             // Forwarding template test trigger

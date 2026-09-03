@@ -1,23 +1,89 @@
+import 'dotenv/config';
 import pg from 'pg';
+import mysql from 'mysql2/promise';
 import crypto from 'crypto';
 import { initAuthCreds, BufferJSON, proto, useMultiFileAuthState } from '@whiskeysockets/baileys';
 import fs from 'fs/promises';
 import path from 'path';
 
-const { Pool } = pg;
-
+let dbType = null; // 'mysql' | 'postgres' | null
+let pgPool = null;
+let mysqlPool = null;
 let pool = null;
 
-if (process.env.DATABASE_URL) {
-    console.log("Database URL detected. Initializing PostgreSQL pool...");
-    pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL.includes('localhost') ? false : {
+const rawDbUrl = (process.env.DATABASE_URL || '').trim();
+const hasMysqlHost = Boolean(process.env.DB_HOST);
+const isMysql = rawDbUrl.startsWith('mysql://') || rawDbUrl.startsWith('mysql2://') || hasMysqlHost;
+const isPostgres = rawDbUrl.startsWith('postgres://') || rawDbUrl.startsWith('postgresql://');
+
+if (isMysql) {
+    dbType = 'mysql';
+    let config = {};
+    if (hasMysqlHost) {
+        const host = process.env.DB_HOST.trim();
+        const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+        let dbName = (process.env.DB_DATABASE || 'whatsapp_db').replace(/^['"]|['"]$/g, '').trim();
+        if (!dbName || dbName === 'sys') dbName = 'whatsapp_db';
+        config = {
+            host,
+            port: parseInt(process.env.DB_PORT || '4000', 10),
+            user: (process.env.DB_USERNAME || 'root').replace(/^['"]|['"]$/g, '').trim(),
+            password: (process.env.DB_PASSWORD || '').replace(/^['"]|['"]$/g, '').trim(),
+            database: dbName,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+            ssl: isLocal ? false : { minVersion: 'TLSv1.2', rejectUnauthorized: true }
+        };
+    } else {
+        try {
+            const parsed = new URL(rawDbUrl);
+            const isLocal = parsed.hostname.includes('localhost') || parsed.hostname.includes('127.0.0.1');
+            let dbName = parsed.pathname ? parsed.pathname.replace(/^\//, '') : 'whatsapp_db';
+            if (!dbName || dbName === 'sys') dbName = 'whatsapp_db';
+            config = {
+                host: parsed.hostname,
+                port: parseInt(parsed.port || '4000', 10),
+                user: decodeURIComponent(parsed.username),
+                password: decodeURIComponent(parsed.password),
+                database: dbName,
+                waitForConnections: true,
+                connectionLimit: 10,
+                queueLimit: 0,
+                ssl: isLocal ? false : { minVersion: 'TLSv1.2', rejectUnauthorized: true }
+            };
+        } catch (e) {
+            console.error("Invalid MySQL DATABASE_URL:", e.message);
+        }
+    }
+    console.log(`TiDB Cloud / MySQL detected. Initializing connection to ${config.host}:${config.port}/${config.database}...`);
+    mysqlPool = mysql.createPool(config);
+
+    pool = {
+        query: async (sql, params = []) => {
+            const mysqlSql = sql.replace(/\$\d+/g, '?');
+            const [rows] = await mysqlPool.query(mysqlSql, params);
+            const isArr = Array.isArray(rows);
+            return {
+                rows: isArr ? rows : [],
+                rowCount: isArr ? rows.length : (rows?.affectedRows || 0),
+                raw: rows
+            };
+        }
+    };
+} else if (isPostgres) {
+    dbType = 'postgres';
+    console.log("PostgreSQL DATABASE_URL detected. Initializing PostgreSQL pool...");
+    const { Pool } = pg;
+    pgPool = new Pool({
+        connectionString: rawDbUrl,
+        ssl: rawDbUrl.includes('localhost') ? false : {
             rejectUnauthorized: false // Required for Render Postgres connections
         }
     });
+    pool = pgPool;
 } else {
-    console.log("No DATABASE_URL found. Fallback to local file storage will be used.");
+    console.log("No DATABASE_URL or DB_HOST found. Fallback to local file storage will be used.");
 }
 
 // In-Memory OTP store for quick lookups & fallback
@@ -191,16 +257,27 @@ export const SUBSCRIPTION_PLANS = {
         totalLimit: 18000,
         description: '18,000 messages (1 Year) • Save ₹1,489'
     },
-    addon_300: {
-        id: 'addon_300',
-        name: '300 Messages Booster Add-on',
-        price: 50,
+    addon_230: {
+        id: 'addon_230',
+        name: '200 + 30 Messages Booster Add-on',
+        price: 99,
         period: 'Never Expires',
         durationDays: 365,
         dailyLimit: null,
-        totalLimit: 300,
+        totalLimit: 230,
         isAddon: true,
-        description: '300 Extra Messages Booster (₹50) • Never Expires'
+        description: '200 + 30 Extra Messages Booster (₹99) • Never Expires'
+    },
+    addon_300: {
+        id: 'addon_300',
+        name: '200 + 30 Messages Booster Add-on',
+        price: 99,
+        period: 'Never Expires',
+        durationDays: 365,
+        dailyLimit: null,
+        totalLimit: 230,
+        isAddon: true,
+        description: '200 + 30 Extra Messages Booster (₹99) • Never Expires'
     }
 };
 
@@ -212,7 +289,42 @@ export function getTodayIST() {
 // Database & Tables Initialization
 // --------------------------------------------------------------------------
 export async function initDatabase() {
-    if (pool) {
+    if (dbType === 'mysql') {
+        try {
+            await mysqlPool.query(`
+                CREATE TABLE IF NOT EXISTS whatsapp_sessions (
+                    session_id VARCHAR(100) NOT NULL,
+                    \`key\` VARCHAR(255) NOT NULL,
+                    value LONGTEXT NOT NULL,
+                    PRIMARY KEY (session_id, \`key\`)
+                );
+            `);
+
+            await mysqlPool.query(`
+                CREATE TABLE IF NOT EXISTS cortex_users (
+                    id VARCHAR(64) PRIMARY KEY,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    password_hash VARCHAR(255),
+                    role VARCHAR(50) DEFAULT 'user',
+                    avatar TEXT,
+                    plan VARCHAR(50) DEFAULT 'trial',
+                    plan_expires_at DATETIME NULL,
+                    messages_sent_today INT DEFAULT 0,
+                    last_message_date VARCHAR(20),
+                    messages_sent_total INT DEFAULT 0,
+                    addon_credits INT DEFAULT 0,
+                    claimed_addon BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                );
+            `);
+
+            console.log("TiDB / MySQL database initialized successfully (tables verified).");
+        } catch (err) {
+            console.error("Failed to initialize MySQL database tables:", err);
+        }
+    } else if (dbType === 'postgres') {
         try {
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS whatsapp_sessions (
@@ -254,7 +366,7 @@ export async function initDatabase() {
 
             console.log("PostgreSQL database initialized successfully (tables verified).");
         } catch (err) {
-            console.error("Failed to initialize database tables:", err);
+            console.error("Failed to initialize PostgreSQL database tables:", err);
         }
     }
 
@@ -350,6 +462,40 @@ export async function seedDefaultUsers() {
         if (changed) {
             await saveLocalUsers(users);
         }
+    } else {
+        // Auto-migrate existing local users to cloud database if not already present
+        try {
+            const localUsers = await readLocalUsers();
+            for (const lu of localUsers) {
+                const existing = await getUserByEmail(lu.email);
+                if (!existing) {
+                    await pool.query(
+                        `INSERT INTO cortex_users (
+                            id, email, name, password_hash, role, avatar, plan, plan_expires_at, 
+                            messages_sent_today, last_message_date, messages_sent_total, addon_credits, claimed_addon
+                         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+                        [
+                            lu.id || generate12DigitId(),
+                            lu.email,
+                            lu.name || lu.email.split('@')[0],
+                            lu.password_hash || null,
+                            lu.role || 'user',
+                            lu.avatar || 'assets/images/avatar/avatar-1.jpg',
+                            lu.plan || 'trial',
+                            lu.plan_expires_at ? new Date(lu.plan_expires_at) : null,
+                            lu.messages_sent_today || 0,
+                            lu.last_message_date || getTodayIST(),
+                            lu.messages_sent_total || 0,
+                            lu.addon_credits || 0,
+                            lu.claimed_addon ? 1 : 0
+                        ]
+                    );
+                    console.log(`Auto-migrated local user account to cloud DB: ${lu.email}`);
+                }
+            }
+        } catch (mErr) {
+            console.warn("Local user migration check notice:", mErr.message);
+        }
     }
 }
 
@@ -438,21 +584,53 @@ export async function createUser({ id, email, name, password, role = 'user', ava
 
     if (pool) {
         try {
-            const res = await pool.query(
-                `INSERT INTO cortex_users (
-                    id, email, name, password_hash, role, avatar, 
-                    plan, plan_expires_at, messages_sent_today, last_message_date, 
-                    messages_sent_total, addon_credits, claimed_addon, created_at, last_login
-                 )
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                 RETURNING id, email, name, role, avatar, plan, plan_expires_at, messages_sent_today, messages_sent_total, addon_credits, claimed_addon, created_at, last_login`,
-                [
-                    userId, normalizedEmail, name || normalizedEmail.split('@')[0], password_hash, userRole, userAvatar,
-                    userPlan, plan_expires_at, messages_sent_today, last_message_date,
-                    messages_sent_total, addon_credits, claimed_addon
-                ]
-            );
-            return res.rows[0];
+            if (dbType === 'mysql') {
+                const planExpiresAtFormatted = plan_expires_at ? new Date(plan_expires_at) : null;
+                await pool.query(
+                    `INSERT INTO cortex_users (
+                        id, email, name, password_hash, role, avatar, 
+                        plan, plan_expires_at, messages_sent_today, last_message_date, 
+                        messages_sent_total, addon_credits, claimed_addon, created_at, last_login
+                     )
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+                    [
+                        userId, normalizedEmail, name || normalizedEmail.split('@')[0], password_hash, userRole, userAvatar,
+                        userPlan, planExpiresAtFormatted, messages_sent_today, last_message_date,
+                        messages_sent_total, addon_credits, claimed_addon
+                    ]
+                );
+                return {
+                    id: userId,
+                    email: normalizedEmail,
+                    name: name || normalizedEmail.split('@')[0],
+                    role: userRole,
+                    avatar: userAvatar,
+                    plan: userPlan,
+                    plan_expires_at,
+                    messages_sent_today,
+                    messages_sent_total,
+                    addon_credits,
+                    claimed_addon,
+                    created_at: new Date().toISOString(),
+                    last_login: new Date().toISOString()
+                };
+            } else {
+                const res = await pool.query(
+                    `INSERT INTO cortex_users (
+                        id, email, name, password_hash, role, avatar, 
+                        plan, plan_expires_at, messages_sent_today, last_message_date, 
+                        messages_sent_total, addon_credits, claimed_addon, created_at, last_login
+                     )
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                     RETURNING id, email, name, role, avatar, plan, plan_expires_at, messages_sent_today, messages_sent_total, addon_credits, claimed_addon, created_at, last_login`,
+                    [
+                        userId, normalizedEmail, name || normalizedEmail.split('@')[0], password_hash, userRole, userAvatar,
+                        userPlan, plan_expires_at, messages_sent_today, last_message_date,
+                        messages_sent_total, addon_credits, claimed_addon
+                    ]
+                );
+                return res.rows[0];
+            }
         } catch (err) {
             console.error("Error creating user in DB:", err);
             throw err;
@@ -606,7 +784,7 @@ export async function checkUserCanSendMessage(userId) {
         }
         return { 
             allowed: false, 
-            reason: `Daily quota limit reached (${sub.messagesSentToday}/${sub.dailyLimit} messages today for ${sub.planName}). Upgrade to a paid plan for higher volume or claim the free 300 msgs Add-on!` 
+            reason: `Daily quota limit reached (${sub.messagesSentToday}/${sub.dailyLimit} messages today for ${sub.planName}). Upgrade to a paid plan for higher volume or get the 200+30 msgs Booster Add-on!` 
         };
     }
 
@@ -701,11 +879,12 @@ export async function upgradeUserSubscription(userId, planId, transactionRef = '
     const planMeta = SUBSCRIPTION_PLANS[planId];
     if (!planMeta) throw new Error('Invalid plan selected.');
 
-    if (planMeta.isAddon || planId === 'addon_300') {
+    if (planMeta.isAddon || planId === 'addon_230' || planId === 'addon_300') {
+        const creditsToAdd = planMeta.totalLimit || 230;
         if (pool) {
             await pool.query(
                 `UPDATE cortex_users 
-                 SET addon_credits = addon_credits + 300 
+                 SET addon_credits = addon_credits + ${creditsToAdd} 
                  WHERE id = $1`,
                 [userId]
             );
@@ -713,13 +892,13 @@ export async function upgradeUserSubscription(userId, planId, transactionRef = '
             const users = await readLocalUsers();
             const idx = users.findIndex(u => u.id === userId);
             if (idx >= 0) {
-                users[idx].addon_credits = (users[idx].addon_credits || 0) + 300;
+                users[idx].addon_credits = (users[idx].addon_credits || 0) + creditsToAdd;
                 await saveLocalUsers(users);
             }
         }
         return {
             success: true,
-            message: '300 Messages Booster (+300 credits) added to your account for ₹50!',
+            message: `200 + 30 Messages Booster (+${creditsToAdd} credits) added to your account for ₹99!`,
             plan: planMeta
         };
     }
@@ -810,6 +989,29 @@ export async function findOrCreateGoogleUser({ email, name, avatar }) {
     return user;
 }
 
+export async function updateUserPassword(userId, password) {
+    if (!userId || !password) return false;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    if (pool) {
+        if (dbType === 'mysql') {
+            await pool.query('UPDATE cortex_users SET password_hash = ? WHERE id = ?', [passwordHash, userId.toString()]);
+        } else {
+            await pool.query('UPDATE cortex_users SET password_hash = $1 WHERE id = $2', [passwordHash, userId.toString()]);
+        }
+        return true;
+    } else {
+        const users = await readLocalUsers();
+        const idx = users.findIndex(u => u.id && u.id.toString() === userId.toString());
+        if (idx >= 0) {
+            users[idx].password_hash = passwordHash;
+            await saveLocalUsers(users);
+            return true;
+        }
+        return false;
+    }
+}
+
 // --------------------------------------------------------------------------
 // OTP Management
 // --------------------------------------------------------------------------
@@ -850,13 +1052,20 @@ async function writeData(sessionId, key, data) {
     if (!pool) return;
     try {
         const json = JSON.stringify(data, BufferJSON.replacer);
-        await pool.query(
-            `INSERT INTO whatsapp_sessions (session_id, key, value) 
-             VALUES ($1, $2, $3) 
-             ON CONFLICT (session_id, key) 
-             DO UPDATE SET value = EXCLUDED.value`,
-            [sessionId, key, json]
-        );
+        if (dbType === 'mysql') {
+            await mysqlPool.query(
+                'REPLACE INTO whatsapp_sessions (session_id, `key`, value) VALUES (?, ?, ?)',
+                [sessionId, key, json]
+            );
+        } else {
+            await pool.query(
+                `INSERT INTO whatsapp_sessions (session_id, key, value) 
+                 VALUES ($1, $2, $3) 
+                 ON CONFLICT (session_id, key) 
+                 DO UPDATE SET value = EXCLUDED.value`,
+                [sessionId, key, json]
+            );
+        }
     } catch (err) {
         console.error(`Error writing data for session ${sessionId}, key ${key}:`, err);
     }
@@ -865,12 +1074,21 @@ async function writeData(sessionId, key, data) {
 async function readData(sessionId, key) {
     if (!pool) return null;
     try {
-        const res = await pool.query(
-            `SELECT value FROM whatsapp_sessions WHERE session_id = $1 AND key = $2`,
-            [sessionId, key]
-        );
-        if (res.rows.length === 0) return null;
-        return JSON.parse(res.rows[0].value, BufferJSON.reviver);
+        if (dbType === 'mysql') {
+            const [rows] = await mysqlPool.query(
+                'SELECT value FROM whatsapp_sessions WHERE session_id = ? AND `key` = ?',
+                [sessionId, key]
+            );
+            if (rows.length === 0) return null;
+            return JSON.parse(rows[0].value, BufferJSON.reviver);
+        } else {
+            const res = await pool.query(
+                `SELECT value FROM whatsapp_sessions WHERE session_id = $1 AND key = $2`,
+                [sessionId, key]
+            );
+            if (res.rows.length === 0) return null;
+            return JSON.parse(res.rows[0].value, BufferJSON.reviver);
+        }
     } catch (err) {
         console.error(`Error reading data for session ${sessionId}, key ${key}:`, err);
         return null;
@@ -880,10 +1098,17 @@ async function readData(sessionId, key) {
 async function removeData(sessionId, key) {
     if (!pool) return;
     try {
-        await pool.query(
-            `DELETE FROM whatsapp_sessions WHERE session_id = $1 AND key = $2`,
-            [sessionId, key]
-        );
+        if (dbType === 'mysql') {
+            await mysqlPool.query(
+                'DELETE FROM whatsapp_sessions WHERE session_id = ? AND `key` = ?',
+                [sessionId, key]
+            );
+        } else {
+            await pool.query(
+                `DELETE FROM whatsapp_sessions WHERE session_id = $1 AND key = $2`,
+                [sessionId, key]
+            );
+        }
     } catch (err) {
         console.error(`Error removing data for session ${sessionId}, key ${key}:`, err);
     }
@@ -1035,14 +1260,26 @@ export function formatJid(number) {
 // Database Stats & Storage Diagnostics
 // --------------------------------------------------------------------------
 export async function getDatabaseStats() {
-    const isPostgres = !!pool;
+    const isDb = Boolean(pool);
+    const engineName = dbType === 'mysql' ? 'TiDB Cloud (MySQL)' : (dbType === 'postgres' ? 'PostgreSQL' : 'Local File Storage (JSON/FS)');
+    let hostName = 'Localhost Storage';
+    let dbName = 'Local Workspace';
+
+    if (dbType === 'mysql') {
+        hostName = process.env.DB_HOST || (process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).hostname : 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
+        dbName = (process.env.DB_DATABASE || 'whatsapp_db').replace(/^['"]|['"]$/g, '');
+    } else if (dbType === 'postgres') {
+        hostName = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).host : 'Remote PostgreSQL';
+        dbName = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).pathname.replace('/', '') : 'whatsapp_sessions';
+    }
+
     let stats = {
-        engine: isPostgres ? 'PostgreSQL' : 'Local File Storage (JSON/FS)',
-        mode: isPostgres ? 'Production Managed Relational DB' : 'Local Filesystem Storage (Fallback)',
+        engine: engineName,
+        mode: isDb ? `Production Managed Relational DB (${engineName})` : 'Local Filesystem Storage (Fallback)',
         status: 'Connected & Active',
-        host: isPostgres ? (process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).host : 'Remote PostgreSQL') : 'Localhost Storage',
-        databaseName: isPostgres ? (process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).pathname.replace('/', '') : 'whatsapp_sessions') : 'Local Workspace',
-        sslEnabled: isPostgres,
+        host: hostName,
+        databaseName: dbName,
+        sslEnabled: isDb,
         tables: [],
         totalUsers: 0,
         totalSessions: 0,
@@ -1052,9 +1289,9 @@ export async function getDatabaseStats() {
 
     if (pool) {
         try {
-            const usersCountRes = await pool.query('SELECT COUNT(*) FROM cortex_users');
-            const sessionsCountRes = await pool.query('SELECT COUNT(DISTINCT session_id) FROM whatsapp_sessions');
-            const keysCountRes = await pool.query('SELECT COUNT(*) FROM whatsapp_sessions');
+            const usersCountRes = await pool.query('SELECT COUNT(*) as count FROM cortex_users');
+            const sessionsCountRes = await pool.query('SELECT COUNT(DISTINCT session_id) as count FROM whatsapp_sessions');
+            const keysCountRes = await pool.query('SELECT COUNT(*) as count FROM whatsapp_sessions');
 
             stats.totalUsers = parseInt(usersCountRes.rows[0].count, 10);
             stats.totalSessions = parseInt(sessionsCountRes.rows[0].count, 10);

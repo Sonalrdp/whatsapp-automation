@@ -42,8 +42,116 @@
       </div>
     </div>
 
-    <!-- Official Google Sign-In -->
-    <div class="google-btn-container">
+    <!-- Auth Method Tabs: Sign In & New Sign Up -->
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" id="tab-btn-password" type="button">
+        <i class="bi bi-key-fill me-1"></i> Sign In
+      </button>
+      <button class="auth-tab-btn" id="tab-btn-signup" type="button">
+        <i class="bi bi-person-plus-fill me-1"></i> New Sign Up
+      </button>
+    </div>
+
+    <!-- 1. Password Login View -->
+    <form id="form-password-login" class="auth-form-view">
+      <div class="mb-3">
+        <label for="input-email-pass" class="form-label small fw-bold">Email address</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input type="email" class="form-control" id="input-email-pass" placeholder="name@example.com" value="" required>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+          <label for="input-password" class="form-label small fw-bold">Password (8+ characters)</label>
+        </div>
+        <div class="input-group password-toggle-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" class="form-control" id="input-password" placeholder="Enter your password (min 8 characters)" value="" minlength="8" required>
+          <button type="button" class="btn-toggle-eye" id="btn-toggle-password" title="Show/Hide password">
+            <i class="bi bi-eye" id="eye-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" id="btn-submit-password" class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In to Dashboard
+      </button>
+    </form>
+
+    <!-- 1b. New User Sign Up View (With Google Apps Script Email OTP) -->
+    <div id="form-signup" class="auth-form-view d-none">
+      <!-- Step 1: Fill Name, Email, Password -->
+      <form id="signup-step-form-details">
+        <div class="mb-3">
+          <label for="input-signup-name" class="form-label small fw-bold">Your Name</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input type="text" class="form-control" id="input-signup-name" placeholder="John Doe" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="input-signup-email" class="form-label small fw-bold">Email address</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input type="email" class="form-control" id="input-signup-email" placeholder="name@example.com" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="input-signup-password" class="form-label small fw-bold">Create Password (8+ characters)</label>
+          <div class="input-group password-toggle-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input type="password" class="form-control" id="input-signup-password" placeholder="Min 8 characters" minlength="8" required>
+          </div>
+          <small class="text-muted" style="font-size: 0.72rem;">7-Day Free Trial (15 msgs/day) automatically credited.</small>
+        </div>
+
+        <button type="submit" id="btn-signup-request-otp" class="btn btn-success w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-send-check"></i> Send Verification OTP &amp; Continue
+        </button>
+      </form>
+
+      <!-- Step 2: Enter 6-digit OTP Code sent via Email -->
+      <form id="signup-step-form-otp" class="d-none mt-2">
+        <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3" style="border-radius: 10px;">
+          <i class="bi bi-envelope-check-fill fs-5 text-primary flex-shrink-0"></i>
+          <div>A 6-digit verification code was sent to <strong id="signup-otp-target-email">your email</strong>.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="input-signup-otp-code" class="form-label small fw-bold">Enter 6-Digit OTP Code</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+            <input type="text" class="form-control font-monospace fs-4 text-center letter-spacing-2" id="input-signup-otp-code" placeholder="123456" maxlength="6" required>
+          </div>
+          <small class="text-muted" style="font-size: 0.72rem;">Please check your inbox or spam folder.</small>
+        </div>
+
+        <button type="submit" id="btn-signup-verify-otp" class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-check-circle-fill"></i> Verify &amp; Create Account
+        </button>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <button type="button" class="btn btn-link btn-sm text-decoration-none" id="btn-signup-back-step1">
+            <i class="bi bi-arrow-left"></i> Change Details
+          </button>
+          <button type="button" class="btn btn-link btn-sm text-decoration-none" id="btn-signup-resend-otp">
+            <i class="bi bi-arrow-clockwise"></i> Resend OTP
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Divider: Moved Google Sign-In below email form! -->
+    <div class="auth-divider my-4">
+      <span>Or Sign In With Google</span>
+    </div>
+
+    <!-- Official Google Sign-In Container (Moved to bottom!) -->
+    <div class="google-btn-container mb-2">
       <div id="g_id_onload"
            data-client_id="438922701114-d4k71rd817gglqa510pv9kj06vjhnup2.apps.googleusercontent.com"
            data-context="signin"
@@ -61,111 +169,60 @@
            data-width="380">
       </div>
     </div>
-
-    <div class="auth-divider">
-      <span>Or Sign In With Email</span>
-    </div>
-
-    <!-- Auth Method Tabs -->
-    <div class="auth-tabs">
-      <button class="auth-tab-btn active" id="tab-btn-password" type="button">
-        <i class="bi bi-key-fill me-1"></i> Password
-      </button>
-      <button class="auth-tab-btn" id="tab-btn-otp" type="button">
-        <i class="bi bi-shield-check me-1"></i> Email OTP
-      </button>
-    </div>
-
-    <!-- 1. Password Login View -->
-    <form id="form-password-login" class="auth-form-view">
-      <div class="mb-3">
-        <label for="input-email-pass" class="form-label small fw-bold">Email address</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-          <input type="email" class="form-control" id="input-email-pass" placeholder="name@example.com" value="admin.demo@gmail.com" required>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <div class="d-flex justify-content-between">
-          <label for="input-password" class="form-label small fw-bold">Password (8+ characters)</label>
-        </div>
-        <div class="input-group password-toggle-group">
-          <span class="input-group-text"><i class="bi bi-lock"></i></span>
-          <input type="password" class="form-control" id="input-password" placeholder="Min 8 characters (e.g. Avoid@123)" value="Avoid@123" minlength="8" required>
-          <button type="button" class="btn-toggle-eye" id="btn-toggle-password" title="Show/Hide password">
-            <i class="bi bi-eye" id="eye-icon"></i>
-          </button>
-        </div>
-        <small class="form-text text-muted">Demo password: <code>Avoid@123</code></small>
-      </div>
-
-      <button type="submit" id="btn-submit-password" class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
-        <i class="bi bi-box-arrow-in-right"></i> Sign In to Dashboard
-      </button>
-    </form>
-
-    <!-- 2. Email OTP Login View -->
-    <div id="form-otp-login" class="auth-form-view d-none">
-      <!-- Step 1: Send OTP -->
-      <form id="form-send-otp">
-        <div class="mb-3">
-          <label for="input-email-otp" class="form-label small fw-bold">Email address</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-            <input type="email" class="form-control" id="input-email-otp" placeholder="name@example.com" value="admin.demo@gmail.com" required>
-          </div>
-        </div>
-
-        <button type="submit" id="btn-send-otp" class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
-          <i class="bi bi-send"></i> Send Verification OTP
-        </button>
-      </form>
-
-      <!-- Step 2: Verify OTP (Hidden initially) -->
-      <form id="form-verify-otp" class="d-none mt-3">
-        <div id="otp-alert-box" class="demo-otp-banner">
-          <i class="bi bi-info-circle-fill text-primary me-1"></i> OTP code sent. <span id="otp-hint-text">Check your email.</span>
-        </div>
-
-        <div class="mb-3">
-          <label for="input-otp-code" class="form-label small fw-bold">6-Digit Verification Code</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-            <input type="text" class="form-control font-monospace fs-5 text-center letter-spacing-2" id="input-otp-code" placeholder="123456" maxlength="6" required>
-          </div>
-        </div>
-
-        <button type="submit" id="btn-verify-otp" class="btn btn-success w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
-          <i class="bi bi-check-circle-fill"></i> Verify &amp; Sign In
-        </button>
-
-        <div class="text-center mt-2">
-          <button type="button" class="btn btn-link btn-sm text-decoration-none" id="btn-resend-otp">
-            <i class="bi bi-arrow-clockwise"></i> Change email or resend
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- 1-Click Quick Demo Evaluation Logins -->
-    <div class="mt-4 pt-3 border-top">
-      <p class="text-center text-muted small fw-bold mb-2">QUICK 1-CLICK DEMO ACCESS</p>
-      <div class="demo-account-cards">
-        <button type="button" class="btn-demo-login" id="btn-demo-admin">
-          <span class="badge role-badge role-badge-admin mb-1">ADMIN ROLE</span>
-          <strong>Demo Admin</strong>
-          <small class="text-muted">Full Bot &amp; QR Control</small>
-        </button>
-
-        <button type="button" class="btn-demo-login" id="btn-demo-user">
-          <span class="badge role-badge role-badge-user mb-1">USER ROLE</span>
-          <strong>Demo User</strong>
-          <small class="text-muted">Status &amp; Messages</small>
-        </button>
-      </div>
-    </div>
   </main>
+
+  <!-- Modal: Google User Create Password Feature (No OTP needed!) -->
+  <div class="modal fade" id="modal-google-password" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="googlePassModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+        <div class="modal-header border-bottom px-4 py-3 bg-light">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+              <i class="bi bi-shield-lock-fill fs-5"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0" id="googlePassModalTitle">Create Account Password</h5>
+              <small class="text-muted">Set a password to enable direct email login anytime</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-body p-4">
+          <div class="alert alert-success py-2 px-3 small d-flex align-items-center gap-2 mb-3" style="border-radius: 10px;">
+            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+            <div>Google account verified! Set an account password to enable direct password login.</div>
+          </div>
+
+          <form id="form-google-create-password">
+            <div class="mb-3">
+              <label for="input-google-new-password" class="form-label small fw-bold">New Password (8+ characters)</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <input type="password" class="form-control" id="input-google-new-password" placeholder="Min 8 characters" minlength="8" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="input-google-confirm-password" class="form-label small fw-bold">Confirm Password</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                <input type="password" class="form-control" id="input-google-confirm-password" placeholder="Re-type password" minlength="8" required>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-2">
+              <button type="button" class="btn btn-outline-secondary px-3" id="btn-skip-google-password">
+                Skip for Now
+              </button>
+              <button type="submit" class="btn btn-success px-4 fw-bold" id="btn-save-google-password">
+                <i class="bi bi-check-circle-fill me-1"></i> Save &amp; Continue <i class="bi bi-arrow-right"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Notification -->
   <div class="toast-container-fixed">
@@ -182,27 +239,41 @@
   <script>
     // Elements
     const tabBtnPassword = document.getElementById('tab-btn-password');
-    const tabBtnOtp = document.getElementById('tab-btn-otp');
-    const formPasswordLogin = document.getElementById('form-password-login');
-    const formOtpLogin = document.getElementById('form-otp-login');
-    const formSendOtp = document.getElementById('form-send-otp');
-    const formVerifyOtp = document.getElementById('form-verify-otp');
-    const inputEmailOtp = document.getElementById('input-email-otp');
-    const inputOtpCode = document.getElementById('input-otp-code');
-    const btnResendOtp = document.getElementById('btn-resend-otp');
-    const otpAlertBox = document.getElementById('otp-alert-box');
-    const otpHintText = document.getElementById('otp-hint-text');
+    const tabBtnSignup = document.getElementById('tab-btn-signup');
 
-    // Password Elements
+    const formPasswordLogin = document.getElementById('form-password-login');
+    const formSignup = document.getElementById('form-signup');
+    const signupStepFormDetails = document.getElementById('signup-step-form-details');
+    const signupStepFormOtp = document.getElementById('signup-step-form-otp');
+
     const inputEmailPass = document.getElementById('input-email-pass');
     const inputPassword = document.getElementById('input-password');
     const btnTogglePassword = document.getElementById('btn-toggle-password');
     const eyeIcon = document.getElementById('eye-icon');
     const btnSubmitPassword = document.getElementById('btn-submit-password');
 
-    // Demo Buttons
-    const btnDemoAdmin = document.getElementById('btn-demo-admin');
-    const btnDemoUser = document.getElementById('btn-demo-user');
+    const inputSignupName = document.getElementById('input-signup-name');
+    const inputSignupEmail = document.getElementById('input-signup-email');
+    const inputSignupPassword = document.getElementById('input-signup-password');
+    const btnSignupRequestOtp = document.getElementById('btn-signup-request-otp');
+
+    const inputSignupOtpCode = document.getElementById('input-signup-otp-code');
+    const btnSignupVerifyOtp = document.getElementById('btn-signup-verify-otp');
+    const signupOtpTargetEmail = document.getElementById('signup-otp-target-email');
+    const btnSignupBackStep1 = document.getElementById('btn-signup-back-step1');
+    const btnSignupResendOtp = document.getElementById('btn-signup-resend-otp');
+
+    // Google Password Modal Elements
+    const modalGooglePasswordEl = document.getElementById('modal-google-password');
+    let modalGooglePassword = null;
+    if (modalGooglePasswordEl && window.bootstrap) {
+      modalGooglePassword = new bootstrap.Modal(modalGooglePasswordEl);
+    }
+    const formGoogleCreatePassword = document.getElementById('form-google-create-password');
+    const inputGoogleNewPassword = document.getElementById('input-google-new-password');
+    const inputGoogleConfirmPassword = document.getElementById('input-google-confirm-password');
+    const btnSkipGooglePassword = document.getElementById('btn-skip-google-password');
+    let pendingGoogleAuthData = null;
 
     // Toast
     const toast = document.getElementById('toast');
@@ -232,7 +303,7 @@
       if (data && data.token) {
         localStorage.setItem('cortex_token', data.token);
         localStorage.setItem('cortex_user', JSON.stringify(data.user));
-        sessionStorage.setItem('cortex_show_plans_on_setup', 'true');
+        sessionStorage.setItem('cortex_new_user_onboarding', 'true');
         showToast("Authentication successful! Redirecting...", "success");
         setTimeout(() => {
           window.location.href = `index.html?uid=${data.user.id}`;
@@ -241,19 +312,26 @@
     }
 
     // Tab Switching
-    tabBtnPassword.addEventListener('click', () => {
-      tabBtnPassword.classList.add('active');
-      tabBtnOtp.classList.remove('active');
-      formPasswordLogin.classList.remove('d-none');
-      formOtpLogin.classList.add('d-none');
-    });
-
-    tabBtnOtp.addEventListener('click', () => {
-      tabBtnOtp.classList.add('active');
+    function activateTab(tab) {
       tabBtnPassword.classList.remove('active');
-      formOtpLogin.classList.remove('d-none');
+      if (tabBtnSignup) tabBtnSignup.classList.remove('active');
       formPasswordLogin.classList.add('d-none');
-    });
+      if (formSignup) formSignup.classList.add('d-none');
+
+      if (tab === 'password') {
+        tabBtnPassword.classList.add('active');
+        formPasswordLogin.classList.remove('d-none');
+      } else if (tab === 'signup') {
+        if (tabBtnSignup) tabBtnSignup.classList.add('active');
+        if (formSignup) formSignup.classList.remove('d-none');
+        // Reset to Step 1
+        if (signupStepFormDetails) signupStepFormDetails.classList.remove('d-none');
+        if (signupStepFormOtp) signupStepFormOtp.classList.add('d-none');
+      }
+    }
+
+    tabBtnPassword.addEventListener('click', () => activateTab('password'));
+    if (tabBtnSignup) tabBtnSignup.addEventListener('click', () => activateTab('signup'));
 
     // Toggle Password Visibility
     btnTogglePassword.addEventListener('click', () => {
@@ -307,94 +385,113 @@
       }
     });
 
-    // 2. Send OTP Form Submission
-    formSendOtp.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = inputEmailOtp.value.trim();
+    // 2. New User Signup - Step 1: Request OTP via Google Apps Script HTML Email
+    if (signupStepFormDetails) {
+      signupStepFormDetails.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = inputSignupName ? inputSignupName.value.trim() : '';
+        const email = inputSignupEmail ? inputSignupEmail.value.trim() : '';
+        const password = inputSignupPassword ? inputSignupPassword.value : '';
 
-      if (!email) {
-        showToast("Please enter a valid email address.", "error");
-        return;
-      }
+        if (!email || !password) {
+          showToast("Please enter email and password.", "error");
+          return;
+        }
 
-      const btn = document.getElementById('btn-send-otp');
-      btn.setAttribute('disabled', 'true');
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending OTP...';
+        if (password.length < 8) {
+          showToast("Password must be at least 8 characters long.", "error");
+          return;
+        }
 
-      try {
-        const res = await fetch('/api/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        });
+        btnSignupRequestOtp.setAttribute('disabled', 'true');
+        btnSignupRequestOtp.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending Verification OTP...';
 
-        const data = await res.json();
-        if (data.success) {
-          showToast(`OTP Code sent to ${email}`, "success");
-          formSendOtp.classList.add('d-none');
-          formVerifyOtp.classList.remove('d-none');
-          
-          if (data.demoOtp) {
-            otpHintText.innerHTML = `Demo Mode Code: <strong class="text-primary font-monospace fs-6">${data.demoOtp}</strong>`;
-            inputOtpCode.value = data.demoOtp;
+        try {
+          const res = await fetch('/api/auth/signup-request-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            showToast(data.message || "OTP sent to your email!", "success");
+            signupStepFormDetails.classList.add('d-none');
+            signupStepFormOtp.classList.remove('d-none');
+            if (signupOtpTargetEmail) signupOtpTargetEmail.innerText = email;
+            if (data.demoOtp && inputSignupOtpCode) {
+              // Populate OTP if fallback mode
+              inputSignupOtpCode.value = data.demoOtp;
+            }
+            if (inputSignupOtpCode) inputSignupOtpCode.focus();
           } else {
-            otpHintText.innerText = "Please check your inbox.";
+            showToast(data.error || "Failed to send OTP.", "error");
           }
-          inputOtpCode.focus();
-        } else {
-          showToast(data.error || "Failed to send OTP.", "error");
+        } catch (err) {
+          console.error("Signup request OTP error:", err);
+          showToast("Network error while sending OTP.", "error");
+        } finally {
+          btnSignupRequestOtp.removeAttribute('disabled');
+          btnSignupRequestOtp.innerHTML = '<i class="bi bi-send-check"></i> Send Verification OTP &amp; Continue';
         }
-      } catch (err) {
-        console.error("Send OTP error:", err);
-        showToast("Network error. Could not send OTP.", "error");
-      } finally {
-        btn.removeAttribute('disabled');
-        btn.innerHTML = '<i class="bi bi-send"></i> Send Verification OTP';
-      }
-    });
+      });
+    }
 
-    // 3. Verify OTP Form Submission
-    formVerifyOtp.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = inputEmailOtp.value.trim();
-      const otp = inputOtpCode.value.trim();
+    // 3. New User Signup - Step 2: Verify OTP & Create Account
+    if (signupStepFormOtp) {
+      signupStepFormOtp.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = inputSignupEmail ? inputSignupEmail.value.trim() : '';
+        const otp = inputSignupOtpCode ? inputSignupOtpCode.value.trim() : '';
 
-      if (!otp) {
-        showToast("Please enter the 6-digit OTP code.", "error");
-        return;
-      }
-
-      const btn = document.getElementById('btn-verify-otp');
-      btn.setAttribute('disabled', 'true');
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
-
-      try {
-        const res = await fetch('/api/auth/verify-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          saveAuthAndRedirect(data);
-        } else {
-          showToast(data.error || "Invalid OTP code.", "error");
+        if (!otp || otp.length !== 6) {
+          showToast("Please enter the complete 6-digit verification code.", "error");
+          return;
         }
-      } catch (err) {
-        console.error("Verify OTP error:", err);
-        showToast("Network error. Could not verify OTP.", "error");
-      } finally {
-        btn.removeAttribute('disabled');
-        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Verify &amp; Sign In';
-      }
-    });
 
-    btnResendOtp.addEventListener('click', () => {
-      formVerifyOtp.classList.add('d-none');
-      formSendOtp.classList.remove('d-none');
-      inputOtpCode.value = '';
-    });
+        btnSignupVerifyOtp.setAttribute('disabled', 'true');
+        btnSignupVerifyOtp.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying &amp; Creating Account...';
+
+        try {
+          const res = await fetch('/api/auth/signup-verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp })
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            showToast("Account successfully verified and created!", "success");
+            saveAuthAndRedirect(data);
+          } else {
+            showToast(data.error || "Invalid verification code.", "error");
+          }
+        } catch (err) {
+          console.error("Signup verify error:", err);
+          showToast("Network error during verification.", "error");
+        } finally {
+          btnSignupVerifyOtp.removeAttribute('disabled');
+          btnSignupVerifyOtp.innerHTML = '<i class="bi bi-check-circle-fill"></i> Verify &amp; Create Account';
+        }
+      });
+    }
+
+    // Signup navigation: Back to details
+    if (btnSignupBackStep1) {
+      btnSignupBackStep1.addEventListener('click', () => {
+        if (signupStepFormOtp) signupStepFormOtp.classList.add('d-none');
+        if (signupStepFormDetails) signupStepFormDetails.classList.remove('d-none');
+      });
+    }
+
+    // Signup navigation: Resend OTP
+    if (btnSignupResendOtp) {
+      btnSignupResendOtp.addEventListener('click', () => {
+        if (signupStepFormDetails) {
+          signupStepFormDetails.dispatchEvent(new Event('submit'));
+        }
+      });
+    }
 
     // 4. Official Google Sign-In Callback Handler
     window.handleGoogleLoginResponse = async function(response) {
@@ -414,7 +511,20 @@
 
         const data = await res.json();
         if (data.success) {
-          saveAuthAndRedirect(data);
+          // If newly registered Google user or has no password set, prompt password creation (No OTP sent!)
+          if (data.isNewUser || !data.hasPassword) {
+            pendingGoogleAuthData = data;
+            if (!modalGooglePassword && modalGooglePasswordEl && window.bootstrap) {
+              modalGooglePassword = new bootstrap.Modal(modalGooglePasswordEl);
+            }
+            if (modalGooglePassword) {
+              modalGooglePassword.show();
+            } else {
+              saveAuthAndRedirect(data);
+            }
+          } else {
+            saveAuthAndRedirect(data);
+          }
         } else {
           showToast(data.error || "Google login failed.", "error");
         }
@@ -424,30 +534,61 @@
       }
     };
 
-    // 5. 1-Click Demo Login Handlers
-    async function executeDemoLogin(role) {
-      showToast(`Logging in as Demo ${role.toUpperCase()}...`, "info");
-      try {
-        const res = await fetch('/api/auth/demo-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role })
-        });
+    // Google User: Save Password Submission
+    if (formGoogleCreatePassword) {
+      formGoogleCreatePassword.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPass = inputGoogleNewPassword ? inputGoogleNewPassword.value : '';
+        const confirmPass = inputGoogleConfirmPassword ? inputGoogleConfirmPassword.value : '';
 
-        const data = await res.json();
-        if (data.success) {
-          saveAuthAndRedirect(data);
-        } else {
-          showToast(data.error || "Demo login failed.", "error");
+        if (!newPass || newPass.length < 8) {
+          showToast("Password must be at least 8 characters long.", "error");
+          return;
         }
-      } catch (err) {
-        console.error("Demo login error:", err);
-        showToast("Network error during demo login.", "error");
-      }
+
+        if (newPass !== confirmPass) {
+          showToast("Passwords do not match. Please re-type.", "error");
+          return;
+        }
+
+        if (!pendingGoogleAuthData || !pendingGoogleAuthData.token) {
+          showToast("Session expired. Please sign in again.", "error");
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/auth/google-set-password', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${pendingGoogleAuthData.token}`
+            },
+            body: JSON.stringify({ password: newPass })
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            showToast("Password saved successfully!", "success");
+            if (modalGooglePassword) modalGooglePassword.hide();
+            saveAuthAndRedirect(pendingGoogleAuthData);
+          } else {
+            showToast(data.error || "Failed to set password.", "error");
+          }
+        } catch (err) {
+          console.error("Error setting Google password:", err);
+          showToast("Network error saving password.", "error");
+        }
+      });
     }
 
-    btnDemoAdmin.addEventListener('click', () => executeDemoLogin('admin'));
-    btnDemoUser.addEventListener('click', () => executeDemoLogin('user'));
+    if (btnSkipGooglePassword) {
+      btnSkipGooglePassword.addEventListener('click', () => {
+        if (modalGooglePassword) modalGooglePassword.hide();
+        if (pendingGoogleAuthData) {
+          saveAuthAndRedirect(pendingGoogleAuthData);
+        }
+      });
+    }
   </script>
 </body>
 </html>

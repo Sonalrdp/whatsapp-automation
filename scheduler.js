@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { formatJid, checkUserCanSendMessage, recordUserMessageSent } from './database.js';
+import { dispatchGoogleSheetAutomation } from './sheets_engine.js';
 
 // Map of active cron jobs per user ID: userId -> Array of ScheduledTasks
 const userCronJobs = new Map();
@@ -49,6 +50,46 @@ export async function setupUserScheduledMessage(userId, sock, config, addLogFn) 
     const activeTasks = [];
 
     for (const tpl of scheduledTemplates) {
+        // Special Handling for Google Sheets Automation
+        if (tpl.type === 'sheets') {
+            const templateName = tpl.name || 'Google Sheets Automation';
+            const scheduleTime = tpl.scheduleTime || '09:00';
+            const [hourStr, minuteStr] = scheduleTime.split(':');
+            const hour = parseInt(hourStr, 10) ?? 9;
+            const minute = parseInt(minuteStr, 10) ?? 0;
+
+            let cronExpression = `${minute} ${hour} * * *`;
+            if (tpl.scheduleFrequency === 'weekly') {
+                const day = tpl.scheduleDay || '1';
+                cronExpression = `${minute} ${hour} * * ${day}`;
+            } else if (tpl.scheduleFrequency === 'hourly') {
+                cronExpression = `0 */${hour || 1} * * *`;
+            }
+
+            const logMsg = `Scheduler: Active Google Sheets rule "${templateName}" scheduled at ${scheduleTime} IST (Cron: "${cronExpression}").`;
+            console.log(`[User ${userId}] ${logMsg}`);
+            if (addLogFn) addLogFn(logMsg);
+
+            const task = cron.schedule(cronExpression, async () => {
+                try {
+                    if (!sock) {
+                        if (addLogFn) addLogFn(`Scheduler: [${templateName}] Trigger failed - WhatsApp socket is disconnected.`);
+                        return;
+                    }
+                    await dispatchGoogleSheetAutomation(userId, sock, tpl, addLogFn);
+                } catch (err) {
+                    console.error(`[User ${userId}] Google Sheet scheduler error for ${templateName}:`, err);
+                    if (addLogFn) addLogFn(`Scheduler: [${templateName}] Google Sheet error: ${err.message}`);
+                }
+            }, {
+                scheduled: true,
+                timezone: "Asia/Kolkata"
+            });
+
+            activeTasks.push(task);
+            continue;
+        }
+
         const destString = tpl.destinations || tpl.targetGroup || tpl.targetNumber || '';
         const targetDestinations = destString
             .split(',')
@@ -110,6 +151,16 @@ export async function setupUserScheduledMessage(userId, sock, config, addLogFn) 
                     const successMsg = `Scheduler: [${templateName}] Successfully delivered scheduled message to ${deliveredCount} destination(s).`;
                     console.log(`[User ${userId}] ${successMsg}`);
                     if (addLogFn) addLogFn(successMsg);
+
+                    const notifyTarget = tpl.notificationTargetNumber || config.notificationTargetNumber;
+                    if (notifyTarget) {
+                        try {
+                            const notifyJid = formatJid(notifyTarget);
+                            const timeIST = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            const auditText = `🔔 *[Cortex AutoBot Alert]*\n✅ *Action:* Scheduled Broadcast Delivered\n📋 *Rule:* "${templateName}"\n👥 *Delivered To:* ${deliveredCount} destination(s)\n⏰ *Time:* ${timeIST} IST`;
+                            sock.sendMessage(notifyJid, { text: auditText }).catch(() => {});
+                        } catch (e) {}
+                    }
                 }
             } catch (err) {
                 console.error(`[User ${userId}] Scheduler execution error for ${templateName}:`, err);
