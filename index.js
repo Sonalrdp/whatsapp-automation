@@ -53,7 +53,7 @@ const pinoLogger = pino({ level: 'silent' });
 // --------------------------------------------------------------------------
 const userSessions = new Map();
 
-// Helper to extract message content of all types (PDF/Docs, Images, Videos, Audio, Text, Stickers)
+// Helper to extract message content of all types (PDF/Docs, Images, Videos, Audio, Text)
 function extractMessageContent(rawMsg) {
     if (!rawMsg) return null;
     let message = rawMsg;
@@ -74,47 +74,59 @@ function extractMessageContent(rawMsg) {
     if (!message) return null;
 
     if (message.documentMessage) {
-        const mime = message.documentMessage.mimetype || 'application/pdf';
+        const mime = (message.documentMessage.mimetype || 'application/pdf').toLowerCase();
         const rawFileName = message.documentMessage.fileName || '';
-        const isPdf = mime.toLowerCase().includes('pdf') || rawFileName.toLowerCase().endsWith('.pdf');
+        const lowerName = rawFileName.toLowerCase();
+        let type = 'document';
+        if (mime.includes('pdf') || lowerName.endsWith('.pdf')) {
+            type = 'pdf';
+        } else if (mime.startsWith('image/') || /\.(jpe?g|png|gif|webp|bmp|tiff|heic)$/i.test(lowerName)) {
+            type = 'image';
+        } else if (mime.startsWith('video/') || /\.(mp4|mkv|mov|avi|webm|3gp)$/i.test(lowerName)) {
+            type = 'video';
+        } else if (mime.startsWith('audio/') || /\.(mp3|wav|ogg|opus|aac|m4a)$/i.test(lowerName)) {
+            type = 'audio';
+        }
         return {
-            type: isPdf ? 'pdf' : 'document',
+            type: type,
             mimetype: mime,
-            fileName: rawFileName || (isPdf ? 'document.pdf' : 'file'),
+            fileName: rawFileName || (type === 'pdf' ? 'document.pdf' : (type === 'image' ? 'image.jpg' : (type === 'video' ? 'video.mp4' : 'file'))),
             caption: message.documentMessage.caption || '',
             media: message.documentMessage
         };
     }
     if (message.imageMessage) {
+        const rawFileName = message.imageMessage.fileName || '';
+        const ext = (message.imageMessage.mimetype || '').split('/')[1]?.split(';')[0] || 'jpeg';
         return {
             type: 'image',
             mimetype: message.imageMessage.mimetype || 'image/jpeg',
+            fileName: rawFileName || `image.${ext === 'jpeg' ? 'jpg' : ext}`,
             caption: message.imageMessage.caption || '',
             media: message.imageMessage
         };
     }
     if (message.videoMessage) {
+        const rawFileName = message.videoMessage.fileName || '';
+        const ext = (message.videoMessage.mimetype || '').split('/')[1]?.split(';')[0] || 'mp4';
         return {
             type: 'video',
             mimetype: message.videoMessage.mimetype || 'video/mp4',
+            fileName: rawFileName || `video.${ext}`,
             caption: message.videoMessage.caption || '',
             gifPlayback: message.videoMessage.gifPlayback || false,
             media: message.videoMessage
         };
     }
     if (message.audioMessage) {
+        const rawFileName = message.audioMessage.fileName || '';
+        const ext = (message.audioMessage.mimetype || '').includes('ogg') ? 'ogg' : 'mp3';
         return {
             type: 'audio',
             mimetype: message.audioMessage.mimetype || 'audio/mp4',
+            fileName: rawFileName || (message.audioMessage.ptt ? 'voice_note.opus' : `audio.${ext}`),
             ptt: message.audioMessage.ptt || false,
             media: message.audioMessage
-        };
-    }
-    if (message.stickerMessage) {
-        return {
-            type: 'sticker',
-            mimetype: message.stickerMessage.mimetype || 'image/webp',
-            media: message.stickerMessage
         };
     }
     if (message.conversation) {
@@ -169,6 +181,61 @@ async function downloadMediaBuffer(content, msg, sock) {
         downloadTask,
         new Promise((_, reject) => setTimeout(() => reject(new Error('Media download timed out after 15s')), 15000))
     ]);
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Exact filename & text trigger matching
+function matchesTriggerFilter(filterString, content) {
+    const rawFilter = (filterString || '').trim();
+    if (!rawFilter || rawFilter === '*' || rawFilter.toLowerCase() === 'all') {
+        return true;
+    }
+
+    const keywords = rawFilter.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    if (keywords.length === 0) return true;
+
+    const rawFileName = (content.fileName || '').trim().toLowerCase();
+    const rawCaption = (content.caption || '').trim().toLowerCase();
+    const rawText = (content.text || '').trim().toLowerCase();
+
+    return keywords.some(k => {
+        if (k === '*' || k === 'all') return true;
+
+        // If content is a file (pdf, document, image, video, audio):
+        if (content.type === 'pdf' || content.type === 'document' || content.type === 'image' || content.type === 'video' || content.type === 'audio') {
+            // Check exact file name
+            if (rawFileName) {
+                // Exact filename match (e.g. filter 'a.pdf' matches file 'a.pdf', 'a.png' matches 'a.png')
+                if (rawFileName === k) return true;
+
+                // Support WhatsApp auto-numbered copy/duplicate suffix (e.g. "a (1).pdf" or "a-1.pdf" when filter is "a.pdf")
+                if (k.includes('.')) {
+                    const ext = k.split('.').pop();
+                    const stem = k.slice(0, -(ext.length + 1));
+                    const duplicateRegex = new RegExp('^' + escapeRegExp(stem) + '(\\s*[\\(\\-_]\\s*\\d+\\s*\\)?)*\\.' + escapeRegExp(ext) + '$', 'i');
+                    if (duplicateRegex.test(rawFileName)) return true;
+                }
+            }
+
+            // Also check caption if caption exactly equals k
+            if (rawCaption && rawCaption === k) {
+                return true;
+            }
+
+            return false;
+        }
+
+        // If content is a text message:
+        if (content.type === 'text') {
+            // Exact text match: "if it is a then it have to be a"
+            return rawText === k;
+        }
+
+        return false;
+    });
 }
 
 // Get or initialize a user session
@@ -344,7 +411,8 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                         const content = extractMessageContent(msg.message);
                         if (!content) continue;
 
-                        const currentConfig = session.config || await getUserBotConfig(userId);
+                        const currentConfig = await getUserBotConfig(userId);
+                        session.config = currentConfig;
                         const activeTemplates = (currentConfig.templates && Array.isArray(currentConfig.templates))
                             ? currentConfig.templates.filter(t => t.active !== false && (t.type === 'forwarding' || !t.type))
                             : (currentConfig.targetNumber || currentConfig.targetGroup ? [currentConfig] : []);
@@ -411,7 +479,7 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                             }
 
                             // Check allowed sharing media types
-                            const shareTypes = tpl.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text', 'sticker'];
+                            const shareTypes = tpl.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text'];
                             const isTypeAllowed = Array.isArray(shareTypes) 
                                 ? (shareTypes.includes(content.type) || (content.type === 'pdf' && shareTypes.includes('document')) || (content.type === 'document' && shareTypes.includes('pdf')))
                                 : (shareTypes[content.type] !== false);
@@ -424,21 +492,9 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                             // Check keyword / filename trigger filter if present
                             const keywordFilter = (tpl.keywordFilter || '').trim();
                             if (keywordFilter && keywordFilter !== '*' && keywordFilter.toLowerCase() !== 'all') {
-                                const keywords = keywordFilter.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-                                const fileName = (content.fileName || '').toLowerCase();
-                                const caption = (content.caption || '').toLowerCase();
-                                const text = (content.text || '').toLowerCase();
-                                
-                                const isMatchKeyword = keywords.some(k => {
-                                    const baseK = k.replace(/\.[^.]+$/, '');
-                                    return fileName.includes(k) || 
-                                           fileName.includes(baseK) ||
-                                           caption.includes(k) || 
-                                           text.includes(k) ||
-                                           fileName.replace(/\.pdf$/i, '') === baseK;
-                                });
+                                const isMatchKeyword = matchesTriggerFilter(keywordFilter, content);
                                 if (!isMatchKeyword) {
-                                    session.addLog(`[${templateName}] ⚠️ Skipped: "${content.fileName || content.text || 'media'}" does not match trigger filter "${keywordFilter}".`);
+                                    session.addLog(`[${templateName}] 🛑 Skipped & Blocked: "${content.fileName || content.text || 'media'}" does not match filter "${keywordFilter}". NOT forwarding.`);
                                     continue;
                                 }
                             }
@@ -474,11 +530,15 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                             try {
                                 if (content.type === 'text') {
                                     const messageText = customPrefix ? `${customPrefix}\n${content.text}` : content.text;
+                                    let deliveredCount = 0;
                                     for (const dest of targetDestinations) {
                                         if (dest === senderJid) continue;
                                         await sock.sendMessage(dest, { text: messageText });
+                                        deliveredCount++;
                                     }
-                                    session.addLog(`[${templateName}] ✅ Forwarded text to ${targetDestinations.length} destination(s).`);
+                                    if (deliveredCount > 0) {
+                                        session.addLog(`[${templateName}] ✅ Forwarded text to ${deliveredCount} destination(s).`);
+                                    }
                                 } else {
                                     // Download media attachment with fallback
                                     const buffer = await downloadMediaBuffer(content, msg, sock);
@@ -488,8 +548,10 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                                         continue;
                                     }
 
+                                    let deliveredCount = 0;
                                     for (const dest of targetDestinations) {
                                         if (dest === senderJid) continue;
+
                                         if (content.type === 'pdf' || content.type === 'document') {
                                             const docMime = (outFileName.toLowerCase().endsWith('.pdf') || content.type === 'pdf')
                                                 ? 'application/pdf'
@@ -527,13 +589,13 @@ lidToPhoneMap.set('165498176200896@lid', '919135779897');
                                                 mimetype: content.mimetype || 'audio/mp4',
                                                 ptt: content.ptt
                                             });
-                                        } else if (content.type === 'sticker') {
-                                            await sock.sendMessage(dest, {
-                                                sticker: buffer
-                                            });
                                         }
+
+                                        deliveredCount++;
                                     }
-                                    session.addLog(`[${templateName}] ✅ Forwarded ${content.type} "${outFileName}" to ${targetDestinations.length} destination(s).`);
+                                    if (deliveredCount > 0) {
+                                        session.addLog(`[${templateName}] ✅ Forwarded ${content.type} "${outFileName}" to ${deliveredCount} destination(s).`);
+                                    }
                                 }
                             } catch (err) {
                                 session.addLog(`[${templateName}] ❌ Failed forwarding ${content.type}: ${err.message}`);
@@ -907,7 +969,7 @@ app.get('/api/status', authenticateUser, async (req, res) => {
                 destinationType: session.config?.destinationType || 'groups',
                 targetGroup: session.config?.targetGroup || session.config?.destinations || '',
                 destinations: session.config?.destinations || session.config?.targetGroup || '',
-                shareTypes: session.config?.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text', 'sticker'],
+                shareTypes: session.config?.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text'],
                 customPrefix: session.config?.customPrefix || '',
                 keywordFilter: session.config?.keywordFilter || '',
                 morningMessage: session.config?.morningMessage || '',
@@ -964,7 +1026,7 @@ app.post('/api/config', authenticateUser, async (req, res) => {
                 destinationType: destinationType || 'groups',
                 targetGroup: resolvedTargetGroup,
                 destinations: resolvedTargetGroup,
-                shareTypes: Array.isArray(shareTypes) ? shareTypes : ['pdf', 'document', 'image', 'video', 'audio', 'text', 'sticker'],
+                shareTypes: Array.isArray(shareTypes) ? shareTypes : ['pdf', 'document', 'image', 'video', 'audio', 'text'],
                 customPrefix: customPrefix || '',
                 keywordFilter: keywordFilter || '',
                 morningMessage: morningMessage || '',
@@ -989,7 +1051,7 @@ app.post('/api/config', authenticateUser, async (req, res) => {
             destinationType: destinationType || (resolvedTemplates[0]?.destinationType) || 'groups',
             targetGroup: resolvedTargetGroup || (resolvedTemplates[0]?.targetGroup) || '',
             destinations: resolvedTargetGroup || (resolvedTemplates[0]?.destinations) || '',
-            shareTypes: Array.isArray(shareTypes) ? shareTypes : (resolvedTemplates[0]?.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text', 'sticker']),
+            shareTypes: Array.isArray(shareTypes) ? shareTypes : (resolvedTemplates[0]?.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text']),
             customPrefix: customPrefix || (resolvedTemplates[0]?.customPrefix) || '',
             keywordFilter: keywordFilter || (resolvedTemplates[0]?.keywordFilter) || '',
             morningMessage: morningMessage || (resolvedTemplates[0]?.morningMessage) || '',
@@ -1096,6 +1158,11 @@ app.post('/api/templates/:id/trigger', authenticateUser, async (req, res) => {
             const delaySec = parseInt(tpl.instantDelay) || 2;
 
             for (const phone of contacts) {
+                const qCheck = await checkUserCanSendMessage(userId);
+                if (!qCheck.allowed) {
+                    session.addLog(`[${templateName}] 🛑 Bulk broadcast halted: ${qCheck.reason}`);
+                    break;
+                }
                 const jid = formatJid(phone);
                 await session.sock.sendMessage(jid, { text: bulkMsg });
                 sentCount++;
@@ -1120,12 +1187,19 @@ app.post('/api/templates/:id/trigger', authenticateUser, async (req, res) => {
                 return res.status(400).json({ success: false, error: 'No destination group or phone number configured in template!' });
             }
 
+            let sentCount = 0;
             for (const dest of targetDestinations) {
+                const qCheck = await checkUserCanSendMessage(userId);
+                if (!qCheck.allowed) {
+                    session.addLog(`[${templateName}] 🛑 Scheduled broadcast halted: ${qCheck.reason}`);
+                    break;
+                }
                 await session.sock.sendMessage(dest, { text: msg });
+                sentCount++;
                 await recordUserMessageSent(userId);
             }
-            session.addLog(`[${templateName}] Instant broadcast sent to ${targetDestinations.length} destination(s).`);
-            return res.json({ success: true, message: `Instant message delivered to ${targetDestinations.length} destination(s)!` });
+            session.addLog(`[${templateName}] Instant broadcast sent to ${sentCount} destination(s).`);
+            return res.json({ success: true, message: `Instant message delivered to ${sentCount} destination(s)!` });
 
         } else if (tplType === 'sheets') {
             const sheetUrl = tpl.sheetUrl;
@@ -1135,6 +1209,11 @@ app.post('/api/templates/:id/trigger', authenticateUser, async (req, res) => {
             session.addLog(`[${templateName}] Syncing with Google Sheet...`);
             const destString = tpl.destinations || tpl.targetGroup || tpl.targetNumber || '';
             if (destString) {
+                const qCheck = await checkUserCanSendMessage(userId);
+                if (!qCheck.allowed) {
+                    session.addLog(`[${templateName}] 🛑 Sheets sync halted: ${qCheck.reason}`);
+                    return res.status(403).json({ success: false, error: qCheck.reason });
+                }
                 const jid = destString.includes('@') ? destString : formatJid(destString);
                 await session.sock.sendMessage(jid, { text: `[Google Sheets Sync] Sync completed successfully from spreadsheet: ${sheetUrl}` });
                 await recordUserMessageSent(userId);
@@ -1161,6 +1240,11 @@ app.post('/api/templates/:id/trigger', authenticateUser, async (req, res) => {
                     .map(dest => dest.includes('@') ? dest : formatJid(dest));
 
                 for (const dest of targetDestinations) {
+                    const qCheck = await checkUserCanSendMessage(userId);
+                    if (!qCheck.allowed) {
+                        session.addLog(`[${templateName}] 🛑 Test message halted: ${qCheck.reason}`);
+                        break;
+                    }
                     await session.sock.sendMessage(dest, { text: testMsg });
                     await recordUserMessageSent(userId);
                     destinationsSent.push(dest.includes('@g.us') ? 'Target Group' : `+${dest.replace(/[^\d]/g, '')}`);
@@ -1169,10 +1253,15 @@ app.post('/api/templates/:id/trigger', authenticateUser, async (req, res) => {
 
             // 2. Also send test confirmation to source number if configured
             if (targetNumber) {
-                const numJid = formatJid(targetNumber);
-                await session.sock.sendMessage(numJid, { text: `[Test Message] Auto-Sharing rule "${templateName}" is actively listening to this phone number.` });
-                await recordUserMessageSent(userId);
-                destinationsSent.push(`Contact (+${targetNumber.replace(/[^\d]/g, '')})`);
+                const qCheck = await checkUserCanSendMessage(userId);
+                if (qCheck.allowed) {
+                    const numJid = formatJid(targetNumber);
+                    await session.sock.sendMessage(numJid, { text: `[Test Message] Auto-Sharing rule "${templateName}" is actively listening to this phone number.` });
+                    await recordUserMessageSent(userId);
+                    destinationsSent.push(`Contact (+${targetNumber.replace(/[^\d]/g, '')})`);
+                } else {
+                    session.addLog(`[${templateName}] 🛑 Test message halted: ${qCheck.reason}`);
+                }
             }
 
             if (destinationsSent.length === 0) {
@@ -1335,17 +1424,23 @@ app.get('/api/admin/users', authenticateUser, requireAdmin, async (req, res) => 
         const userDetailsList = await Promise.all(users.map(async (u) => {
             const session = userSessions.get(u.id);
             const config = await getUserBotConfig(u.id);
+            const userPlan = u.plan || (u.role === 'admin' ? 'pro_12m' : 'trial');
             return {
                 id: u.id,
                 email: u.email,
                 name: u.name,
                 role: u.role,
                 avatar: u.avatar,
+                plan: userPlan,
+                plan_expires_at: u.plan_expires_at,
+                messages_sent_today: u.messages_sent_today || 0,
+                messages_sent_total: u.messages_sent_total || 0,
                 createdAt: u.created_at,
                 lastLogin: u.last_login,
                 whatsappStatus: session ? session.connectionStatus : 'disconnected',
                 targetNumber: config?.targetNumber || '',
                 targetGroup: config?.targetGroup || '',
+                destinationType: config?.destinationType || (config?.targetGroup ? 'group' : 'number'),
                 scheduleTime: config?.scheduleTime || '09:00',
                 groupsCount: session ? session.groupsList.length : 0,
                 lastLog: session && session.recentLogs.length > 0 ? session.recentLogs[0] : 'No activity'

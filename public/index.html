@@ -213,29 +213,29 @@
               </div>
 
               <div class="col-12 col-sm-6 col-xl-3">
-                <article class="metric-card metric-group panel">
+                <article class="metric-card metric-contact panel" id="card-target-contact" style="cursor: pointer;" title="Click to configure notification destination">
                   <div class="metric-top">
-                    <span class="metric-label text-muted fw-bold">PDF Forward Group</span>
-                    <span class="metric-icon" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+                    <span class="metric-label text-muted fw-bold">Notification Target</span>
+                    <span class="metric-icon" style="background: rgba(15, 118, 110, 0.12); color: #0f766e;"><i class="bi bi-bell-fill" aria-hidden="true"></i></span>
                   </div>
-                  <div class="metric-value fs-4 fw-bold mt-2 text-truncate" id="metric-group-val">Not Configured</div>
-                  <div class="metric-meta mt-1">
-                    <span id="metric-groups-count" class="text-purple fw-bold">0 Groups</span>
-                    <span class="text-muted ms-1">In Your Account</span>
+                  <div class="metric-value fs-4 fw-bold mt-2 text-truncate" id="metric-contact-val">Not Set</div>
+                  <div class="metric-meta mt-1 d-flex justify-content-between align-items-center">
+                    <span class="text-teal fw-bold" id="metric-contact-meta">Number or Group</span>
+                    <span class="badge bg-primary-subtle text-primary"><i class="bi bi-gear-fill"></i> Setup</span>
                   </div>
                 </article>
               </div>
 
               <div class="col-12 col-sm-6 col-xl-3">
-                <article class="metric-card metric-contact panel">
+                <article class="metric-card panel">
                   <div class="metric-top">
-                    <span class="metric-label text-muted fw-bold">Monitored Contact</span>
-                    <span class="metric-icon" style="background: rgba(15, 118, 110, 0.12); color: #0f766e;"><i class="bi bi-telephone-fill" aria-hidden="true"></i></span>
+                    <span class="metric-label text-muted fw-bold">Triggered Messages</span>
+                    <span class="metric-icon" style="background: rgba(59, 130, 246, 0.12); color: #2563eb;"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i></span>
                   </div>
-                  <div class="metric-value fs-4 fw-bold mt-2 text-truncate" id="metric-contact-val">Not Set</div>
+                  <div class="metric-value fs-4 fw-bold mt-2 text-truncate" id="metric-triggered-count">0 Sent</div>
                   <div class="metric-meta mt-1">
-                    <span class="text-teal fw-bold">PDF Listener</span>
-                    <span class="text-muted ms-1">Target Number</span>
+                    <span class="text-primary fw-bold">Active Quota</span>
+                    <span class="text-muted ms-1">Trigger Section Only</span>
                   </div>
                 </article>
               </div>
@@ -666,35 +666,30 @@
                             </div>
                           </div>
                           <div class="sharing-type-grid">
-                            <label class="share-type-card active" data-type="pdf">
-                              <input type="checkbox" name="shareType" value="pdf" checked>
+                            <label class="share-type-card" data-type="pdf">
+                              <input type="checkbox" name="shareType" value="pdf">
                               <span class="icon-wrap text-danger"><i class="bi bi-file-earmark-pdf-fill"></i></span>
                               <span class="title-text">PDF / Docs</span>
                             </label>
-                            <label class="share-type-card active" data-type="image">
-                              <input type="checkbox" name="shareType" value="image" checked>
+                            <label class="share-type-card" data-type="image">
+                              <input type="checkbox" name="shareType" value="image">
                               <span class="icon-wrap text-primary"><i class="bi bi-image-fill"></i></span>
                               <span class="title-text">Images</span>
                             </label>
-                            <label class="share-type-card active" data-type="video">
-                              <input type="checkbox" name="shareType" value="video" checked>
+                            <label class="share-type-card" data-type="video">
+                              <input type="checkbox" name="shareType" value="video">
                               <span class="icon-wrap text-success"><i class="bi bi-play-btn-fill"></i></span>
                               <span class="title-text">Videos</span>
                             </label>
-                            <label class="share-type-card active" data-type="audio">
-                              <input type="checkbox" name="shareType" value="audio" checked>
+                            <label class="share-type-card" data-type="audio">
+                              <input type="checkbox" name="shareType" value="audio">
                               <span class="icon-wrap text-warning"><i class="bi bi-mic-fill"></i></span>
                               <span class="title-text">Audio / Voice</span>
                             </label>
-                            <label class="share-type-card active" data-type="text">
-                              <input type="checkbox" name="shareType" value="text" checked>
+                            <label class="share-type-card" data-type="text">
+                              <input type="checkbox" name="shareType" value="text">
                               <span class="icon-wrap text-info"><i class="bi bi-chat-left-text-fill"></i></span>
                               <span class="title-text">Text Messages</span>
-                            </label>
-                            <label class="share-type-card active" data-type="sticker">
-                              <input type="checkbox" name="shareType" value="sticker" checked>
-                              <span class="icon-wrap text-secondary"><i class="bi bi-emoji-smile-fill"></i></span>
-                              <span class="title-text">Stickers</span>
                             </label>
                           </div>
                         </div>
@@ -1266,13 +1261,12 @@
                       <th>Plan / Quota</th>
                       <th>WhatsApp State</th>
                       <th>Target Contact</th>
-                      <th>Forward Group</th>
                       <th class="text-end">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="admin-users-tbody">
                     <tr>
-                      <td colspan="7" class="text-center text-muted py-3">Loading registered users...</td>
+                      <td colspan="6" class="text-center text-muted py-3">Loading registered users...</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1560,6 +1554,93 @@
         </form>
       </div>
     </div>
+  <!-- Modal: Notification Target Destination Setup -->
+  <div class="modal fade" id="modal-target-setup" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="targetSetupModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+        <div class="modal-header border-bottom px-4 py-3 bg-light" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+          <div class="d-flex align-items-center gap-2">
+            <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+              <i class="bi bi-bell-fill fs-5"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0" id="targetSetupModalTitle">Notification Destination Setup</h5>
+              <small class="text-muted">Where do you want to receive automated notifications and alerts?</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close" id="btn-close-target-modal" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          <p class="text-muted small mb-3">
+            Choose whether the bot should deliver notifications directly to your mobile number or to a designated WhatsApp group:
+          </p>
+
+          <div class="row g-3 mb-3">
+            <!-- Option 1: Mobile Phone Number -->
+            <div class="col-12 col-md-6">
+              <div class="card h-100 p-3 border-2 target-option-card border-primary" id="card-option-number" style="cursor: pointer; border-radius: 12px; background: rgba(37, 99, 235, 0.02);">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <input class="form-check-input mt-0" type="radio" name="target-choice-type" id="radio-choice-number" value="number" checked>
+                  <label class="form-check-label fw-bold cursor-pointer" for="radio-choice-number">
+                    <i class="bi bi-telephone-fill text-teal me-1"></i> Phone Number
+                  </label>
+                </div>
+                <p class="text-muted small mb-3">Receive notifications directly on your individual WhatsApp number.</p>
+                
+                <div id="target-number-input-box">
+                  <label class="form-label small fw-bold mb-1">Target Phone Number</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text font-monospace"><i class="bi bi-phone"></i> +</span>
+                    <input type="text" class="form-control font-monospace" id="modal-input-target-number" placeholder="919135779897" value="">
+                  </div>
+                  <small class="text-muted" style="font-size: 0.72rem;">Country code + mobile number (e.g. 919135779897)</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Option 2: WhatsApp Group -->
+            <div class="col-12 col-md-6">
+              <div class="card h-100 p-3 border target-option-card" id="card-option-group" style="cursor: pointer; border-radius: 12px;">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <input class="form-check-input mt-0" type="radio" name="target-choice-type" id="radio-choice-group" value="group">
+                  <label class="form-check-label fw-bold cursor-pointer" for="radio-choice-group">
+                    <i class="bi bi-people-fill text-purple me-1"></i> WhatsApp Group
+                  </label>
+                </div>
+                <p class="text-muted small mb-2">Post notifications to an existing WhatsApp group.</p>
+                
+                <div id="target-group-select-box" style="opacity: 0.6;">
+                  <div class="mb-2 p-2 rounded bg-light border small d-flex align-items-center justify-content-between">
+                    <span id="modal-wa-link-status"><i class="bi bi-circle-fill text-secondary me-1" style="font-size: 0.55rem;"></i> WhatsApp: Checking...</span>
+                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" id="btn-modal-link-wa" style="font-size: 0.74rem;">
+                      <i class="bi bi-qr-code"></i> Link Account
+                    </button>
+                  </div>
+
+                  <label class="form-label small fw-bold mb-1">Select Notification Group</label>
+                  <select class="form-select form-select-sm" id="modal-select-target-group" disabled>
+                    <option value="">-- Choose Group --</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-0" style="border-radius: 10px;">
+            <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0"></i>
+            <div><strong>Quota Notice:</strong> Notifications sent to your target contact/group do <em>not</em> count against your plan message quota. Quota is only consumed when running broadcasts or campaigns from the <strong>Trigger</strong> section.</div>
+          </div>
+        </div>
+
+        <div class="modal-footer border-top px-4 py-3 bg-light d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary px-4 fw-bold" id="btn-save-target-destination">
+            <i class="bi bi-check-circle-fill me-1"></i> Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Toast Container -->
@@ -1625,9 +1706,10 @@
     const metricStatusVal = document.getElementById('metric-status-val');
     const metricStatusBadge = document.getElementById('metric-status-badge');
     const metricScheduleVal = document.getElementById('metric-schedule-val');
-    const metricGroupVal = document.getElementById('metric-group-val');
-    const metricGroupsCount = document.getElementById('metric-groups-count');
     const metricContactVal = document.getElementById('metric-contact-val');
+    const metricContactMeta = document.getElementById('metric-contact-meta');
+    const cardTargetContact = document.getElementById('card-target-contact');
+    const metricTriggeredCount = document.getElementById('metric-triggered-count');
     
     const viewDisconnected = document.getElementById('view-disconnected');
     const viewConnecting = document.getElementById('view-connecting');
@@ -1978,6 +2060,42 @@
       if (hash) switchSheet(hash);
     });
 
+    function applySubscriptionData(s) {
+      if (!s) return;
+      userSubscriptionData = s;
+
+      if (sidebarPlanBadge) {
+        sidebarPlanBadge.innerText = s.isTrial ? '7-DAY TRIAL' : s.planName.toUpperCase();
+        sidebarPlanBadge.className = s.isTrial ? 'badge text-bg-warning ms-1' : 'badge text-bg-success ms-1';
+      }
+      if (menuUserPlan) {
+        menuUserPlan.innerText = s.planName + (s.isTrial ? ' (7-Day Trial)' : '');
+        menuUserPlan.className = s.isTrial ? 'badge text-bg-warning' : 'badge text-bg-success';
+      }
+
+      if (navQuotaText) {
+        navQuotaText.innerText = s.dailyLimit ? `${s.dailyRemaining}/${s.dailyLimit} msgs today` : `${s.totalRemaining} msgs total`;
+      }
+
+      if (metricQuotaVal) {
+        metricQuotaVal.innerText = s.dailyLimit ? `${s.messagesSentToday} / ${s.dailyLimit} today` : `${s.messagesSentTotal} / ${s.totalLimit} msgs`;
+      }
+      if (metricPlanName) metricPlanName.innerText = s.planName;
+      if (metricDaysLeft) metricDaysLeft.innerText = `${s.daysLeft} Days left`;
+      if (metricTriggeredCount) metricTriggeredCount.innerText = `${s.messagesSentTotal || 0} Sent`;
+
+      if (subActivePlanName) subActivePlanName.innerText = s.planName;
+      if (subActiveBadge) {
+        subActiveBadge.innerText = s.isTrial ? 'Active 7-Day Trial' : 'Active Plan';
+        subActiveBadge.className = s.isTrial ? 'badge text-bg-warning fs-6 px-3 py-2' : 'badge text-bg-success fs-6 px-3 py-2';
+      }
+      if (subActiveExpiry) subActiveExpiry.innerText = `${s.daysLeft} days remaining (${new Date(s.expiresAt).toLocaleDateString()})`;
+
+      if (subTodayUsage) subTodayUsage.innerText = s.dailyLimit ? `${s.messagesSentToday} / ${s.dailyLimit} msgs` : `${s.messagesSentToday} msgs (No Limit)`;
+      if (subTotalUsage) subTotalUsage.innerText = `${s.messagesSentTotal} / ${s.totalLimit} msgs`;
+      if (subAddonBalance) subAddonBalance.innerText = `${s.addonCredits} Credits`;
+    }
+
     async function loadSubscriptionStatus() {
       try {
         const res = await fetch('/api/subscription/my-plan', {
@@ -1985,38 +2103,7 @@
         });
         const data = await res.json();
         if (data.success && data.subscription) {
-          userSubscriptionData = data.subscription;
-          const s = data.subscription;
-
-          if (sidebarPlanBadge) {
-            sidebarPlanBadge.innerText = s.isTrial ? '7-DAY TRIAL' : s.planName.toUpperCase();
-            sidebarPlanBadge.className = s.isTrial ? 'badge text-bg-warning ms-1' : 'badge text-bg-success ms-1';
-          }
-          if (menuUserPlan) {
-            menuUserPlan.innerText = s.planName + (s.isTrial ? ' (7-Day Trial)' : '');
-            menuUserPlan.className = s.isTrial ? 'badge text-bg-warning' : 'badge text-bg-success';
-          }
-
-          if (navQuotaText) {
-            navQuotaText.innerText = s.dailyLimit ? `${s.dailyRemaining}/${s.dailyLimit} msgs today` : `${s.totalRemaining} msgs total`;
-          }
-
-          if (metricQuotaVal) {
-            metricQuotaVal.innerText = s.dailyLimit ? `${s.messagesSentToday} / ${s.dailyLimit} today` : `${s.messagesSentTotal} / ${s.totalLimit} msgs`;
-          }
-          if (metricPlanName) metricPlanName.innerText = s.planName;
-          if (metricDaysLeft) metricDaysLeft.innerText = `${s.daysLeft} Days left`;
-
-          if (subActivePlanName) subActivePlanName.innerText = s.planName;
-          if (subActiveBadge) {
-            subActiveBadge.innerText = s.isTrial ? 'Active 7-Day Trial' : 'Active Plan';
-            subActiveBadge.className = s.isTrial ? 'badge text-bg-warning fs-6 px-3 py-2' : 'badge text-bg-success fs-6 px-3 py-2';
-          }
-          if (subActiveExpiry) subActiveExpiry.innerText = `${s.daysLeft} days remaining (${new Date(s.expiresAt).toLocaleDateString()})`;
-
-          if (subTodayUsage) subTodayUsage.innerText = s.dailyLimit ? `${s.messagesSentToday} / ${s.dailyLimit} msgs` : `${s.messagesSentToday} msgs (No Limit)`;
-          if (subTotalUsage) subTotalUsage.innerText = `${s.messagesSentTotal} / ${s.totalLimit} msgs`;
-          if (subAddonBalance) subAddonBalance.innerText = `${s.addonCredits} Credits`;
+          applySubscriptionData(data.subscription);
         }
       } catch (err) {
         console.error("Error loading subscription status:", err);
@@ -2221,12 +2308,25 @@
                   </select>
                 </td>
                 <td>
-                  <span class="badge ${planText.includes('PRO') ? 'text-bg-success' : (planText.includes('STARTER') ? 'text-bg-primary' : 'text-bg-warning')}">${escapeHtml(planText)}</span>
-                  <div class="small text-muted font-monospace mt-1">${u.messages_sent_total || 0} msgs sent</div>
+                  <select class="form-select form-select-sm plan-change-select mb-1" data-user-id="${u.id}" style="font-size: 0.78rem; min-width: 140px;">
+                    <option value="trial" ${u.plan === 'trial' ? 'selected' : ''}>Free Trial (15/day)</option>
+                    <option value="starter_monthly" ${u.plan === 'starter_monthly' ? 'selected' : ''}>Starter Monthly (1,000)</option>
+                    <option value="pro_monthly" ${u.plan === 'pro_monthly' ? 'selected' : ''}>Pro Monthly (1,500)</option>
+                    <option value="starter_3m" ${u.plan === 'starter_3m' ? 'selected' : ''}>Starter 3M (3,000)</option>
+                    <option value="pro_3m" ${u.plan === 'pro_3m' ? 'selected' : ''}>Pro 3M (4,500)</option>
+                    <option value="starter_6m" ${u.plan === 'starter_6m' ? 'selected' : ''}>Starter 6M (6,000)</option>
+                    <option value="pro_6m" ${u.plan === 'pro_6m' ? 'selected' : ''}>Pro 6M (9,000)</option>
+                    <option value="starter_12m" ${u.plan === 'starter_12m' ? 'selected' : ''}>Starter 12M (12,000)</option>
+                    <option value="pro_12m" ${(u.plan === 'pro_12m' || (u.role === 'admin' && (!u.plan || u.plan === 'trial'))) ? 'selected' : ''}>Pro 12M (18,000)</option>
+                  </select>
+                  <div class="small text-muted font-monospace">${u.messages_sent_total || 0} msgs sent</div>
                 </td>
                 <td>${statusBadge}</td>
-                <td><span class="small font-monospace">${u.targetNumber ? '+' + escapeHtml(u.targetNumber) : '<span class="text-muted">Not Set</span>'}</span></td>
-                <td><span class="small text-truncate d-inline-block" style="max-width: 140px;">${u.targetGroup ? escapeHtml(u.targetGroup) : '<span class="text-muted">Not Set</span>'}</span></td>
+                <td>
+                  <span class="small font-monospace">
+                    ${u.targetNumber ? '+' + escapeHtml(u.targetNumber) : (u.targetGroup ? '<span class="badge text-bg-light border text-purple"><i class="bi bi-people-fill me-1"></i>' + escapeHtml(u.targetGroup) + '</span>' : '<span class="text-muted">Not Set</span>')}
+                  </span>
+                </td>
                 <td class="text-end">
                   ${!isSelf ? `
                     <button class="btn btn-outline-danger btn-sm btn-delete-user" data-user-id="${u.id}" data-user-email="${escapeHtml(u.email)}" title="Delete User">
@@ -2244,6 +2344,34 @@
               const userId = e.target.getAttribute('data-user-id');
               const newRole = e.target.value;
               await updateUserRoleAction(userId, newRole);
+            });
+          });
+
+          // Attach plan change listeners
+          document.querySelectorAll('.plan-change-select').forEach(select => {
+            select.addEventListener('change', async (e) => {
+              const userId = e.target.getAttribute('data-user-id');
+              const newPlan = e.target.value;
+              try {
+                const res = await fetch(`/api/admin/users/${userId}/plan`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                  },
+                  body: JSON.stringify({ planId: newPlan })
+                });
+                const result = await res.json();
+                if (result.success) {
+                  showToast(result.message || "Plan updated successfully!", "success");
+                  loadSubscriptionStatus();
+                } else {
+                  showToast(result.error || "Failed to update plan.", "error");
+                }
+              } catch (err) {
+                console.error("Failed to update user plan:", err);
+                showToast("Network error updating plan.", "error");
+              }
             });
           });
 
@@ -2445,6 +2573,10 @@
         if (data.activeSessionsCount && activeSessionsCount) {
           activeSessionsCount.innerText = data.activeSessionsCount;
         }
+
+        if (data.subscription) {
+          applySubscriptionData(data.subscription);
+        }
         
         if (data.config) {
           if (data.config.templates && Array.isArray(data.config.templates)) {
@@ -2462,7 +2594,7 @@
               sourceGroup: data.config.sourceGroup || '',
               targetGroup: data.config.targetGroup || data.config.destinations || '',
               destinations: data.config.targetGroup || data.config.destinations || '',
-              shareTypes: data.config.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text', 'sticker'],
+              shareTypes: data.config.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text'],
               customPrefix: data.config.customPrefix || '',
               keywordFilter: data.config.keywordFilter || '',
               morningMessage: data.config.morningMessage || '',
@@ -2481,20 +2613,31 @@
         }
 
         if (data.config) {
-          metricContactVal.innerText = data.config.targetNumber ? '+' + data.config.targetNumber : 'Not Set';
-          
-          if (data.config.targetGroup) {
+          if (data.config.destinationType === 'group' && data.config.targetGroup) {
             const matchedGrp = (data.groups || []).find(g => g.jid === data.config.targetGroup);
-            metricGroupVal.innerText = matchedGrp ? matchedGrp.name : data.config.targetGroup;
+            metricContactVal.innerText = matchedGrp ? matchedGrp.name : data.config.targetGroup;
+            if (metricContactMeta) metricContactMeta.innerText = 'WhatsApp Group';
+          } else if (data.config.targetNumber) {
+            metricContactVal.innerText = '+' + data.config.targetNumber;
+            if (metricContactMeta) metricContactMeta.innerText = 'Target Mobile';
           } else {
-            metricGroupVal.innerText = 'Not Configured';
+            metricContactVal.innerText = 'Not Configured';
+            if (metricContactMeta) metricContactMeta.innerText = 'Click to Set Up';
+          }
+
+          // Check if user has no target configured and needs onboarding prompt
+          const hasTargetConfigured = !!(data.config.targetNumber || data.config.targetGroup);
+          const onboardingDone = currentUser && localStorage.getItem('cortex_target_configured_' + currentUser.id) === 'true';
+          if (!hasTargetConfigured && !onboardingDone && !window.targetModalShown) {
+            window.targetModalShown = true;
+            setTimeout(() => { openTargetSetupModal(true); }, 700);
           }
         }
 
         if (JSON.stringify(availableGroups) !== JSON.stringify(data.groups)) {
           availableGroups = data.groups || [];
-          metricGroupsCount.innerText = `${availableGroups.length} Groups`;
           updateGroupDropdown(data.config ? data.config.targetGroup : null);
+          populateModalGroupDropdown(data.config ? data.config.targetGroup : null);
         }
 
         updateLogs(data.logs);
@@ -3043,13 +3186,12 @@
           inputTargetGroup.value = destVal;
         }
 
-        if (tpl.shareTypes && Array.isArray(tpl.shareTypes)) {
-          document.querySelectorAll('input[name="shareType"]').forEach(cb => {
-            const isChecked = tpl.shareTypes.includes(cb.value);
-            cb.checked = isChecked;
-            cb.closest('.share-type-card')?.classList.toggle('active', isChecked);
-          });
-        }
+        const savedShareTypes = (tpl.shareTypes && Array.isArray(tpl.shareTypes)) ? tpl.shareTypes : [];
+        document.querySelectorAll('input[name="shareType"]').forEach(cb => {
+          const isChecked = savedShareTypes.includes(cb.value);
+          cb.checked = isChecked;
+          cb.closest('.share-type-card')?.classList.toggle('active', isChecked);
+        });
 
         const prefixEl = document.getElementById('input-custom-prefix');
         if (prefixEl) prefixEl.value = tpl.customPrefix || '';
@@ -3139,8 +3281,8 @@
         document.getElementById('input-sheet-url').value = '';
 
         document.querySelectorAll('input[name="shareType"]').forEach(cb => {
-          cb.checked = true;
-          cb.closest('.share-type-card')?.classList.add('active');
+          cb.checked = false;
+          cb.closest('.share-type-card')?.classList.remove('active');
         });
 
         const numRadio = document.getElementById('srcTypeNumber');
@@ -3219,6 +3361,10 @@
       }
 
       const selectedShareTypes = Array.from(document.querySelectorAll('input[name="shareType"]:checked')).map(cb => cb.value);
+      if (type === 'forwarding' && selectedShareTypes.length === 0) {
+        showToast('Please select at least one Allowed Content Type (e.g. PDF / Docs).', 'warning');
+        return;
+      }
 
       const templateObj = {
         id,
@@ -3431,13 +3577,10 @@
     });
 
     // Share Type Cards selection
-    document.querySelectorAll('.share-type-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        const checkbox = card.querySelector('input[type="checkbox"]');
-        if (e.target !== checkbox) {
-          checkbox.checked = !checkbox.checked;
-        }
-        card.classList.toggle('active', checkbox.checked);
+    document.querySelectorAll('input[name="shareType"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        cb.closest('.share-type-card')?.classList.toggle('active', cb.checked);
+        updateLivePreview();
       });
     });
 
@@ -3446,6 +3589,7 @@
         cb.checked = true;
         cb.closest('.share-type-card')?.classList.add('active');
       });
+      updateLivePreview();
     });
 
     document.getElementById('btn-clear-all-media')?.addEventListener('click', () => {
@@ -3453,6 +3597,7 @@
         cb.checked = false;
         cb.closest('.share-type-card')?.classList.remove('active');
       });
+      updateLivePreview();
     });
 
     // Preview Switcher Tabs
@@ -3653,6 +3798,205 @@
 
     if (btnRelinkSession) btnRelinkSession.addEventListener('click', restartSession);
     if (btnQrRefreshLink) btnQrRefreshLink.addEventListener('click', restartSession);
+
+    // --------------------------------------------------------------------------
+    // Notification Target Destination Setup Modal
+    // --------------------------------------------------------------------------
+    const modalTargetSetupEl = document.getElementById('modal-target-setup');
+    const modalInputTargetNumber = document.getElementById('modal-input-target-number');
+    const modalSelectTargetGroup = document.getElementById('modal-select-target-group');
+    const radioChoiceNumber = document.getElementById('radio-choice-number');
+    const radioChoiceGroup = document.getElementById('radio-choice-group');
+    const cardOptionNumber = document.getElementById('card-option-number');
+    const cardOptionGroup = document.getElementById('card-option-group');
+    const targetNumberInputBox = document.getElementById('target-number-input-box');
+    const targetGroupSelectBox = document.getElementById('target-group-select-box');
+    const btnSaveTargetDestination = document.getElementById('btn-save-target-destination');
+    const btnModalLinkWa = document.getElementById('btn-modal-link-wa');
+    const modalWaLinkStatus = document.getElementById('modal-wa-link-status');
+
+    let targetSetupBsModal = null;
+    let isFirstTimeOnboarding = false;
+
+    function getTargetSetupModal() {
+      if (!targetSetupBsModal && modalTargetSetupEl && typeof bootstrap !== 'undefined') {
+        targetSetupBsModal = new bootstrap.Modal(modalTargetSetupEl);
+      }
+      return targetSetupBsModal;
+    }
+
+    function syncTargetChoiceUi() {
+      if (!radioChoiceNumber || !cardOptionNumber || !cardOptionGroup) return;
+      const isNumber = radioChoiceNumber.checked;
+      if (isNumber) {
+        cardOptionNumber.classList.add('border-primary', 'border-2');
+        cardOptionNumber.style.background = 'rgba(37, 99, 235, 0.02)';
+        cardOptionGroup.classList.remove('border-primary', 'border-2');
+        cardOptionGroup.style.background = 'transparent';
+        if (targetNumberInputBox) targetNumberInputBox.style.opacity = '1';
+        if (modalInputTargetNumber) modalInputTargetNumber.removeAttribute('disabled');
+        if (targetGroupSelectBox) targetGroupSelectBox.style.opacity = '0.5';
+        if (modalSelectTargetGroup) modalSelectTargetGroup.setAttribute('disabled', 'true');
+      } else {
+        cardOptionGroup.classList.add('border-primary', 'border-2');
+        cardOptionGroup.style.background = 'rgba(139, 92, 246, 0.02)';
+        cardOptionNumber.classList.remove('border-primary', 'border-2');
+        cardOptionNumber.style.background = 'transparent';
+        if (targetGroupSelectBox) targetGroupSelectBox.style.opacity = '1';
+        if (modalSelectTargetGroup) modalSelectTargetGroup.removeAttribute('disabled');
+        if (targetNumberInputBox) targetNumberInputBox.style.opacity = '0.5';
+        if (modalInputTargetNumber) modalInputTargetNumber.setAttribute('disabled', 'true');
+      }
+    }
+
+    if (radioChoiceNumber) radioChoiceNumber.addEventListener('change', syncTargetChoiceUi);
+    if (radioChoiceGroup) radioChoiceGroup.addEventListener('change', syncTargetChoiceUi);
+    if (cardOptionNumber) cardOptionNumber.addEventListener('click', (e) => {
+      if (e.target !== modalInputTargetNumber) {
+        radioChoiceNumber.checked = true;
+        syncTargetChoiceUi();
+      }
+    });
+    if (cardOptionGroup) cardOptionGroup.addEventListener('click', (e) => {
+      if (e.target !== modalSelectTargetGroup && e.target !== btnModalLinkWa) {
+        radioChoiceGroup.checked = true;
+        syncTargetChoiceUi();
+      }
+    });
+
+    function populateModalGroupDropdown(selectedJid) {
+      if (!modalSelectTargetGroup) return;
+      modalSelectTargetGroup.innerHTML = '';
+      if (!availableGroups || availableGroups.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.innerText = '-- No Groups Found (Link WhatsApp) --';
+        modalSelectTargetGroup.appendChild(opt);
+        return;
+      }
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.innerText = '-- Choose Destination Group --';
+      modalSelectTargetGroup.appendChild(defaultOpt);
+
+      availableGroups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.jid;
+        opt.innerText = `${g.name || 'Unnamed Group'} (${g.participantsCount || 0} members)`;
+        if (selectedJid && selectedJid === g.jid) opt.selected = true;
+        modalSelectTargetGroup.appendChild(opt);
+      });
+    }
+
+    function openTargetSetupModal(firstTime = false) {
+      isFirstTimeOnboarding = firstTime;
+      const modal = getTargetSetupModal();
+      if (!modal) return;
+
+      const currentContact = metricContactVal ? metricContactVal.innerText : '';
+      if (currentContact && currentContact.startsWith('+')) {
+        radioChoiceNumber.checked = true;
+        modalInputTargetNumber.value = currentContact.replace('+', '').trim();
+      } else if (currentContact && currentContact !== 'Not Set' && currentContact !== 'Not Configured') {
+        radioChoiceGroup.checked = true;
+      }
+
+      if (modalWaLinkStatus) {
+        const isConn = (currentConnectionStatus === 'connected');
+        modalWaLinkStatus.innerHTML = isConn 
+          ? `<i class="bi bi-check-circle-fill text-success me-1"></i> WhatsApp: <strong class="text-success">Connected</strong>` 
+          : `<i class="bi bi-exclamation-circle-fill text-warning me-1"></i> WhatsApp: <strong class="text-secondary">Not Linked</strong>`;
+      }
+
+      populateModalGroupDropdown();
+      syncTargetChoiceUi();
+      modal.show();
+    }
+
+    if (cardTargetContact) {
+      cardTargetContact.addEventListener('click', () => openTargetSetupModal(false));
+    }
+
+    if (btnModalLinkWa) {
+      btnModalLinkWa.addEventListener('click', () => {
+        const modal = getTargetSetupModal();
+        if (modal) modal.hide();
+        switchSheet('whatsapp-link');
+        showToast("Scan the QR code to link your WhatsApp account.", "info");
+      });
+    }
+
+    if (btnSaveTargetDestination) {
+      btnSaveTargetDestination.addEventListener('click', async () => {
+        const isNumber = radioChoiceNumber.checked;
+        const numberVal = modalInputTargetNumber.value.trim().replace(/\D/g, '');
+        const groupVal = modalSelectTargetGroup.value.trim();
+
+        if (isNumber) {
+          if (!numberVal || numberVal.length < 8) {
+            showToast("Please enter a valid phone number with country code (e.g. 919135779897).", "error");
+            modalInputTargetNumber.focus();
+            return;
+          }
+        } else {
+          if (!groupVal) {
+            showToast("Please select a destination WhatsApp group.", "error");
+            modalSelectTargetGroup.focus();
+            return;
+          }
+        }
+
+        btnSaveTargetDestination.setAttribute('disabled', 'true');
+        btnSaveTargetDestination.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+        try {
+          const configPayload = {
+            destinationType: isNumber ? 'number' : 'group',
+            targetNumber: isNumber ? numberVal : '',
+            sourceNumber: isNumber ? numberVal : '',
+            targetGroup: isNumber ? '' : groupVal,
+            destinations: isNumber ? '' : groupVal
+          };
+
+          const res = await fetch('/api/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(configPayload)
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            showToast("Notification target saved successfully!", "success");
+            if (currentUser) {
+              localStorage.setItem('cortex_target_configured_' + currentUser.id, 'true');
+            }
+
+            const modal = getTargetSetupModal();
+            if (modal) modal.hide();
+
+            // If first time signup onboarding: ask and show Plans & Subscription!
+            if (isFirstTimeOnboarding || sessionStorage.getItem('cortex_show_plans_on_setup') === 'true') {
+              sessionStorage.removeItem('cortex_show_plans_on_setup');
+              switchSheet('subscription-plans');
+              showToast("Notification destination set! Review your subscription plan below.", "info");
+            }
+
+            fetchStatus();
+          } else {
+            showToast(data.error || "Failed to save notification target.", "error");
+          }
+        } catch (err) {
+          console.error("Save target destination error:", err);
+          showToast("Network error saving target destination.", "error");
+        } finally {
+          btnSaveTargetDestination.removeAttribute('disabled');
+          btnSaveTargetDestination.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>';
+        }
+      });
+    }
 
     // Initialize polling
     fetchStatus();

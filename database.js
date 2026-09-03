@@ -404,12 +404,19 @@ export async function getAllUsers() {
     if (pool) {
         try {
             const res = await pool.query(`SELECT id, email, name, role, avatar, plan, plan_expires_at, messages_sent_today, messages_sent_total, addon_credits, created_at, last_login FROM cortex_users ORDER BY created_at ASC`);
-            return res.rows;
+            return res.rows.map(u => ({
+                ...u,
+                plan: u.plan || (u.role === 'admin' ? 'pro_12m' : 'trial')
+            }));
         } catch {
             return [];
         }
     } else {
-        return readLocalUsers();
+        const users = await readLocalUsers();
+        return users.map(u => ({
+            ...u,
+            plan: u.plan || (u.role === 'admin' ? 'pro_12m' : 'trial')
+        }));
     }
 }
 
@@ -426,8 +433,8 @@ export async function createUser({ id, email, name, password, role = 'user', ava
     const messages_sent_today = 0;
     const last_message_date = getTodayIST();
     const messages_sent_total = 0;
-    const addon_credits = role === 'admin' ? 999999 : 0;
-    const claimed_addon = role === 'admin';
+    const addon_credits = 0;
+    const claimed_addon = false;
 
     if (pool) {
         try {
@@ -485,13 +492,24 @@ export async function createUser({ id, email, name, password, role = 'user', ava
 export async function updateUserRole(userId, newRole) {
     if (!['admin', 'user'].includes(newRole)) throw new Error('Invalid role');
 
+    const isAdmin = newRole === 'admin';
+    const planExpiresAt = isAdmin ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null;
+
     if (pool) {
-        await pool.query(`UPDATE cortex_users SET role = $1 WHERE id = $2`, [newRole, userId]);
+        if (isAdmin) {
+            await pool.query(`UPDATE cortex_users SET role = $1, plan = 'pro_12m', plan_expires_at = $2 WHERE id = $3`, [newRole, planExpiresAt, userId]);
+        } else {
+            await pool.query(`UPDATE cortex_users SET role = $1 WHERE id = $2`, [newRole, userId]);
+        }
     } else {
         const users = await readLocalUsers();
         const idx = users.findIndex(u => u.id === userId);
         if (idx >= 0) {
             users[idx].role = newRole;
+            if (isAdmin) {
+                users[idx].plan = 'pro_12m';
+                users[idx].plan_expires_at = planExpiresAt;
+            }
             await saveLocalUsers(users);
         }
     }
@@ -509,9 +527,10 @@ export async function getUserSubscription(userId) {
     const planMeta = SUBSCRIPTION_PLANS[planKey] || SUBSCRIPTION_PLANS.trial;
 
     const now = Date.now();
-    const expiresAt = user.plan_expires_at ? new Date(user.plan_expires_at).getTime() : (now + 7 * 24 * 60 * 60 * 1000);
-    const isExpired = !isAdmin && now > expiresAt;
-    const daysLeft = isAdmin ? 365 : Math.max(0, Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)));
+    const durationDays = planMeta.durationDays || (isAdmin ? 365 : 7);
+    const expiresAt = user.plan_expires_at ? new Date(user.plan_expires_at).getTime() : (now + durationDays * 24 * 60 * 60 * 1000);
+    const isExpired = now > expiresAt;
+    const daysLeft = Math.max(0, Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)));
 
     const todayIST = getTodayIST();
     let sentToday = user.messages_sent_today || 0;
@@ -536,12 +555,12 @@ export async function getUserSubscription(userId) {
     const claimedAddon = !!user.claimed_addon;
 
     // Daily limit calculation
-    const dailyLimit = isAdmin ? null : planMeta.dailyLimit; // 15 for trial, null for paid
+    const dailyLimit = planMeta.dailyLimit; // 15 for trial, null for paid
     const dailyRemaining = dailyLimit ? Math.max(0, dailyLimit - sentToday) : 'Unlimited';
 
-    // Total limit calculation
-    const totalLimit = isAdmin ? 999999 : planMeta.totalLimit;
-    const totalRemaining = isAdmin ? 'Unlimited' : Math.max(0, totalLimit - sentTotal);
+    // Total limit calculation directly from plan specification
+    const totalLimit = planMeta.totalLimit;
+    const totalRemaining = Math.max(0, totalLimit - sentTotal) + addonCredits;
 
     return {
         userId: user.id,
@@ -573,36 +592,32 @@ export async function checkUserCanSendMessage(userId) {
     const sub = await getUserSubscription(userId);
     if (!sub) return { allowed: false, reason: 'User account not found.' };
 
-    if (sub.role === 'admin') {
-        return { allowed: true };
-    }
-
     if (sub.isExpired) {
         return { 
             allowed: false, 
-            reason: `Your ${sub.planName} has expired. Please upgrade your plan in Subscription & Billing to continue automation.` 
+            reason: `Your ${sub.planName} has expired. Please upgrade or renew your plan in Subscription & Billing to continue automation.` 
         };
     }
 
-    // Check Daily Limit (For 7-Day Free Trial: 15 msgs/day fix)
+    // Check Daily Limit (For 7-Day Free Trial: 15 msgs/day)
     if (sub.dailyLimit && sub.messagesSentToday >= sub.dailyLimit) {
         if (sub.addonCredits > 0) {
             return { allowed: true, usingAddon: true };
         }
         return { 
             allowed: false, 
-            reason: `Daily quota limit reached (15/15 messages today for Free Trial). Upgrade to a paid plan (₹399 / ₹499) for higher volume or claim the free ₹0 / 300 msgs Add-on!` 
+            reason: `Daily quota limit reached (${sub.messagesSentToday}/${sub.dailyLimit} messages today for ${sub.planName}). Upgrade to a paid plan for higher volume or claim the free 300 msgs Add-on!` 
         };
     }
 
-    // Check Total Monthly/Plan Limit (For Paid Plans)
+    // Check Total Plan Limit
     if (sub.totalLimit && sub.messagesSentTotal >= sub.totalLimit) {
         if (sub.addonCredits > 0) {
             return { allowed: true, usingAddon: true };
         }
         return { 
             allowed: false, 
-            reason: `Plan message quota exhausted (${sub.messagesSentTotal}/${sub.totalLimit} messages). Please renew or upgrade your plan in Subscription & Billing.` 
+            reason: `Plan message quota exhausted (${sub.messagesSentTotal}/${sub.totalLimit} messages for ${sub.planName}). Please renew or upgrade your plan in Subscription & Billing.` 
         };
     }
 
@@ -613,8 +628,6 @@ export async function recordUserMessageSent(userId) {
     const todayIST = getTodayIST();
     const sub = await getUserSubscription(userId);
     if (!sub) return;
-
-    if (sub.role === 'admin') return;
 
     let useAddon = false;
     if (sub.dailyLimit && sub.messagesSentToday >= sub.dailyLimit && sub.addonCredits > 0) {

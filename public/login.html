@@ -232,6 +232,7 @@
       if (data && data.token) {
         localStorage.setItem('cortex_token', data.token);
         localStorage.setItem('cortex_user', JSON.stringify(data.user));
+        sessionStorage.setItem('cortex_show_plans_on_setup', 'true');
         showToast("Authentication successful! Redirecting...", "success");
         setTimeout(() => {
           window.location.href = `index.html?uid=${data.user.id}`;

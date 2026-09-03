@@ -93,14 +93,24 @@ export async function setupUserScheduledMessage(userId, sock, config, addLogFn) 
 
                 if (addLogFn) addLogFn(`Scheduler: [${templateName}] Triggered! Delivering to ${targetDestinations.length} destination(s)...`);
 
+                let deliveredCount = 0;
                 for (const jid of targetDestinations) {
+                    const qCheck = await checkUserCanSendMessage(userId);
+                    if (!qCheck.allowed) {
+                        const limitMsg = `Scheduler: [${templateName}] Quota limit reached: ${qCheck.reason}`;
+                        if (addLogFn) addLogFn(limitMsg);
+                        break;
+                    }
                     await sock.sendMessage(jid, { text: morningMessage });
                     await recordUserMessageSent(userId);
+                    deliveredCount++;
                 }
 
-                const successMsg = `Scheduler: [${templateName}] Successfully delivered scheduled message to ${targetDestinations.length} destination(s).`;
-                console.log(`[User ${userId}] ${successMsg}`);
-                if (addLogFn) addLogFn(successMsg);
+                if (deliveredCount > 0) {
+                    const successMsg = `Scheduler: [${templateName}] Successfully delivered scheduled message to ${deliveredCount} destination(s).`;
+                    console.log(`[User ${userId}] ${successMsg}`);
+                    if (addLogFn) addLogFn(successMsg);
+                }
             } catch (err) {
                 console.error(`[User ${userId}] Scheduler execution error for ${templateName}:`, err);
                 if (addLogFn) addLogFn(`Scheduler: [${templateName}] Error sending: ${err.message}`);
