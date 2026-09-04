@@ -401,52 +401,57 @@ async function saveLocalUsers(users) {
 }
 
 export async function seedDefaultUsers() {
-    const adminEmail = (process.env.ADMIN_EMAIL || 'admin.demo@gmail.com').toLowerCase();
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin.demo@gmail.com').toLowerCase().trim();
     const adminPassword = process.env.ADMIN_PASSWORD || 'Avoid@123';
-    const userEmail = (process.env.DEMO_USER_EMAIL || 'user.demo@gmail.com').toLowerCase();
+    const userEmail = (process.env.DEMO_USER_EMAIL || 'user.demo@gmail.com').toLowerCase().trim();
     const userPassword = process.env.DEMO_USER_PASSWORD || 'Avoid@123';
 
-    // Seed Admin with fixed 12-digit ID: 100000000001
-    let admin = await getUserByEmail(adminEmail);
-    if (!admin) {
-        await createUser({
-            id: '100000000001',
-            email: adminEmail,
-            name: 'Cortex Administrator',
-            password: adminPassword,
-            role: 'admin',
-            avatar: 'assets/images/avatar/avatar-1.jpg'
-        });
-        console.log(`Default Admin seeded with 12-digit UID [100000000001]: ${adminEmail}`);
-    } else if (!/^\d{12}$/.test(admin.id)) {
-        // Ensure 12-digit numeric UID format
-        admin.id = '100000000001';
-        if (!pool) {
-            const users = await readLocalUsers();
-            const idx = users.findIndex(u => u.email.toLowerCase() === adminEmail);
-            if (idx >= 0) { users[idx].id = '100000000001'; await saveLocalUsers(users); }
+    try {
+        // Seed Admin with fixed 12-digit ID: 100000000001
+        let admin = (await getUserByEmail(adminEmail)) || (await getUserById('100000000001'));
+        if (!admin) {
+            await createUser({
+                id: '100000000001',
+                email: adminEmail,
+                name: 'Cortex Administrator',
+                password: adminPassword,
+                role: 'admin',
+                avatar: 'assets/images/avatar/avatar-1.jpg',
+                plan: 'pro_12m'
+            });
+            console.log(`Default Admin seeded with 12-digit UID [100000000001]: ${adminEmail}`);
+        } else {
+            // Ensure admin role and plan
+            if (admin.role !== 'admin' || admin.email !== adminEmail) {
+                if (pool) {
+                    await pool.query(
+                        `UPDATE cortex_users SET role = 'admin', email = $1, plan = 'pro_12m' WHERE id = $2`,
+                        [adminEmail, admin.id]
+                    );
+                }
+            }
         }
+    } catch (adminErr) {
+        console.warn("Notice in seedDefaultUsers (Admin):", adminErr.message);
     }
 
-    // Seed Regular Demo User with fixed 12-digit ID: 200000000002
-    let demoUser = await getUserByEmail(userEmail);
-    if (!demoUser) {
-        await createUser({
-            id: '200000000002',
-            email: userEmail,
-            name: 'Demo Standard User',
-            password: userPassword,
-            role: 'user',
-            avatar: 'assets/images/avatar/avatar-2.jpg'
-        });
-        console.log(`Default Demo User seeded with 12-digit UID [200000000002]: ${userEmail}`);
-    } else if (!/^\d{12}$/.test(demoUser.id)) {
-        demoUser.id = '200000000002';
-        if (!pool) {
-            const users = await readLocalUsers();
-            const idx = users.findIndex(u => u.email.toLowerCase() === userEmail);
-            if (idx >= 0) { users[idx].id = '200000000002'; await saveLocalUsers(users); }
+    try {
+        // Seed Regular Demo User with fixed 12-digit ID: 200000000002
+        let demoUser = (await getUserByEmail(userEmail)) || (await getUserById('200000000002'));
+        if (!demoUser) {
+            await createUser({
+                id: '200000000002',
+                email: userEmail,
+                name: 'Demo Standard User',
+                password: userPassword,
+                role: 'user',
+                avatar: 'assets/images/avatar/avatar-2.jpg',
+                plan: 'trial'
+            });
+            console.log(`Default Demo User seeded with 12-digit UID [200000000002]: ${userEmail}`);
         }
+    } catch (demoErr) {
+        console.warn("Notice in seedDefaultUsers (Demo User):", demoErr.message);
     }
 
     // Migration: ensure all existing local users have a 12-digit numeric UID
@@ -467,13 +472,14 @@ export async function seedDefaultUsers() {
         try {
             const localUsers = await readLocalUsers();
             for (const lu of localUsers) {
-                const existing = await getUserByEmail(lu.email);
+                const existing = (await getUserByEmail(lu.email)) || (await getUserById(lu.id));
                 if (!existing) {
                     await pool.query(
                         `INSERT INTO cortex_users (
                             id, email, name, password_hash, role, avatar, plan, plan_expires_at, 
                             messages_sent_today, last_message_date, messages_sent_total, addon_credits, claimed_addon
-                         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+                         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                         ON DUPLICATE KEY UPDATE name = VALUES(name)`,
                         [
                             lu.id || generate12DigitId(),
                             lu.email,
@@ -592,7 +598,15 @@ export async function createUser({ id, email, name, password, role = 'user', ava
                         plan, plan_expires_at, messages_sent_today, last_message_date, 
                         messages_sent_total, addon_credits, claimed_addon, created_at, last_login
                      )
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                     ON DUPLICATE KEY UPDATE
+                        name = VALUES(name),
+                        password_hash = COALESCE(VALUES(password_hash), password_hash),
+                        role = VALUES(role),
+                        avatar = VALUES(avatar),
+                        plan = VALUES(plan),
+                        plan_expires_at = COALESCE(VALUES(plan_expires_at), plan_expires_at),
+                        last_login = CURRENT_TIMESTAMP`,
                     [
                         userId, normalizedEmail, name || normalizedEmail.split('@')[0], password_hash, userRole, userAvatar,
                         userPlan, planExpiresAtFormatted, messages_sent_today, last_message_date,
@@ -622,6 +636,14 @@ export async function createUser({ id, email, name, password, role = 'user', ava
                         messages_sent_total, addon_credits, claimed_addon, created_at, last_login
                      )
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                     ON CONFLICT (id) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        password_hash = COALESCE(EXCLUDED.password_hash, cortex_users.password_hash),
+                        role = EXCLUDED.role,
+                        avatar = EXCLUDED.avatar,
+                        plan = EXCLUDED.plan,
+                        plan_expires_at = COALESCE(EXCLUDED.plan_expires_at, cortex_users.plan_expires_at),
+                        last_login = CURRENT_TIMESTAMP
                      RETURNING id, email, name, role, avatar, plan, plan_expires_at, messages_sent_today, messages_sent_total, addon_credits, claimed_addon, created_at, last_login`,
                     [
                         userId, normalizedEmail, name || normalizedEmail.split('@')[0], password_hash, userRole, userAvatar,
@@ -629,9 +651,14 @@ export async function createUser({ id, email, name, password, role = 'user', ava
                         messages_sent_total, addon_credits, claimed_addon
                     ]
                 );
-                return res.rows[0];
+                return res.rows[0] || (await getUserByEmail(normalizedEmail));
             }
         } catch (err) {
+            if (err.code === 'ER_DUP_ENTRY' || err.code === '23505' || err.errno === 1062) {
+                console.warn(`User already exists (${normalizedEmail} / ${userId}), retrieving existing user record...`);
+                const existing = (await getUserByEmail(normalizedEmail)) || (await getUserById(userId));
+                if (existing) return existing;
+            }
             console.error("Error creating user in DB:", err);
             throw err;
         }
