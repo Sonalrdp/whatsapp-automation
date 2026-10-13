@@ -5,14 +5,66 @@ import pino from 'pino';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import makeWASocket, { DisconnectReason, downloadMediaMessage, downloadContentFromMessage, Browsers, proto } from '@whiskeysockets/baileys';
+import makeWASocket, { DisconnectReason, downloadMediaMessage, downloadContentFromMessage, Browsers, proto, BufferJSON } from '@whiskeysockets/baileys';
 import QRCode from 'qrcode';
+import NodeCache from 'node-cache';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Message store for Baileys retry and decryption handling
+// Message retry counter cache across reconnections to handle Signal re-keys
+const msgRetryCounterCache = new NodeCache({
+    stdTTL: 3600, // 1 hour TTL
+    checkperiod: 120,
+    useClones: false
+});
+
+// Persistent Message Store for Baileys retry and decryption handling
+const MESSAGE_STORE_FILE = path.join(__dirname, 'auth_info', 'messages_store.json');
 const messageStore = new Map();
+
+// Load persisted message keys on startup
+try {
+    if (fs.existsSync(MESSAGE_STORE_FILE)) {
+        const raw = fs.readFileSync(MESSAGE_STORE_FILE, 'utf-8');
+        const parsed = JSON.parse(raw, BufferJSON.reviver);
+        if (Array.isArray(parsed)) {
+            for (const [id, val] of parsed) {
+                if (id && val) messageStore.set(id, val);
+            }
+        }
+        console.log(`[MessageStore] Loaded ${messageStore.size} persistent messages from disk.`);
+    }
+} catch (err) {
+    console.warn(`[MessageStore] Could not load persisted message store: ${err.message}`);
+}
+
+// Debounced flush to disk (prevents disk lag on high message volume)
+let messageStoreFlushTimer = null;
+function persistMessageStore() {
+    if (messageStoreFlushTimer) return;
+    messageStoreFlushTimer = setTimeout(() => {
+        messageStoreFlushTimer = null;
+        try {
+            const dir = path.dirname(MESSAGE_STORE_FILE);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            const entries = Array.from(messageStore.entries()).slice(-2500); // Retain latest 2500 messages
+            fs.writeFileSync(MESSAGE_STORE_FILE, JSON.stringify(entries, BufferJSON.replacer));
+        } catch (e) {
+            console.error('[MessageStore] Error writing message store to disk:', e.message);
+        }
+    }, 1500);
+}
+
+function storeMessage(id, data) {
+    if (!id || !data) return;
+    messageStore.set(id, data);
+    if (messageStore.size > 3000) {
+        const firstKey = messageStore.keys().next().value;
+        messageStore.delete(firstKey);
+    }
+    persistMessageStore();
+}
 
 import { 
     initDatabase, 
@@ -61,6 +113,7 @@ import {
     generateLedgerPdf, 
     cleanPhoneNumber,
     formatCurrency,
+    formatPhoneDisplay,
     getAllTallyPhoneNumbers
 } from './tally_engine.js';
 import convertApiRouter from './ConvertAPI/index.js';
@@ -515,6 +568,7 @@ export async function connectUserWhatsApp(userId) {
             connectTimeoutMs: 60000,
             defaultQueryTimeoutMs: 60000,
             retryRequestDelayMs: 250,
+            msgRetryCounterCache,
             getMessage: async (key) => {
                 if (!key?.id) return undefined;
                 const cached = messageStore.get(key.id);
@@ -522,7 +576,12 @@ export async function connectUserWhatsApp(userId) {
                     if (!key.remoteJid && cached.remoteJid) {
                         key.remoteJid = cached.remoteJid;
                     }
-                    return cached.message || cached;
+                    const rawMsg = cached.message || cached;
+                    try {
+                        return proto.Message.fromObject(rawMsg);
+                    } catch (e) {
+                        return rawMsg;
+                    }
                 }
                 return undefined;
             }
@@ -533,14 +592,10 @@ export async function connectUserWhatsApp(userId) {
         sock.sendMessage = async (jid, content, options) => {
             const result = await rawSendMessage(jid, content, options);
             if (result?.key?.id && result?.message) {
-                messageStore.set(result.key.id, {
+                storeMessage(result.key.id, {
                     message: result.message,
                     remoteJid: result.key.remoteJid || jid
                 });
-                if (messageStore.size > 5000) {
-                    const firstKey = messageStore.keys().next().value;
-                    messageStore.delete(firstKey);
-                }
             }
             return result;
         };
@@ -682,14 +737,10 @@ export async function connectUserWhatsApp(userId) {
                     for (const msg of m.messages) {
                         try {
                             if (msg.key?.id && msg.message) {
-                                messageStore.set(msg.key.id, {
+                                storeMessage(msg.key.id, {
                                     message: msg.message,
                                     remoteJid: msg.key.remoteJid
                                 });
-                                if (messageStore.size > 5000) {
-                                    const firstKey = messageStore.keys().next().value;
-                                    messageStore.delete(firstKey);
-                                }
                             }
 
                             const senderJid = msg.key?.remoteJid || '';
@@ -736,43 +787,28 @@ export async function connectUserWhatsApp(userId) {
                                 const sessionKey = `${userId}:${cleanSenderPhone || effectiveJid}`;
                                 const activeTallySession = tallyUserSessions.get(sessionKey);
 
-                                // Robust helper to send reply to customer (routes directly to canonical phone JID to prevent "Waiting for this message")
+                                // Robust helper to send reply directly to the customer's active conversation channel
                                 const sendCustomerReply = async (payload) => {
-                                    if (isGroupMsg) {
-                                        try {
-                                            return await sock.sendMessage(senderJid, payload, { quoted: msg });
-                                        } catch (eg) {
-                                            console.warn('[sendCustomerReply] Group send warning:', eg.message);
-                                        }
-                                    }
-
-                                    // Direct 1-on-1: ALWAYS route to canonical @s.whatsapp.net phone JID
-                                    // Sending to an @lid JID breaks WhatsApp Signal ratchet and causes "Waiting for this message. This may take a while."
-                                    let targetJid = null;
-                                    if (cleanSenderPhone) {
-                                        const fullPhone = cleanSenderPhone.length === 10 ? ('91' + cleanSenderPhone) : cleanSenderPhone;
-                                        targetJid = `${fullPhone}@s.whatsapp.net`;
-                                    } else if (senderJid && senderJid.endsWith('@s.whatsapp.net')) {
-                                        targetJid = senderJid.includes(':') ? (senderJid.split(':')[0] + '@s.whatsapp.net') : senderJid;
-                                    } else if (senderJid && senderJid.endsWith('@lid')) {
-                                        const cleanLid = senderJid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
-                                        const mappedPhone = lidToPhoneMap.get(cleanLid) || lidToPhoneMap.get(senderJid);
-                                        if (mappedPhone) {
-                                            const fullPhone = mappedPhone.length === 10 ? ('91' + mappedPhone) : mappedPhone;
-                                            targetJid = `${fullPhone}@s.whatsapp.net`;
-                                        }
-                                    }
-
-                                    if (!targetJid) {
-                                        targetJid = senderJid;
-                                    }
+                                    // ALWAYS reply to the exact JID of the incoming conversation (whether @lid, @s.whatsapp.net, or @g.us)
+                                    // Quoting the incoming message links it to the active Signal ratchet session and prevents "Waiting for this message"
+                                    const replyTarget = msg.key?.remoteJid || senderJid;
+                                    const options = { quoted: msg };
 
                                     try {
-                                        return await sock.sendMessage(targetJid, payload);
+                                        return await sock.sendMessage(replyTarget, payload, options);
                                     } catch (eSend) {
-                                        console.warn(`[sendCustomerReply] Send to ${targetJid} failed (${eSend.message}), trying fallback to ${senderJid}...`);
-                                        if (targetJid !== senderJid) {
-                                            return await sock.sendMessage(senderJid, payload);
+                                        console.warn(`[sendCustomerReply] Send to ${replyTarget} failed (${eSend.message}), trying unquoted...`);
+                                        try {
+                                            return await sock.sendMessage(replyTarget, payload);
+                                        } catch (e2) {
+                                            // Fallback: If sent to @lid and failed completely, try phone JID
+                                            if (cleanSenderPhone) {
+                                                const phoneJid = `${cleanSenderPhone.length === 10 ? '91' + cleanSenderPhone : cleanSenderPhone}@s.whatsapp.net`;
+                                                if (phoneJid !== replyTarget) {
+                                                    return await sock.sendMessage(phoneJid, payload);
+                                                }
+                                            }
+                                            throw e2;
                                         }
                                     }
                                 };
@@ -794,13 +830,22 @@ export async function connectUserWhatsApp(userId) {
                                             continue;
                                         }
 
-                                        // If customer types "ledger" or keyword again, re-prompt menu
+                                        // If customer types "ledger" or keyword again, re-prompt menu (strictly max 2 times only)
                                         const isKeywordAgain = isTallyTriggerMatch(lowerText, tpl.triggerKeywords);
                                         if (isKeywordAgain) {
+                                            activeTallySession.resentCount = (activeTallySession.resentCount || 0) + 1;
+                                            if (activeTallySession.resentCount > 2) {
+                                                session.addLog(`[Tally Ledger Bot] ⚠️ Duration choices menu already re-sent 2 times to ${formatPhoneDisplay(cleanSenderPhone || senderJid)}. Maximum attempts reached.`);
+                                                tallyUserSessions.delete(sessionKey);
+                                                await sendCustomerReply({
+                                                    text: `⚠️ *Request expired.* Duration choices were re-sent 2 times without selection.\n\nPlease type *ledger* again when you are ready to select a statement duration.`
+                                                });
+                                                continue;
+                                            }
                                             activeTallySession.timestamp = Date.now();
-                                            const promptMenu = `*Hello ${activeTallySession.ledgerName}* 👋\n\nPlease select the statement duration for your Ledger Account:\n\n1️⃣ *1 Month* (Last 30 Days)\n2️⃣ *3 Months* (Last 90 Days)\n3️⃣ *6 Months* (Last 180 Days)\n4️⃣ *12 Months* (Last 1 Year)\n\n👉 Reply with *1, 2, 3, or 4* (or type the duration name).`;
+                                            const promptMenu = `*Hello ${activeTallySession.ledgerName}* 👋\n\nPlease select the statement duration for your Ledger Account (Reminder ${activeTallySession.resentCount}/2):\n\n1️⃣ *1 Month* (Last 30 Days)\n2️⃣ *3 Months* (Last 90 Days)\n3️⃣ *6 Months* (Last 180 Days)\n4️⃣ *12 Months* (Last 1 Year)\n\n👉 Reply with *1, 2, 3, or 4* (or type the duration name).`;
                                             await sendCustomerReply({ text: promptMenu });
-                                            session.addLog(`[Tally Ledger Bot] 📤 Re-sent duration choices menu to +${cleanSenderPhone || senderJid}`);
+                                            session.addLog(`[Tally Ledger Bot] 📤 Re-sent duration choices menu (${activeTallySession.resentCount}/2) to ${formatPhoneDisplay(cleanSenderPhone || senderJid)}`);
                                             continue;
                                         }
 
@@ -826,11 +871,15 @@ export async function connectUserWhatsApp(userId) {
                                             if (activeTallySession.invalidCount >= 2) {
                                                 // Drop session after 2 invalid attempts so user is not stuck
                                                 tallyUserSessions.delete(sessionKey);
+                                                session.addLog(`[Tally Ledger Bot] ⚠️ Customer (${formatPhoneDisplay(cleanSenderPhone)}) reached maximum invalid duration attempts (2/2). Session ended.`);
+                                                await sendCustomerReply({
+                                                    text: `⚠️ *Request expired.* Invalid option entered 2 times.\n\nPlease type *ledger* again when you are ready to select a statement duration.`
+                                                });
                                                 continue;
                                             }
-                                            session.addLog(`[Tally Ledger Bot] ⚠️ Customer (+${cleanSenderPhone}) replied "${textMsg}" which is not a valid duration option.`);
+                                            session.addLog(`[Tally Ledger Bot] ⚠️ Customer (${formatPhoneDisplay(cleanSenderPhone)}) replied "${textMsg}" which is not a valid duration option (${activeTallySession.invalidCount}/2).`);
                                             await sendCustomerReply({
-                                                text: `⚠️ *Please choose a valid duration:*\n\nReply with *1*, *2*, *3*, or *4*:\n1️⃣ *1 Month*\n2️⃣ *3 Months*\n3️⃣ *6 Months*\n4️⃣ *12 Months*`
+                                                text: `⚠️ *Please choose a valid duration (Attempt ${activeTallySession.invalidCount}/2):*\n\nReply with *1*, *2*, *3*, or *4*:\n1️⃣ *1 Month*\n2️⃣ *3 Months*\n3️⃣ *6 Months*\n4️⃣ *12 Months*`
                                             });
                                             continue;
                                         }
@@ -841,7 +890,7 @@ export async function connectUserWhatsApp(userId) {
                                         // Send INSTANT Waiting Message immediately (< 1 sec)
                                         const waitNotice = tpl.waitMessage || '⏳ *Please wait up to 10 minutes.* Your ledger request is being generated from our accounting system. Once ready, it will be delivered here.';
                                         await sendCustomerReply({ text: waitNotice });
-                                        session.addLog(`[Tally Ledger Bot] ⚡ Customer (+${cleanSenderPhone}) selected ${periodLabel}. Instant wait message sent!`);
+                                        session.addLog(`[Tally Ledger Bot] ⚡ Customer (${formatPhoneDisplay(cleanSenderPhone)}) selected ${periodLabel}. Instant wait message sent!`);
 
                                         // Async Background Job: Fetch from Tally, Generate PDF, and Send
                                         (async () => {
@@ -857,8 +906,9 @@ export async function connectUserWhatsApp(userId) {
 
                                                 session.addLog(`[Tally Ledger Bot] 📄 Generating official statement PDF for ${activeTallySession.ledgerName} (${data.vouchers.length} vouchers)...`);
 
+                                                const activeCo = tpl.companyName || (tpl.tallyCompany && tpl.tallyCompany !== 'xyz' ? tpl.tallyCompany : null) || data.companyName || 'Accounts Department';
                                                 const pdfBuffer = await generateLedgerPdf({
-                                                    companyName: tpl.companyName || tpl.tallyCompany || 'Accounts Department',
+                                                    companyName: activeCo,
                                                     ledgerName: activeTallySession.ledgerName,
                                                     phoneNumber: cleanSenderPhone,
                                                     periodLabel,
@@ -874,7 +924,7 @@ export async function connectUserWhatsApp(userId) {
                                                 const safePartyFilename = activeTallySession.ledgerName.replace(/[^a-zA-Z0-9_-]/g, '_');
                                                 const outFileName = `Ledger_${safePartyFilename}_${periodLabel.replace(/\s+/g, '_')}.pdf`;
                                                 const balSign = data.closingBalance >= 0 ? 'Dr (Receivable)' : 'Cr (Payable)';
-                                                const captionText = `*${tpl.companyName || tpl.tallyCompany || 'Accounts Department'}*\n\n📄 *Statement of Ledger Account*\n👤 *Party:* ${activeTallySession.ledgerName}\n📅 *Period:* ${data.fromDateStr} to ${data.toDateStr}\n💰 *Closing Balance:* Rs. ${formatCurrency(data.closingBalance)} ${balSign}\n\n_Thank you for your business!_`;
+                                                const captionText = `*${activeCo}*\n\n📄 *Statement of Ledger Account*\n👤 *Party:* ${activeTallySession.ledgerName}\n📅 *Period:* ${data.fromDateStr} to ${data.toDateStr}\n💰 *Closing Balance:* Rs. ${formatCurrency(data.closingBalance)} ${balSign}\n\n_Thank you for your business!_`;
 
                                                 await sendCustomerReply({
                                                     document: pdfBuffer,
@@ -883,7 +933,7 @@ export async function connectUserWhatsApp(userId) {
                                                     caption: captionText
                                                 });
 
-                                                session.addLog(`[Tally Ledger Bot] ✅ Successfully delivered Ledger PDF (${outFileName}) to +${cleanSenderPhone}!`);
+                                                session.addLog(`[Tally Ledger Bot] ✅ Successfully delivered Ledger PDF (${outFileName}) to ${formatPhoneDisplay(cleanSenderPhone)}!`);
                                                 recordUserMessageSent(userId).catch(() => {});
                                             } catch (bgErr) {
                                                 session.addLog(`[Tally Ledger Bot] ❌ Error generating statement: ${bgErr.message}`);
@@ -906,9 +956,9 @@ export async function connectUserWhatsApp(userId) {
                                     if (!isTrigger) continue;
 
                                     tallyTriggerMatched = true;
-                                    session.addLog(`[Tally Ledger Bot] 🔍 Received keyword trigger "${textMsg}" from +${cleanSenderPhone || senderJid}. Verifying registered mobile in Tally...`);
+                                    session.addLog(`[Tally Ledger Bot] 🔍 Received keyword trigger "${textMsg}" from ${formatPhoneDisplay(cleanSenderPhone || senderJid)}. Verifying registered mobile in Tally...`);
 
-                                    // Verify registered number in Tally
+                                    // Verify registered number in Tally (strictly matches 10 digits ignoring country codes)
                                     const checkResult = await findLedgerByPhone({
                                         tallyUrl: tpl.tallyUrl,
                                         companyName: tpl.tallyCompany,
@@ -924,10 +974,10 @@ export async function connectUserWhatsApp(userId) {
                                     }
 
                                     if (!checkResult.found) {
-                                        session.addLog(`[Tally Ledger Bot] ⚠️ Mobile +${cleanSenderPhone || senderJid} is NOT registered in Tally. Sending notice...`);
-                                        const unregMsg = tpl.unregisteredMessage || `❌ *Notice:* Your mobile number (+${cleanSenderPhone || 'your number'}) is not registered with our accounting records.\n\nPlease contact our accounts department to link your mobile number.`;
+                                        session.addLog(`[Tally Ledger Bot] ⚠️ Mobile ${formatPhoneDisplay(cleanSenderPhone || senderJid)} is NOT registered in Tally. Sending notice...`);
+                                        const unregMsg = tpl.unregisteredMessage || `❌ *Notice:* Your mobile number (${formatPhoneDisplay(cleanSenderPhone || 'your number')}) is not registered with our accounting records.\n\nPlease contact our accounts department to link your mobile number.`;
                                         await sendCustomerReply({ text: unregMsg });
-                                        session.addLog(`[Tally Ledger Bot] 📤 Unregistered notice delivered to +${cleanSenderPhone || senderJid}`);
+                                        session.addLog(`[Tally Ledger Bot] 📤 Unregistered notice delivered to ${formatPhoneDisplay(cleanSenderPhone || senderJid)}`);
                                         break;
                                     }
 
@@ -937,14 +987,16 @@ export async function connectUserWhatsApp(userId) {
                                         step: 'AWAITING_DURATION',
                                         ledgerName: partyName,
                                         tplId: tpl.id,
-                                        timestamp: Date.now()
+                                        timestamp: Date.now(),
+                                        resentCount: 0,
+                                        invalidCount: 0
                                     });
 
                                     session.addLog(`[Tally Ledger Bot] ✅ Verified party "${partyName}". Sending duration choices...`);
 
                                     const promptMenu = `*Hello ${partyName}* 👋\n\nPlease select the statement duration for your Ledger Account:\n\n1️⃣ *1 Month* (Last 30 Days)\n2️⃣ *3 Months* (Last 90 Days)\n3️⃣ *6 Months* (Last 180 Days)\n4️⃣ *12 Months* (Last 1 Year)\n\n👉 Reply with *1, 2, 3, or 4* (or type the duration name).`;
                                     await sendCustomerReply({ text: promptMenu });
-                                    session.addLog(`[Tally Ledger Bot] 📤 Duration choices menu delivered to +${cleanSenderPhone}`);
+                                    session.addLog(`[Tally Ledger Bot] 📤 Duration choices menu delivered to ${formatPhoneDisplay(cleanSenderPhone)}`);
                                     break;
                                 }
 
@@ -2291,8 +2343,9 @@ app.post('/api/tally/test-customer-flow', authenticateUser, async (req, res) => 
                 months
             });
 
+            const activeCo = tpl.companyName || (tpl.tallyCompany && tpl.tallyCompany !== 'xyz' ? tpl.tallyCompany : null) || data.companyName || 'Accounts Department';
             const pdfBuffer = await generateLedgerPdf({
-                companyName: tpl.companyName || tpl.tallyCompany || 'Accounts Department',
+                companyName: activeCo,
                 ledgerName,
                 phoneNumber: cleanPhone,
                 periodLabel,
@@ -2502,8 +2555,9 @@ app.post('/api/templates/:id/trigger', authenticateUser, async (req, res) => {
                         months: 3
                     });
 
+                    const activeCo = tpl.companyName || (tpl.tallyCompany && tpl.tallyCompany !== 'xyz' ? tpl.tallyCompany : null) || sampleData.companyName || 'Accounts Department';
                     const pdfBuf = await generateLedgerPdf({
-                        companyName: tpl.companyName || tpl.tallyCompany || 'Accounts Department',
+                        companyName: activeCo,
                         ledgerName: testParty,
                         phoneNumber: cleanPhoneNumber(notifyTarget),
                         periodLabel: 'Last 3 Months (Test Verification)',

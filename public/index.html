@@ -6161,6 +6161,12 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         });
         const data = await res.json();
         if (data.success) {
+          if (data.companyName) {
+            const compInput = document.getElementById('input-tally-company');
+            if (compInput && (!compInput.value.trim() || compInput.value.trim().toLowerCase() === 'xyz')) {
+              compInput.value = data.companyName;
+            }
+          }
           statusBox.className = 'alert alert-success border small py-2 px-3 mb-0';
           statusBox.innerHTML = `<strong><i class="bi bi-check-circle-fill text-success me-1"></i> Success!</strong> ${escapeHtml(data.message || 'Connected to Tally successfully!')}`;
           showToast('Connected to Tally successfully!', 'success');

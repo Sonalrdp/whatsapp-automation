@@ -5,14 +5,24 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
  * and automated professional PDF statement generation.
  */
 
-// Helper to clean phone numbers: strictly matches the 10 digits after +91
+// Helper to clean phone numbers: strictly matches the 10 digits, ignoring country code (+91, 91, 0, etc.)
 export function cleanPhoneNumber(phone) {
     if (!phone) return '';
     const digits = String(phone).replace(/[^\d]/g, '');
     if (digits.length >= 10) {
-        return digits.slice(-10); // strictly the 10 digits after +91
+        return digits.slice(-10); // strictly the 10-digit mobile number
     }
     return digits;
+}
+
+// Helper: Format phone number for clean Indian display (+91 XXXXXXXXXX)
+export function formatPhoneDisplay(phone) {
+    if (!phone) return '';
+    const digits = String(phone).replace(/[^\d]/g, '');
+    if (digits.length >= 10) {
+        return `+91 ${digits.slice(-10)}`;
+    }
+    return phone;
 }
 
 // Format Date as DD-MMM-YYYY (e.g. 12-Oct-2026)
@@ -44,30 +54,63 @@ export function formatCurrency(amount) {
 }
 
 /**
+ * Get Active Open Company from Tally
+ */
+export async function getActiveTallyCompany(tallyUrl = 'http://localhost:9000') {
+    const targetUrl = (tallyUrl || 'http://localhost:9000').trim().replace(/\/+$/, '');
+    try {
+        const queryXml = `
+<ENVELOPE>
+    <HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>List of Companies</ID></HEADER>
+    <BODY><DESC><STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES></DESC></BODY>
+</ENVELOPE>`.trim();
+
+        const res = await fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/xml;charset=utf-8' },
+            body: queryXml
+        });
+        if (res.ok) {
+            const xml = await res.text();
+            const nameMatch = xml.match(/<COMPANY[^>]*NAME="([^"]+)"/i) || xml.match(/<NAME[^>]*>([^<]+)<\/NAME>/i);
+            if (nameMatch && nameMatch[1]) {
+                return nameMatch[1].trim();
+            }
+        }
+    } catch (err) {
+        console.warn('[Tally Engine] Could not fetch active company name:', err.message);
+    }
+    return null;
+}
+
+/**
  * Test Tally Server Connection & Company Status
  */
 export async function testTallyConnection({ tallyUrl, companyName }) {
     const targetUrl = (tallyUrl || 'http://localhost:9000').trim().replace(/\/+$/, '');
 
-    const testXml = `
+    try {
+        const detectedCompany = await getActiveTallyCompany(targetUrl);
+        const resolvedCompany = (companyName && companyName.trim() !== 'xyz') ? companyName.trim() : (detectedCompany || '');
+
+        const testXml = `
 <ENVELOPE>
     <HEADER>
         <VERSION>1</VERSION>
         <TALLYREQUEST>Export</TALLYREQUEST>
-        <TYPE>Data</TYPE>
-        <ID>CompanyInfo</ID>
+        <TYPE>Collection</TYPE>
+        <ID>List of Companies</ID>
     </HEADER>
     <BODY>
         <DESC>
             <STATICVARIABLES>
                 <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-                ${companyName ? `<SVCURRENTCOMPANY>${escapeXml(companyName)}</SVCURRENTCOMPANY>` : ''}
+                ${resolvedCompany ? `<SVCURRENTCOMPANY>${escapeXml(resolvedCompany)}</SVCURRENTCOMPANY>` : ''}
             </STATICVARIABLES>
         </DESC>
     </BODY>
 </ENVELOPE>`.trim();
 
-    try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 6000);
 
@@ -93,18 +136,20 @@ export async function testTallyConnection({ tallyUrl, companyName }) {
                              responseText.includes('<COMPANY');
 
         if (hasTallyMark) {
+            const finalCompany = detectedCompany || resolvedCompany || 'Active Tally Company';
             return {
                 success: true,
-                message: `Connection established with Tally at ${targetUrl}!`,
+                message: `Connection established with Tally at ${targetUrl}! Active Company: ${finalCompany}`,
                 tallyUrl: targetUrl,
-                companyName: companyName || 'Active Tally Company'
+                companyName: finalCompany
             };
         }
 
         return {
             success: true,
             message: `Tally Server reachable at ${targetUrl}.`,
-            tallyUrl: targetUrl
+            tallyUrl: targetUrl,
+            companyName: detectedCompany || ''
         };
     } catch (err) {
         if (err.name === 'AbortError') {
@@ -131,6 +176,11 @@ export async function findLedgerByPhone({ tallyUrl, companyName, phoneNumber }) 
 
     const targetUrl = (tallyUrl || 'http://localhost:9000').trim().replace(/\/+$/, '');
 
+    let resolvedCompany = (companyName && companyName.trim() !== 'xyz') ? companyName.trim() : '';
+    if (!resolvedCompany) {
+        resolvedCompany = (await getActiveTallyCompany(targetUrl)) || '';
+    }
+
     // Query helper
     async function executeLedgerQuery(withCompany = true) {
         const queryXml = `
@@ -145,7 +195,7 @@ export async function findLedgerByPhone({ tallyUrl, companyName, phoneNumber }) 
         <DESC>
             <STATICVARIABLES>
                 <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-                ${(withCompany && companyName) ? `<SVCURRENTCOMPANY>${escapeXml(companyName)}</SVCURRENTCOMPANY>` : ''}
+                ${(withCompany && resolvedCompany) ? `<SVCURRENTCOMPANY>${escapeXml(resolvedCompany)}</SVCURRENTCOMPANY>` : ''}
             </STATICVARIABLES>
             <TDL>
                 <TDLMESSAGE>
@@ -177,13 +227,22 @@ export async function findLedgerByPhone({ tallyUrl, companyName, phoneNumber }) 
     }
 
     try {
-        let xmlText = await executeLedgerQuery(Boolean(companyName));
-        // If specified company resulted in error or empty collection, fallback to active company
-        if (!xmlText || xmlText.includes('<LINEERROR>') || !xmlText.includes('<COLLECTION')) {
-            xmlText = await executeLedgerQuery(false);
+        let xmlText = await executeLedgerQuery(Boolean(resolvedCompany));
+        let ledgerMatches = xmlText ? [...xmlText.matchAll(/<LEDGER[^>]*>([\s\S]*?)<\/LEDGER>/gi)] : [];
+
+        // If specified company resulted in 0 ledgers or error, fallback to without company
+        if (ledgerMatches.length === 0 || !xmlText || xmlText.includes('<LINEERROR>')) {
+            const fallbackXml = await executeLedgerQuery(false);
+            if (fallbackXml) {
+                const fbMatches = [...fallbackXml.matchAll(/<LEDGER[^>]*>([\s\S]*?)<\/LEDGER>/gi)];
+                if (fbMatches.length > 0) {
+                    xmlText = fallbackXml;
+                    ledgerMatches = fbMatches;
+                }
+            }
         }
 
-        if (!xmlText) {
+        if (!xmlText || ledgerMatches.length === 0) {
             return {
                 found: false,
                 tallyUnavailable: true,
@@ -191,13 +250,18 @@ export async function findLedgerByPhone({ tallyUrl, companyName, phoneNumber }) 
             };
         }
 
-        if (xmlText && xmlText.includes('<COLLECTION')) {
-            // Parse XML blocks for Ledgers
-            const ledgerMatches = [...xmlText.matchAll(/<LEDGER[^>]*>([\s\S]*?)<\/LEDGER>/gi)];
+        const candidateMatches = [];
+
             for (const match of ledgerMatches) {
                 const block = match[1];
                 const nameMatch = block.match(/NAME="([^"]+)"/i) || block.match(/<NAME>([^<]+)<\/NAME>/i);
                 const ledgerName = nameMatch ? nameMatch[1].trim() : '';
+                if (!ledgerName) continue;
+
+                const parentMatch = block.match(/<PARENT[^>]*>([^<]+)<\/PARENT>/i);
+                const parent = parentMatch ? parentMatch[1].trim() : '';
+                const cbMatch = block.match(/<CLOSINGBALANCE[^>]*>([^<]+)<\/CLOSINGBALANCE>/i);
+                const closingBalance = (cbMatch && cbMatch[1]) ? parseFloat(cbMatch[1]) : 0;
 
                 // Extract all possible phone tags
                 const mobileMatch = block.match(/<LEDGERMOBILE[^>]*>([^<]+)<\/LEDGERMOBILE>/i);
@@ -216,19 +280,71 @@ export async function findLedgerByPhone({ tallyUrl, companyName, phoneNumber }) 
                     narrMatch?.[1]
                 ].filter(Boolean);
 
+                let isMatch = false;
+                let matchedNumber = '';
+
+                // 1. Check specific phone tags
                 for (const rawPhone of candidates) {
                     const cleanP = cleanPhoneNumber(rawPhone);
-                    // Check strictly after +91 (10-digit mobile number)
-                    if (cleanP && (cleanP === cleanSearch || cleanP.slice(-10) === cleanSearch.slice(-10))) {
-                        return {
-                            found: true,
-                            ledgerName: ledgerName || 'Customer Account',
-                            registeredPhone: rawPhone,
-                            companyName: companyName || 'Active Tally Company'
-                        };
+                    if (cleanP && cleanP.slice(-10) === cleanSearch.slice(-10)) {
+                        isMatch = true;
+                        matchedNumber = rawPhone;
+                        break;
+                    }
+                    const allExtracted = String(rawPhone).match(/\d{10,12}/g) || [];
+                    for (const num of allExtracted) {
+                        if (num.slice(-10) === cleanSearch.slice(-10)) {
+                            isMatch = true;
+                            matchedNumber = num;
+                            break;
+                        }
+                    }
+                    if (isMatch) break;
+                }
+
+                // 2. Fallback: Search anywhere in the ledger block
+                if (!isMatch) {
+                    const allBlockNumbers = block.match(/\d{10,12}/g) || [];
+                    for (const bNum of allBlockNumbers) {
+                        if (bNum.slice(-10) === cleanSearch.slice(-10)) {
+                            isMatch = true;
+                            matchedNumber = bNum;
+                            break;
+                        }
                     }
                 }
+
+                if (isMatch) {
+                    candidateMatches.push({
+                        ledgerName,
+                        parent,
+                        closingBalance,
+                        registeredPhone: matchedNumber || cleanSearch,
+                        companyName: resolvedCompany || companyName || 'Active Tally Company',
+                        // Debtors / Creditors get highest priority in accounting
+                        isDebtor: /debtor|customer|receivable/i.test(parent),
+                        isCreditor: /creditor|payable|vendor/i.test(parent),
+                        hasBalance: Math.abs(closingBalance) > 0
+                    });
+                }
             }
+
+        if (candidateMatches.length > 0) {
+            candidateMatches.sort((a, b) => {
+                if (a.isDebtor && !b.isDebtor) return -1;
+                if (!a.isDebtor && b.isDebtor) return 1;
+                if (a.hasBalance && !b.hasBalance) return -1;
+                if (!a.hasBalance && b.hasBalance) return 1;
+                return 0;
+            });
+
+            const bestMatch = candidateMatches[0];
+            return {
+                found: true,
+                ledgerName: bestMatch.ledgerName,
+                registeredPhone: bestMatch.registeredPhone,
+                companyName: bestMatch.companyName
+            };
         }
     } catch (err) {
         console.warn(`[Tally Engine] XML fetch failed for phone ${cleanSearch}:`, err.message);
@@ -325,7 +441,17 @@ export async function getAllTallyPhoneNumbers({ tallyUrl, companyName }) {
                 for (const raw of candidates) {
                     const clean = cleanPhoneNumber(raw);
                     if (clean && clean.length >= 10) {
-                        phoneList.add(clean.length === 10 ? '91' + clean : clean);
+                        phoneList.add('91' + clean.slice(-10));
+                        phoneList.add(clean.slice(-10));
+                    }
+                }
+
+                const allBlock10s = block.match(/\d{10,12}/g) || [];
+                for (const bNum of allBlock10s) {
+                    const c10 = bNum.slice(-10);
+                    if (/^[6-9]\d{9}$/.test(c10)) {
+                        phoneList.add('91' + c10);
+                        phoneList.add(c10);
                     }
                 }
             }
@@ -352,30 +478,85 @@ export async function fetchLedgerTransactions({ tallyUrl, companyName, ledgerNam
 
     const targetUrl = (tallyUrl || 'http://localhost:9000').trim().replace(/\/+$/, '');
 
-    async function executeVouchersQuery(withCompany = true) {
-        const ledgerVouchersXml = `
+    let resolvedCompany = (companyName && companyName.trim() !== 'xyz') ? companyName.trim() : '';
+    if (!resolvedCompany) {
+        resolvedCompany = (await getActiveTallyCompany(targetUrl)) || '';
+    }
+
+    // 1. Fetch real ledger closing balance directly from Tally
+    let realClosingBalance = 0;
+    try {
+        const ledgerQueryXml = `
 <ENVELOPE>
-    <HEADER>
-        <VERSION>1</VERSION>
-        <TALLYREQUEST>Export</TALLYREQUEST>
-        <TYPE>Data</TYPE>
-        <ID>Ledger Vouchers</ID>
-    </HEADER>
+    <HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Collection</TYPE><ID>LedgerInfo</ID></HEADER>
     <BODY>
         <DESC>
             <STATICVARIABLES>
                 <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
-                <SVFROMDATE>${fromDateTally}</SVFROMDATE>
-                <SVTODATE>${toDateTally}</SVTODATE>
-                <LEDGERNAME>${escapeXml(ledgerName)}</LEDGERNAME>
-                ${(withCompany && companyName) ? `<SVCURRENTCOMPANY>${escapeXml(companyName)}</SVCURRENTCOMPANY>` : ''}
+                ${resolvedCompany ? `<SVCURRENTCOMPANY>${escapeXml(resolvedCompany)}</SVCURRENTCOMPANY>` : ''}
             </STATICVARIABLES>
+            <TDL>
+                <TDLMESSAGE>
+                    <COLLECTION NAME="LedgerInfo">
+                        <TYPE>Ledger</TYPE>
+                        <FETCH>Name, ClosingBalance</FETCH>
+                    </COLLECTION>
+                </TDLMESSAGE>
+            </TDL>
         </DESC>
     </BODY>
 </ENVELOPE>`.trim();
 
+        const lRes = await fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/xml;charset=utf-8' },
+            body: ledgerQueryXml
+        });
+        if (lRes.ok) {
+            const lXml = await lRes.text();
+            const matches = [...lXml.matchAll(/<LEDGER[^>]*>([\s\S]*?)<\/LEDGER>/gi)];
+            for (const m of matches) {
+                const b = m[1];
+                const nm = b.match(/NAME="([^"]+)"/i) || b.match(/<NAME>([^<]+)<\/NAME>/i);
+                if (nm && nm[1].trim().toLowerCase() === ledgerName.trim().toLowerCase()) {
+                    const cbMatch = b.match(/<CLOSINGBALANCE[^>]*>([^<]+)<\/CLOSINGBALANCE>/i);
+                    if (cbMatch && cbMatch[1]) {
+                        realClosingBalance = parseFloat(cbMatch[1]) || 0;
+                    }
+                    break;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[Tally Engine] Live ledger balance query:', e.message);
+    }
+
+    // 2. Fetch live ledger vouchers from Tally
+    async function executeVouchersQuery(withCompany = true) {
+        const ledgerVouchersXml = `
+<ENVELOPE>
+    <HEADER>
+        <TALLYREQUEST>Export Data</TALLYREQUEST>
+    </HEADER>
+    <BODY>
+        <EXPORTDATA>
+            <REQUESTDESC>
+                <REPORTNAME>Ledger Vouchers</REPORTNAME>
+                <STATICVARIABLES>
+                    <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+                    <LEDGERNAME>${escapeXml(ledgerName)}</LEDGERNAME>
+                    <SVFROMDATE>${fromDateTally}</SVFROMDATE>
+                    <SVTODATE>${toDateTally}</SVTODATE>
+                    <ExplodeNarrFlag>YES</ExplodeNarrFlag>
+                    ${(withCompany && resolvedCompany) ? `<SVCURRENTCOMPANY>${escapeXml(resolvedCompany)}</SVCURRENTCOMPANY>` : ''}
+                </STATICVARIABLES>
+            </REQUESTDESC>
+        </EXPORTDATA>
+    </BODY>
+</ENVELOPE>`.trim();
+
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
         try {
             const response = await fetch(targetUrl, {
                 method: 'POST',
@@ -393,7 +574,7 @@ export async function fetchLedgerTransactions({ tallyUrl, companyName, ledgerNam
 
     let vouchers = [];
     let openingBalance = 0;
-    let closingBalance = 0;
+    let closingBalance = realClosingBalance;
 
     try {
         let xml = await executeVouchersQuery(Boolean(companyName));
@@ -402,21 +583,25 @@ export async function fetchLedgerTransactions({ tallyUrl, companyName, ledgerNam
         }
 
         if (xml) {
-            
             // Extract vouchers from response
             const vchMatches = [...xml.matchAll(/<VOUCHER[^>]*>([\s\S]*?)<\/VOUCHER>/gi)];
             for (const vMatch of vchMatches) {
                 const vBlock = vMatch[1];
+                const isCancelled = vBlock.match(/<VCHSTATUSISCANCELLED>Yes<\/VCHSTATUSISCANCELLED>/i);
+                if (isCancelled) continue; // Skip cancelled vouchers
+
                 const dateM = vBlock.match(/<DATE>([^<]+)<\/DATE>/i);
                 const typeM = vBlock.match(/<VOUCHERTYPENAME>([^<]+)<\/VOUCHERTYPENAME>/i);
                 const noM = vBlock.match(/<VOUCHERNUMBER>([^<]+)<\/VOUCHERNUMBER>/i);
                 const amountM = vBlock.match(/<AMOUNT>([^<]+)<\/AMOUNT>/i);
+                const narrM = vBlock.match(/<NARRATION>([^<]+)<\/NARRATION>/i);
 
                 const vDateStr = dateM ? dateM[1] : '';
                 const vDate = vDateStr ? `${vDateStr.slice(6,8)}-${vDateStr.slice(4,6)}-${vDateStr.slice(0,4)}` : formatDateDisplay(new Date());
-                const vType = typeM ? typeM[1] : 'Sales';
+                const vType = typeM ? typeM[1] : 'Voucher';
                 const vNo = noM ? noM[1] : '-';
                 const rawAmount = amountM ? parseFloat(amountM[1]) : 0;
+                const narration = narrM ? narrM[1].trim() : '';
 
                 const isDebit = rawAmount > 0;
                 const debit = isDebit ? Math.abs(rawAmount) : 0;
@@ -424,7 +609,7 @@ export async function fetchLedgerTransactions({ tallyUrl, companyName, ledgerNam
 
                 vouchers.push({
                     date: vDate,
-                    particulars: `${vType} (Inv #${vNo})`,
+                    particulars: narration ? `${vType} - ${narration}` : `${vType} (Inv #${vNo})`,
                     vchType: vType,
                     vchNo: vNo,
                     debit,
@@ -433,41 +618,13 @@ export async function fetchLedgerTransactions({ tallyUrl, companyName, ledgerNam
             }
         }
     } catch (err) {
-        console.warn('[Tally Engine] Vouchers fetch note:', err.message);
+        console.warn('[Tally Engine] Live vouchers query note:', err.message);
     }
 
-    // If no vouchers found or in test mode, provide sample transactions so the user gets a working PDF demo immediately
-    if (vouchers.length === 0) {
-        openingBalance = 24500.00;
-        const middleDate1 = new Date();
-        middleDate1.setDate(middleDate1.getDate() - Math.floor(months * 15));
-        const middleDate2 = new Date();
-        middleDate2.setDate(middleDate2.getDate() - Math.floor(months * 5));
-
-        vouchers = [
-            {
-                date: formatDateDisplay(middleDate1),
-                particulars: 'Sales / Tax Invoice',
-                vchType: 'Sales',
-                vchNo: 'INV-2026-089',
-                debit: 48500.00,
-                credit: 0.00
-            },
-            {
-                date: formatDateDisplay(middleDate2),
-                particulars: 'Bank Receipt / NEFT Payment',
-                vchType: 'Receipt',
-                vchNo: 'RCPT-104',
-                debit: 0.00,
-                credit: 35000.00
-            }
-        ];
-    }
-
-    // Calculate totals
+    // Calculate totals strictly from real Tally data (zero demo data)
     let totalDebit = 0;
     let totalCredit = 0;
-    let runningBalance = openingBalance;
+    let runningBalance = vouchers.length > 0 ? openingBalance : realClosingBalance;
 
     const computedVouchers = vouchers.map(v => {
         totalDebit += v.debit;
@@ -479,15 +636,15 @@ export async function fetchLedgerTransactions({ tallyUrl, companyName, ledgerNam
         };
     });
 
-    closingBalance = runningBalance;
+    closingBalance = vouchers.length > 0 ? runningBalance : realClosingBalance;
 
     return {
         ledgerName,
-        companyName: companyName || 'Company Account',
+        companyName: resolvedCompany || companyName || 'Company Account',
         months,
         fromDateStr: fromDateDisplay,
         toDateStr: toDateDisplay,
-        openingBalance,
+        openingBalance: vouchers.length > 0 ? openingBalance : realClosingBalance,
         totalDebit,
         totalCredit,
         closingBalance,
@@ -591,7 +748,7 @@ export async function generateLedgerPdf({
         color: rgb(0.1, 0.1, 0.1)
     });
     if (phoneNumber) {
-        page.drawText(`Mobile: +${phoneNumber}`, {
+        page.drawText(`Mobile: ${formatPhoneDisplay(phoneNumber)}`, {
             x: 52,
             y: y - 46,
             size: 8.5,
@@ -678,36 +835,54 @@ export async function generateLedgerPdf({
     y -= 22;
 
     // Table Rows
-    let rowIndex = 0;
-    for (const v of vouchers) {
-        if (y < 120) break; // keep footer space
+    if (vouchers.length === 0) {
+        page.drawRectangle({
+            x: 40,
+            y: y - 22,
+            width: width - 80,
+            height: 22,
+            color: rgb(0.98, 0.98, 0.98)
+        });
+        page.drawText('No voucher transactions recorded for this party in the selected period.', {
+            x: 52,
+            y: y - 15,
+            size: 8,
+            font: fontOblique,
+            color: rgb(0.45, 0.45, 0.45)
+        });
+        y -= 24;
+    } else {
+        let rowIndex = 0;
+        for (const v of vouchers) {
+            if (y < 120) break; // keep footer space
 
-        const isEven = rowIndex % 2 === 0;
-        if (isEven) {
-            page.drawRectangle({
-                x: 40,
-                y: y - 16,
-                width: width - 80,
-                height: 16,
-                color: rgb(0.97, 0.98, 0.98)
-            });
+            const isEven = rowIndex % 2 === 0;
+            if (isEven) {
+                page.drawRectangle({
+                    x: 40,
+                    y: y - 16,
+                    width: width - 80,
+                    height: 16,
+                    color: rgb(0.97, 0.98, 0.98)
+                });
+            }
+
+            page.drawText(String(v.date || ''), { x: colX.date, y: y - 12, size: 7.5, font: fontRegular, color: rgb(0.2, 0.2, 0.2) });
+            page.drawText(String(v.particulars || '').slice(0, 32), { x: colX.particulars, y: y - 12, size: 7.5, font: fontRegular, color: rgb(0.1, 0.1, 0.1) });
+            page.drawText(String(v.vchType || '').slice(0, 16), { x: colX.vchType, y: y - 12, size: 7.5, font: fontRegular, color: rgb(0.3, 0.3, 0.3) });
+            
+            const debitStr = v.debit > 0 ? formatCurrency(v.debit) : '-';
+            page.drawText(debitStr, { x: colX.debit, y: y - 12, size: 7.5, font: fontRegular, color: v.debit > 0 ? rgb(0.7, 0.1, 0.1) : rgb(0.5, 0.5, 0.5) });
+
+            const creditStr = v.credit > 0 ? formatCurrency(v.credit) : '-';
+            page.drawText(creditStr, { x: colX.credit, y: y - 12, size: 7.5, font: fontRegular, color: v.credit > 0 ? rgb(0.05, 0.5, 0.2) : rgb(0.5, 0.5, 0.5) });
+
+            const balStr = `${formatCurrency(v.balance || 0)} ${v.balance >= 0 ? 'Dr' : 'Cr'}`;
+            page.drawText(balStr, { x: colX.balance, y: y - 12, size: 7.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
+
+            y -= 17;
+            rowIndex++;
         }
-
-        page.drawText(String(v.date || ''), { x: colX.date, y: y - 12, size: 7.5, font: fontRegular, color: rgb(0.2, 0.2, 0.2) });
-        page.drawText(String(v.particulars || '').slice(0, 32), { x: colX.particulars, y: y - 12, size: 7.5, font: fontRegular, color: rgb(0.1, 0.1, 0.1) });
-        page.drawText(String(v.vchType || '').slice(0, 16), { x: colX.vchType, y: y - 12, size: 7.5, font: fontRegular, color: rgb(0.3, 0.3, 0.3) });
-        
-        const debitStr = v.debit > 0 ? formatCurrency(v.debit) : '-';
-        page.drawText(debitStr, { x: colX.debit, y: y - 12, size: 7.5, font: fontRegular, color: v.debit > 0 ? rgb(0.7, 0.1, 0.1) : rgb(0.5, 0.5, 0.5) });
-
-        const creditStr = v.credit > 0 ? formatCurrency(v.credit) : '-';
-        page.drawText(creditStr, { x: colX.credit, y: y - 12, size: 7.5, font: fontRegular, color: v.credit > 0 ? rgb(0.05, 0.5, 0.2) : rgb(0.5, 0.5, 0.5) });
-
-        const balStr = `${formatCurrency(v.balance || 0)} ${v.balance >= 0 ? 'Dr' : 'Cr'}`;
-        page.drawText(balStr, { x: colX.balance, y: y - 12, size: 7.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
-
-        y -= 17;
-        rowIndex++;
     }
 
     y -= 10;
