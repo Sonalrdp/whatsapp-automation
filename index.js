@@ -736,7 +736,7 @@ export async function connectUserWhatsApp(userId) {
                                 const sessionKey = `${userId}:${cleanSenderPhone || effectiveJid}`;
                                 const activeTallySession = tallyUserSessions.get(sessionKey);
 
-                                // Robust helper to send reply to customer (handles direct, group, and LID fallbacks)
+                                // Robust helper to send reply to customer (routes directly to canonical phone JID to prevent "Waiting for this message")
                                 const sendCustomerReply = async (payload) => {
                                     if (isGroupMsg) {
                                         try {
@@ -746,22 +746,33 @@ export async function connectUserWhatsApp(userId) {
                                         }
                                     }
 
-                                    // Direct 1-on-1: ALWAYS reply directly to senderJid with { quoted: msg }
-                                    // This preserves the active session and prevents "Waiting for this message"
-                                    const directJid = senderJid.includes(':') && senderJid.endsWith('@s.whatsapp.net')
-                                        ? (senderJid.split(':')[0] + '@s.whatsapp.net')
-                                        : senderJid;
+                                    // Direct 1-on-1: ALWAYS route to canonical @s.whatsapp.net phone JID
+                                    // Sending to an @lid JID breaks WhatsApp Signal ratchet and causes "Waiting for this message. This may take a while."
+                                    let targetJid = null;
+                                    if (cleanSenderPhone) {
+                                        const fullPhone = cleanSenderPhone.length === 10 ? ('91' + cleanSenderPhone) : cleanSenderPhone;
+                                        targetJid = `${fullPhone}@s.whatsapp.net`;
+                                    } else if (senderJid && senderJid.endsWith('@s.whatsapp.net')) {
+                                        targetJid = senderJid.includes(':') ? (senderJid.split(':')[0] + '@s.whatsapp.net') : senderJid;
+                                    } else if (senderJid && senderJid.endsWith('@lid')) {
+                                        const cleanLid = senderJid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
+                                        const mappedPhone = lidToPhoneMap.get(cleanLid) || lidToPhoneMap.get(senderJid);
+                                        if (mappedPhone) {
+                                            const fullPhone = mappedPhone.length === 10 ? ('91' + mappedPhone) : mappedPhone;
+                                            targetJid = `${fullPhone}@s.whatsapp.net`;
+                                        }
+                                    }
+
+                                    if (!targetJid) {
+                                        targetJid = senderJid;
+                                    }
 
                                     try {
-                                        return await sock.sendMessage(directJid, payload, { quoted: msg });
-                                    } catch (eDirect) {
-                                        console.warn(`[sendCustomerReply] Direct send to ${directJid} failed (${eDirect.message}), trying phoneJid fallback...`);
-                                        if (cleanSenderPhone) {
-                                            const fullPhone = cleanSenderPhone.length === 10 ? ('91' + cleanSenderPhone) : cleanSenderPhone;
-                                            const phoneJid = `${fullPhone}@s.whatsapp.net`;
-                                            if (phoneJid !== directJid) {
-                                                return await sock.sendMessage(phoneJid, payload, { quoted: msg });
-                                            }
+                                        return await sock.sendMessage(targetJid, payload);
+                                    } catch (eSend) {
+                                        console.warn(`[sendCustomerReply] Send to ${targetJid} failed (${eSend.message}), trying fallback to ${senderJid}...`);
+                                        if (targetJid !== senderJid) {
+                                            return await sock.sendMessage(senderJid, payload);
                                         }
                                     }
                                 };
