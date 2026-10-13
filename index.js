@@ -213,8 +213,20 @@ app.use(express.static('public')); // Serve the web dashboard
 app.use('/Google Script', express.static(path.join(__dirname, 'Google Script')));
 app.use('/Google Script', express.static(path.join(__dirname, '..', 'Google Script')));
 
+// Filter out noisy internal libsignal session retry errors (automatically resolved by Baileys pre-key exchange)
+const originalConsoleError = console.error;
+console.error = function (...args) {
+    const msg = String(args[0] || '');
+    if (msg.includes('Session error:Error: Bad MAC') || 
+        msg.includes('Failed to decrypt message with any known session') ||
+        msg.includes('No matching sessions found for message')) {
+        return;
+    }
+    originalConsoleError.apply(console, args);
+};
+
 // Logger
-const pinoLogger = pino({ level: 'warn' });
+const pinoLogger = pino({ level: 'error' });
 
 // --------------------------------------------------------------------------
 // Multi-Tenant User Sessions Map
@@ -489,7 +501,10 @@ export async function connectUserWhatsApp(userId) {
             defaultQueryTimeoutMs: 60000,
             retryRequestDelayMs: 250,
             getMessage: async (key) => {
-                return messageStore.get(key.id) || proto.Message.fromObject({});
+                if (key?.id && messageStore.has(key.id)) {
+                    return messageStore.get(key.id);
+                }
+                return undefined;
             }
         });
 
