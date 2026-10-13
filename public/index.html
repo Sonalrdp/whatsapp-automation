@@ -6410,7 +6410,11 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         sheetTabName: document.getElementById('input-sheet-gid')?.dataset.tabName || null,
         tallyUrl: document.getElementById('input-tally-url')?.value.trim() || 'http://localhost:9000',
         tallyCompany: document.getElementById('input-tally-company')?.value.trim() || '',
-        triggerKeywords: document.getElementById('input-tally-keywords')?.value.trim() || 'ledger, leadger, statement, hisab, khata',
+        triggerKeywords: (document.getElementById('input-tally-keywords')?.value || '')
+          .split(',')
+          .map(k => k.trim())
+          .filter(k => k.length >= 2)
+          .join(', ') || 'ledger, leadger, statement, hisab, khata',
         waitMessage: document.getElementById('input-tally-wait-msg')?.value.trim() || '',
         unregisteredMessage: document.getElementById('input-tally-unreg-msg')?.value.trim() || '',
         updatedAt: new Date().toISOString()

@@ -84,6 +84,40 @@ function isSamePhoneNumber(phone1, phone2) {
     return clean1 === clean2;
 }
 
+// Helper: Checks if incoming text matches any trigger keyword strictly (whole word / exact phrase)
+function isTallyTriggerMatch(messageText, rawKeywords) {
+    if (!messageText) return false;
+    const cleanMsg = messageText.toString().trim().toLowerCase();
+    if (!cleanMsg) return false;
+
+    const keywords = (rawKeywords || 'ledger, leadger, statement, hisab, khata')
+        .split(',')
+        .map(k => k.trim().toLowerCase())
+        .filter(k => k.length >= 2); // Ignore single characters like 'a' or accidental commas
+
+    if (keywords.length === 0) return false;
+
+    // Remove punctuation, collapse spaces to extract discrete words
+    const normalizedMsg = cleanMsg.replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+    const words = normalizedMsg.split(' ').filter(Boolean);
+
+    for (const kw of keywords) {
+        // Direct match with full message
+        if (cleanMsg === kw || normalizedMsg === kw) return true;
+
+        if (kw.includes(' ')) {
+            // Multi-word phrase matching
+            const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(^|\\s)${escaped}(\\s|$)`, 'i');
+            if (regex.test(normalizedMsg)) return true;
+        } else {
+            // Single-word keyword: must match as a standalone word (NOT a substring inside unrelated words)
+            if (words.includes(kw)) return true;
+        }
+    }
+    return false;
+}
+
 // Universal Sender Phone Resolver (resolves @s.whatsapp.net, self-chats, and modern WhatsApp @lid)
 async function resolveSenderPhone(effectiveJid, msg, sock, currentConfig) {
     if (!effectiveJid) return '';
@@ -677,168 +711,178 @@ export async function connectUserWhatsApp(userId) {
 
                                 // 1. Check if customer is responding to duration prompt
                                 if (activeTallySession && activeTallySession.step === 'AWAITING_DURATION') {
-                                    const tpl = activeTallyTemplates.find(t => t.id === activeTallySession.tplId) || activeTallyTemplates[0];
-
-                                    // If customer types "ledger" or keyword again, re-prompt menu
-                                    const isKeywordAgain = /^(ledger|leadger|statement|hisab|khata)/i.test(lowerText);
-                                    if (isKeywordAgain) {
-                                        const promptMenu = `*Hello ${activeTallySession.ledgerName}* 👋\n\nPlease select the statement duration for your Ledger Account:\n\n1️⃣ *1 Month* (Last 30 Days)\n2️⃣ *3 Months* (Last 90 Days)\n3️⃣ *6 Months* (Last 180 Days)\n4️⃣ *12 Months* (Last 1 Year)\n\n👉 Reply with *1, 2, 3, or 4* (or type the duration name).`;
-                                        await sendCustomerReply({ text: promptMenu });
-                                        session.addLog(`[Tally Ledger Bot] 📤 Re-sent duration choices menu to +${cleanSenderPhone || senderJid}`);
-                                        continue;
-                                    }
-
-                                    let selectedMonths = null;
-                                    let periodLabel = '';
-
-                                    if (/^(1|1\s*m|1\s*month|one|one\s*month)$/i.test(lowerText) || lowerText.includes('1 month') || lowerText === '1') {
-                                        selectedMonths = 1;
-                                        periodLabel = 'Last 1 Month';
-                                    } else if (/^(2|3\s*m|3\s*month|3\s*months|three|three\s*months)$/i.test(lowerText) || lowerText.includes('3 month') || lowerText === '2') {
-                                        selectedMonths = 3;
-                                        periodLabel = 'Last 3 Months';
-                                    } else if (/^(3|6\s*m|6\s*month|6\s*months|six|six\s*months)$/i.test(lowerText) || lowerText.includes('6 month') || lowerText === '3') {
-                                        selectedMonths = 6;
-                                        periodLabel = 'Last 6 Months';
-                                    } else if (/^(4|12\s*m|12\s*month|12\s*months|1\s*year|year|twelve)$/i.test(lowerText) || lowerText.includes('12 month') || lowerText === '4' || lowerText.includes('1 year')) {
-                                        selectedMonths = 12;
-                                        periodLabel = 'Last 12 Months';
-                                    }
-
-                                    if (!selectedMonths) {
-                                        session.addLog(`[Tally Ledger Bot] ⚠️ Customer (+${cleanSenderPhone}) replied "${textMsg}" which is not a valid duration option.`);
-                                        await sendCustomerReply({
-                                            text: `⚠️ *Please choose a valid duration:*\n\nReply with *1*, *2*, *3*, or *4*:\n1️⃣ *1 Month*\n2️⃣ *3 Months*\n3️⃣ *6 Months*\n4️⃣ *12 Months*`
-                                        });
-                                        continue;
-                                    }
-
-                                // Update state to prevent duplicate triggers
-                                activeTallySession.step = 'PROCESSING';
-
-                                // Send INSTANT Waiting Message immediately (< 1 sec)
-                                const waitNotice = tpl.waitMessage || '⏳ *Please wait up to 10 minutes.* Your ledger request is being generated from our accounting system. Once ready, it will be delivered here.';
-                                await sendCustomerReply({ text: waitNotice });
-                                session.addLog(`[Tally Ledger Bot] ⚡ Customer (+${cleanSenderPhone}) selected ${periodLabel}. Instant wait message sent!`);
-
-                                // Async Background Job: Fetch from Tally, Generate PDF, and Send
-                                (async () => {
-                                    try {
-                                        session.addLog(`[Tally Ledger Bot] 🔄 Connecting to Tally (${tpl.tallyUrl || 'http://localhost:9000'}) for "${activeTallySession.ledgerName}" (${periodLabel})...`);
-
-                                        const data = await fetchLedgerTransactions({
-                                            tallyUrl: tpl.tallyUrl,
-                                            companyName: tpl.tallyCompany,
-                                            ledgerName: activeTallySession.ledgerName,
-                                            months: selectedMonths
-                                        });
-
-                                        session.addLog(`[Tally Ledger Bot] 📄 Generating official statement PDF for ${activeTallySession.ledgerName} (${data.vouchers.length} vouchers)...`);
-
-                                        const pdfBuffer = await generateLedgerPdf({
-                                            companyName: tpl.companyName || tpl.tallyCompany || 'Accounts Department',
-                                            ledgerName: activeTallySession.ledgerName,
-                                            phoneNumber: cleanSenderPhone,
-                                            periodLabel,
-                                            fromDateStr: data.fromDateStr,
-                                            toDateStr: data.toDateStr,
-                                            openingBalance: data.openingBalance,
-                                            totalDebit: data.totalDebit,
-                                            totalCredit: data.totalCredit,
-                                            closingBalance: data.closingBalance,
-                                            vouchers: data.vouchers
-                                        });
-
-                                        const safePartyFilename = activeTallySession.ledgerName.replace(/[^a-zA-Z0-9_-]/g, '_');
-                                        const outFileName = `Ledger_${safePartyFilename}_${periodLabel.replace(/\s+/g, '_')}.pdf`;
-                                        const balSign = data.closingBalance >= 0 ? 'Dr (Receivable)' : 'Cr (Payable)';
-                                        const captionText = `*${tpl.companyName || tpl.tallyCompany || 'Accounts Department'}*\n\n📄 *Statement of Ledger Account*\n👤 *Party:* ${activeTallySession.ledgerName}\n📅 *Period:* ${data.fromDateStr} to ${data.toDateStr}\n💰 *Closing Balance:* Rs. ${formatCurrency(data.closingBalance)} ${balSign}\n\n_Thank you for your business!_`;
-
-                                        await sendCustomerReply({
-                                            document: pdfBuffer,
-                                            mimetype: 'application/pdf',
-                                            fileName: outFileName,
-                                            caption: captionText
-                                        });
-
-                                        session.addLog(`[Tally Ledger Bot] ✅ Successfully delivered Ledger PDF (${outFileName}) to +${cleanSenderPhone}!`);
-                                        recordUserMessageSent(userId).catch(() => {});
-                                    } catch (bgErr) {
-                                        session.addLog(`[Tally Ledger Bot] ❌ Error generating statement: ${bgErr.message}`);
-                                        await sendCustomerReply({
-                                            text: `⚠️ Our accounting server encountered a delay while generating your statement. Our team has been notified.`
-                                        }).catch(() => {});
-                                    } finally {
+                                    // Session expiration check (10 minutes)
+                                    const SESSION_EXPIRY_MS = 10 * 60 * 1000;
+                                    if (activeTallySession.timestamp && (Date.now() - activeTallySession.timestamp > SESSION_EXPIRY_MS)) {
                                         tallyUserSessions.delete(sessionKey);
+                                        // Expired: do not treat as duration reply; fall through to trigger check
+                                    } else {
+                                        const tpl = activeTallyTemplates.find(t => t.id === activeTallySession.tplId) || activeTallyTemplates[0];
+
+                                        // Cancellation support
+                                        if (/^(cancel|exit|stop|close|quit|nahi|no)$/i.test(lowerText.trim())) {
+                                            tallyUserSessions.delete(sessionKey);
+                                            await sendCustomerReply({ text: '❌ *Ledger request cancelled.* You can request your statement again anytime by typing *ledger*.' });
+                                            continue;
+                                        }
+
+                                        // If customer types "ledger" or keyword again, re-prompt menu
+                                        const isKeywordAgain = isTallyTriggerMatch(lowerText, tpl.triggerKeywords);
+                                        if (isKeywordAgain) {
+                                            activeTallySession.timestamp = Date.now();
+                                            const promptMenu = `*Hello ${activeTallySession.ledgerName}* 👋\n\nPlease select the statement duration for your Ledger Account:\n\n1️⃣ *1 Month* (Last 30 Days)\n2️⃣ *3 Months* (Last 90 Days)\n3️⃣ *6 Months* (Last 180 Days)\n4️⃣ *12 Months* (Last 1 Year)\n\n👉 Reply with *1, 2, 3, or 4* (or type the duration name).`;
+                                            await sendCustomerReply({ text: promptMenu });
+                                            session.addLog(`[Tally Ledger Bot] 📤 Re-sent duration choices menu to +${cleanSenderPhone || senderJid}`);
+                                            continue;
+                                        }
+
+                                        let selectedMonths = null;
+                                        let periodLabel = '';
+
+                                        if (/^(1|1\s*m|1\s*month|one|one\s*month)$/i.test(lowerText) || lowerText.includes('1 month') || lowerText === '1') {
+                                            selectedMonths = 1;
+                                            periodLabel = 'Last 1 Month';
+                                        } else if (/^(2|3\s*m|3\s*month|3\s*months|three|three\s*months)$/i.test(lowerText) || lowerText.includes('3 month') || lowerText === '2') {
+                                            selectedMonths = 3;
+                                            periodLabel = 'Last 3 Months';
+                                        } else if (/^(3|6\s*m|6\s*month|6\s*months|six|six\s*months)$/i.test(lowerText) || lowerText.includes('6 month') || lowerText === '3') {
+                                            selectedMonths = 6;
+                                            periodLabel = 'Last 6 Months';
+                                        } else if (/^(4|12\s*m|12\s*month|12\s*months|1\s*year|year|twelve)$/i.test(lowerText) || lowerText.includes('12 month') || lowerText === '4' || lowerText.includes('1 year')) {
+                                            selectedMonths = 12;
+                                            periodLabel = 'Last 12 Months';
+                                        }
+
+                                        if (!selectedMonths) {
+                                            activeTallySession.invalidCount = (activeTallySession.invalidCount || 0) + 1;
+                                            if (activeTallySession.invalidCount >= 2) {
+                                                // Drop session after 2 invalid attempts so user is not stuck
+                                                tallyUserSessions.delete(sessionKey);
+                                                continue;
+                                            }
+                                            session.addLog(`[Tally Ledger Bot] ⚠️ Customer (+${cleanSenderPhone}) replied "${textMsg}" which is not a valid duration option.`);
+                                            await sendCustomerReply({
+                                                text: `⚠️ *Please choose a valid duration:*\n\nReply with *1*, *2*, *3*, or *4*:\n1️⃣ *1 Month*\n2️⃣ *3 Months*\n3️⃣ *6 Months*\n4️⃣ *12 Months*`
+                                            });
+                                            continue;
+                                        }
+
+                                        // Update state to prevent duplicate triggers
+                                        activeTallySession.step = 'PROCESSING';
+
+                                        // Send INSTANT Waiting Message immediately (< 1 sec)
+                                        const waitNotice = tpl.waitMessage || '⏳ *Please wait up to 10 minutes.* Your ledger request is being generated from our accounting system. Once ready, it will be delivered here.';
+                                        await sendCustomerReply({ text: waitNotice });
+                                        session.addLog(`[Tally Ledger Bot] ⚡ Customer (+${cleanSenderPhone}) selected ${periodLabel}. Instant wait message sent!`);
+
+                                        // Async Background Job: Fetch from Tally, Generate PDF, and Send
+                                        (async () => {
+                                            try {
+                                                session.addLog(`[Tally Ledger Bot] 🔄 Connecting to Tally (${tpl.tallyUrl || 'http://localhost:9000'}) for "${activeTallySession.ledgerName}" (${periodLabel})...`);
+
+                                                const data = await fetchLedgerTransactions({
+                                                    tallyUrl: tpl.tallyUrl,
+                                                    companyName: tpl.tallyCompany,
+                                                    ledgerName: activeTallySession.ledgerName,
+                                                    months: selectedMonths
+                                                });
+
+                                                session.addLog(`[Tally Ledger Bot] 📄 Generating official statement PDF for ${activeTallySession.ledgerName} (${data.vouchers.length} vouchers)...`);
+
+                                                const pdfBuffer = await generateLedgerPdf({
+                                                    companyName: tpl.companyName || tpl.tallyCompany || 'Accounts Department',
+                                                    ledgerName: activeTallySession.ledgerName,
+                                                    phoneNumber: cleanSenderPhone,
+                                                    periodLabel,
+                                                    fromDateStr: data.fromDateStr,
+                                                    toDateStr: data.toDateStr,
+                                                    openingBalance: data.openingBalance,
+                                                    totalDebit: data.totalDebit,
+                                                    totalCredit: data.totalCredit,
+                                                    closingBalance: data.closingBalance,
+                                                    vouchers: data.vouchers
+                                                });
+
+                                                const safePartyFilename = activeTallySession.ledgerName.replace(/[^a-zA-Z0-9_-]/g, '_');
+                                                const outFileName = `Ledger_${safePartyFilename}_${periodLabel.replace(/\s+/g, '_')}.pdf`;
+                                                const balSign = data.closingBalance >= 0 ? 'Dr (Receivable)' : 'Cr (Payable)';
+                                                const captionText = `*${tpl.companyName || tpl.tallyCompany || 'Accounts Department'}*\n\n📄 *Statement of Ledger Account*\n👤 *Party:* ${activeTallySession.ledgerName}\n📅 *Period:* ${data.fromDateStr} to ${data.toDateStr}\n💰 *Closing Balance:* Rs. ${formatCurrency(data.closingBalance)} ${balSign}\n\n_Thank you for your business!_`;
+
+                                                await sendCustomerReply({
+                                                    document: pdfBuffer,
+                                                    mimetype: 'application/pdf',
+                                                    fileName: outFileName,
+                                                    caption: captionText
+                                                });
+
+                                                session.addLog(`[Tally Ledger Bot] ✅ Successfully delivered Ledger PDF (${outFileName}) to +${cleanSenderPhone}!`);
+                                                recordUserMessageSent(userId).catch(() => {});
+                                            } catch (bgErr) {
+                                                session.addLog(`[Tally Ledger Bot] ❌ Error generating statement: ${bgErr.message}`);
+                                                await sendCustomerReply({
+                                                    text: `⚠️ Our accounting server encountered a delay while generating your statement. Our team has been notified.`
+                                                }).catch(() => {});
+                                            } finally {
+                                                tallyUserSessions.delete(sessionKey);
+                                            }
+                                        })();
+
+                                        continue;
                                     }
-                                })();
+                                }
 
-                                continue;
-                            }
+                                // 2. Check if message is a new keyword trigger for Tally (e.g. "ledger", "leadger", "statement", "hisab", "khata")
+                                let tallyTriggerMatched = false;
+                                for (const tpl of activeTallyTemplates) {
+                                    const isTrigger = isTallyTriggerMatch(textMsg, tpl.triggerKeywords);
+                                    if (!isTrigger) continue;
 
-                            // 2. Check if message is a new keyword trigger for Tally (e.g. "ledger", "leadger")
-                            let tallyTriggerMatched = false;
-                            for (const tpl of activeTallyTemplates) {
-                                const keywords = (tpl.triggerKeywords || 'ledger, leadger, statement, hisab, khata')
-                                    .split(',')
-                                    .map(k => k.trim().toLowerCase())
-                                    .filter(Boolean);
+                                    tallyTriggerMatched = true;
+                                    session.addLog(`[Tally Ledger Bot] 🔍 Received keyword trigger "${textMsg}" from +${cleanSenderPhone || senderJid}. Verifying registered mobile in Tally...`);
 
-                                const rawCleanText = lowerText.replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
-                                const textWords = rawCleanText.split(' ');
-                                const isTrigger = keywords.some(k => 
-                                    lowerText === k || 
-                                    lowerText.includes(k) || 
-                                    textWords.includes(k)
-                                );
-                                if (!isTrigger) continue;
-
-                                tallyTriggerMatched = true;
-                                session.addLog(`[Tally Ledger Bot] 🔍 Received keyword trigger "${textMsg}" from +${cleanSenderPhone || senderJid}. Verifying registered mobile in Tally...`);
-
-                                // Verify registered number in Tally
-                                const checkResult = await findLedgerByPhone({
-                                    tallyUrl: tpl.tallyUrl,
-                                    companyName: tpl.tallyCompany,
-                                    phoneNumber: cleanSenderPhone
-                                });
-
-                                if (checkResult.tallyUnavailable) {
-                                    session.addLog(`[Tally Ledger Bot] ⏳ Tally accounting server is synchronizing/offline. Notifying customer...`);
-                                    await sendCustomerReply({
-                                        text: `⏳ *Our accounting system is currently synchronizing. Please try later.*`
+                                    // Verify registered number in Tally
+                                    const checkResult = await findLedgerByPhone({
+                                        tallyUrl: tpl.tallyUrl,
+                                        companyName: tpl.tallyCompany,
+                                        phoneNumber: cleanSenderPhone
                                     });
+
+                                    if (checkResult.tallyUnavailable) {
+                                        session.addLog(`[Tally Ledger Bot] ⏳ Tally accounting server is synchronizing/offline. Notifying customer...`);
+                                        await sendCustomerReply({
+                                            text: `⏳ *Our accounting system is currently synchronizing. Please try later.*`
+                                        });
+                                        break;
+                                    }
+
+                                    if (!checkResult.found) {
+                                        session.addLog(`[Tally Ledger Bot] ⚠️ Mobile +${cleanSenderPhone || senderJid} is NOT registered in Tally. Sending notice...`);
+                                        const unregMsg = tpl.unregisteredMessage || `❌ *Notice:* Your mobile number (+${cleanSenderPhone || 'your number'}) is not registered with our accounting records.\n\nPlease contact our accounts department to link your mobile number.`;
+                                        await sendCustomerReply({ text: unregMsg });
+                                        session.addLog(`[Tally Ledger Bot] 📤 Unregistered notice delivered to +${cleanSenderPhone || senderJid}`);
+                                        break;
+                                    }
+
+                                    // Verified! Save state and prompt for duration
+                                    const partyName = checkResult.ledgerName;
+                                    tallyUserSessions.set(sessionKey, {
+                                        step: 'AWAITING_DURATION',
+                                        ledgerName: partyName,
+                                        tplId: tpl.id,
+                                        timestamp: Date.now()
+                                    });
+
+                                    session.addLog(`[Tally Ledger Bot] ✅ Verified party "${partyName}". Sending duration choices...`);
+
+                                    const promptMenu = `*Hello ${partyName}* 👋\n\nPlease select the statement duration for your Ledger Account:\n\n1️⃣ *1 Month* (Last 30 Days)\n2️⃣ *3 Months* (Last 90 Days)\n3️⃣ *6 Months* (Last 180 Days)\n4️⃣ *12 Months* (Last 1 Year)\n\n👉 Reply with *1, 2, 3, or 4* (or type the duration name).`;
+                                    await sendCustomerReply({ text: promptMenu });
+                                    session.addLog(`[Tally Ledger Bot] 📤 Duration choices menu delivered to +${cleanSenderPhone}`);
                                     break;
                                 }
 
-                                if (!checkResult.found) {
-                                    session.addLog(`[Tally Ledger Bot] ⚠️ Mobile +${cleanSenderPhone || senderJid} is NOT registered in Tally. Sending notice...`);
-                                    const unregMsg = tpl.unregisteredMessage || `❌ *Notice:* Your mobile number (+${cleanSenderPhone || 'your number'}) is not registered with our accounting records.\n\nPlease contact our accounts department to link your mobile number.`;
-                                    await sendCustomerReply({ text: unregMsg });
-                                    session.addLog(`[Tally Ledger Bot] 📤 Unregistered notice delivered to +${cleanSenderPhone || senderJid}`);
-                                    break;
+                                if (tallyTriggerMatched) {
+                                    continue;
                                 }
-
-                                // Verified! Save state and prompt for duration
-                                const partyName = checkResult.ledgerName;
-                                tallyUserSessions.set(sessionKey, {
-                                    step: 'AWAITING_DURATION',
-                                    ledgerName: partyName,
-                                    tplId: tpl.id,
-                                    timestamp: Date.now()
-                                });
-
-                                session.addLog(`[Tally Ledger Bot] ✅ Verified party "${partyName}". Sending duration choices...`);
-
-                                const promptMenu = `*Hello ${partyName}* 👋\n\nPlease select the statement duration for your Ledger Account:\n\n1️⃣ *1 Month* (Last 30 Days)\n2️⃣ *3 Months* (Last 90 Days)\n3️⃣ *6 Months* (Last 180 Days)\n4️⃣ *12 Months* (Last 1 Year)\n\n👉 Reply with *1, 2, 3, or 4* (or type the duration name).`;
-                                await sendCustomerReply({ text: promptMenu });
-                                session.addLog(`[Tally Ledger Bot] 📤 Duration choices menu delivered to +${cleanSenderPhone}`);
-                                break;
-                            }
-
-                            if (tallyTriggerMatched) {
-                                continue;
-                            }
                         }
 
                         const activeTemplates = (currentConfig.templates && Array.isArray(currentConfig.templates))
