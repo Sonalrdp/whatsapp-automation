@@ -1,0 +1,1758 @@
+import 'dotenv/config';
+import pg from 'pg';
+import mysql from 'mysql2/promise';
+import crypto from 'crypto';
+import { initAuthCreds, BufferJSON, proto, useMultiFileAuthState } from '@whiskeysockets/baileys';
+import fs from 'fs/promises';
+import path from 'path';
+
+let dbType = null; // 'mysql' | 'postgres' | null
+let pgPool = null;
+let mysqlPool = null;
+let pool = null;
+
+const rawDbUrl = (process.env.DATABASE_URL || '').trim();
+const hasMysqlHost = Boolean(process.env.DB_HOST);
+const isMysql = rawDbUrl.startsWith('mysql://') || rawDbUrl.startsWith('mysql2://') || hasMysqlHost;
+const isPostgres = rawDbUrl.startsWith('postgres://') || rawDbUrl.startsWith('postgresql://');
+
+if (isMysql) {
+    dbType = 'mysql';
+    let config = {};
+    if (hasMysqlHost) {
+        const host = process.env.DB_HOST.trim();
+        const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+        let dbName = (process.env.DB_DATABASE || 'whatsapp_db').replace(/^['"]|['"]$/g, '').trim();
+        if (!dbName || dbName === 'sys') dbName = 'whatsapp_db';
+        config = {
+            host,
+            port: parseInt(process.env.DB_PORT || '4000', 10),
+            user: (process.env.DB_USERNAME || 'root').replace(/^['"]|['"]$/g, '').trim(),
+            password: (process.env.DB_PASSWORD || '').replace(/^['"]|['"]$/g, '').trim(),
+            database: dbName,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+            ssl: isLocal ? false : { minVersion: 'TLSv1.2', rejectUnauthorized: true }
+        };
+    } else {
+        try {
+            const parsed = new URL(rawDbUrl);
+            const isLocal = parsed.hostname.includes('localhost') || parsed.hostname.includes('127.0.0.1');
+            let dbName = parsed.pathname ? parsed.pathname.replace(/^\//, '') : 'whatsapp_db';
+            if (!dbName || dbName === 'sys') dbName = 'whatsapp_db';
+            config = {
+                host: parsed.hostname,
+                port: parseInt(parsed.port || '4000', 10),
+                user: decodeURIComponent(parsed.username),
+                password: decodeURIComponent(parsed.password),
+                database: dbName,
+                waitForConnections: true,
+                connectionLimit: 10,
+                queueLimit: 0,
+                ssl: isLocal ? false : { minVersion: 'TLSv1.2', rejectUnauthorized: true }
+            };
+        } catch (e) {
+            console.error("Invalid MySQL DATABASE_URL:", e.message);
+        }
+    }
+    console.log(`TiDB Cloud / MySQL detected. Initializing connection to ${config.host}:${config.port}/${config.database}...`);
+    mysqlPool = mysql.createPool(config);
+
+    pool = {
+        query: async (sql, params = []) => {
+            const mysqlSql = sql.replace(/\$\d+/g, '?');
+            const [rows] = await mysqlPool.query(mysqlSql, params);
+            const isArr = Array.isArray(rows);
+            return {
+                rows: isArr ? rows : [],
+                rowCount: isArr ? rows.length : (rows?.affectedRows || 0),
+                raw: rows
+            };
+        }
+    };
+} else if (isPostgres) {
+    dbType = 'postgres';
+    console.log("PostgreSQL DATABASE_URL detected. Initializing PostgreSQL pool...");
+    const { Pool } = pg;
+    pgPool = new Pool({
+        connectionString: rawDbUrl,
+        ssl: rawDbUrl.includes('localhost') ? false : {
+            rejectUnauthorized: false // Required for Render Postgres connections
+        }
+    });
+    pool = pgPool;
+} else {
+    console.log("No DATABASE_URL or DB_HOST found. Fallback to local file storage will be used.");
+}
+
+// In-Memory OTP store for quick lookups & fallback
+const otpStore = new Map();
+
+// --------------------------------------------------------------------------
+// 12-Digit Numeric User ID Generator
+// --------------------------------------------------------------------------
+export function generate12DigitId() {
+    // Generate a random 12-digit number (100000000000 - 999999999999)
+    const firstDigit = Math.floor(1 + Math.random() * 9).toString();
+    const remainingDigits = crypto.randomInt(10000000000, 99999999999).toString().padStart(11, '0');
+    return `${firstDigit}${remainingDigits}`;
+}
+
+// --------------------------------------------------------------------------
+// 50-Character Alphanumeric Access Token Generator
+// --------------------------------------------------------------------------
+export function generateAccessToken(length = 50) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let token = '';
+    const bytes = crypto.randomBytes(length);
+    for (let i = 0; i < length; i++) {
+        token += chars[bytes[i] % chars.length];
+    }
+    return token;
+}
+
+// --------------------------------------------------------------------------
+// 30-Character Alphanumeric ConvertAPI Secret Generator
+// --------------------------------------------------------------------------
+export function generateConvertApiSecret(length = 30) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let secret = '';
+    const bytes = crypto.randomBytes(length);
+    for (let i = 0; i < length; i++) {
+        secret += chars[bytes[i] % chars.length];
+    }
+    return secret;
+}
+
+// --------------------------------------------------------------------------
+// Password Hashing & Verification
+// --------------------------------------------------------------------------
+export function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+    return `${salt}:${hash}`;
+}
+
+export function verifyPasswordHash(password, storedHash) {
+    if (!storedHash || !storedHash.includes(':')) return false;
+    const [salt, originalHash] = storedHash.split(':');
+    const hashToVerify = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+    return originalHash === hashToVerify;
+}
+
+// --------------------------------------------------------------------------
+// JWT Token Helpers
+// --------------------------------------------------------------------------
+const JWT_SECRET = process.env.JWT_SECRET || 'cortex_wa_default_jwt_secret_2026';
+
+export function createToken(payload, expiresInHours = 24 * 365 * 100) {
+    const header = { alg: 'HS256', typ: 'JWT' };
+    // Permanent login session: 100 years (never expires on its own)
+    const exp = Math.floor(Date.now() / 1000) + (expiresInHours * 60 * 60);
+    const fullPayload = { ...payload, exp };
+
+    const base64UrlEncode = (str) => Buffer.from(JSON.stringify(str)).toString('base64url');
+    const encodedHeader = base64UrlEncode(header);
+    const encodedPayload = base64UrlEncode(fullPayload);
+
+    const signature = crypto
+        .createHmac('sha256', JWT_SECRET)
+        .update(`${encodedHeader}.${encodedPayload}`)
+        .digest('base64url');
+
+    return `${encodedHeader}.${encodedPayload}.${signature}`;
+}
+
+export function verifyToken(token) {
+    if (!token) return null;
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    const [encodedHeader, encodedPayload, signature] = parts;
+    const expectedSignature = crypto
+        .createHmac('sha256', JWT_SECRET)
+        .update(`${encodedHeader}.${encodedPayload}`)
+        .digest('base64url');
+
+    if (signature !== expectedSignature) {
+        return null;
+    }
+
+    try {
+        const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf-8'));
+        // User session is permanent: never expire on its own
+        return payload;
+    } catch {
+        return null;
+    }
+}
+
+// --------------------------------------------------------------------------
+// Subscription Plans & Quotas Matrix
+// --------------------------------------------------------------------------
+export const SUBSCRIPTION_PLANS = {
+    trial: {
+        id: 'trial',
+        name: 'Free Trial',
+        price: 0,
+        period: '7 Days',
+        durationDays: 7,
+        dailyLimit: 15,
+        totalLimit: 105,
+        description: '7-Day Free Trial with 15 fixed messages every day'
+    },
+    starter_monthly: {
+        id: 'starter_monthly',
+        name: 'Starter Monthly',
+        price: 399,
+        period: '1 Month',
+        durationDays: 30,
+        dailyLimit: null,
+        totalLimit: 1000,
+        description: '1,000 messages / month • High-speed delivery'
+    },
+    pro_monthly: {
+        id: 'pro_monthly',
+        name: 'Pro Monthly',
+        price: 499,
+        period: '1 Month',
+        durationDays: 30,
+        dailyLimit: null,
+        totalLimit: 1500,
+        description: '1,500 messages / month • Priority WhatsApp socket'
+    },
+    starter_3m: {
+        id: 'starter_3m',
+        name: 'Starter 3 Months',
+        price: 1099,
+        period: '3 Months',
+        durationDays: 90,
+        dailyLimit: null,
+        totalLimit: 3000,
+        description: '3,000 messages (3 Months) • Save ₹98'
+    },
+    pro_3m: {
+        id: 'pro_3m',
+        name: 'Pro 3 Months',
+        price: 1349,
+        period: '3 Months',
+        durationDays: 90,
+        dailyLimit: null,
+        totalLimit: 4500,
+        description: '4,500 messages (3 Months) • Save ₹148'
+    },
+    starter_6m: {
+        id: 'starter_6m',
+        name: 'Starter 6 Months',
+        price: 1999,
+        period: '6 Months',
+        durationDays: 180,
+        dailyLimit: null,
+        totalLimit: 6000,
+        description: '6,000 messages (6 Months) • Save ₹395'
+    },
+    pro_6m: {
+        id: 'pro_6m',
+        name: 'Pro 6 Months',
+        price: 2499,
+        period: '6 Months',
+        durationDays: 180,
+        dailyLimit: null,
+        totalLimit: 9000,
+        description: '9,000 messages (6 Months) • Save ₹495'
+    },
+    starter_12m: {
+        id: 'starter_12m',
+        name: 'Starter 12 Months',
+        price: 3599,
+        period: '12 Months',
+        durationDays: 365,
+        dailyLimit: null,
+        totalLimit: 12000,
+        description: '12,000 messages (1 Year) • Save ₹1,189'
+    },
+    pro_12m: {
+        id: 'pro_12m',
+        name: 'Pro 12 Months',
+        price: 4499,
+        period: '12 Months',
+        durationDays: 365,
+        dailyLimit: null,
+        totalLimit: 18000,
+        description: '18,000 messages (1 Year) • Save ₹1,489'
+    },
+    addon_230: {
+        id: 'addon_230',
+        name: '200 + 30 Messages Booster Add-on',
+        price: 99,
+        period: 'Never Expires',
+        durationDays: 365,
+        dailyLimit: null,
+        totalLimit: 230,
+        isAddon: true,
+        description: '200 + 30 Extra Messages Booster (₹99) • Never Expires'
+    },
+    addon_300: {
+        id: 'addon_300',
+        name: '200 + 30 Messages Booster Add-on',
+        price: 99,
+        period: 'Never Expires',
+        durationDays: 365,
+        dailyLimit: null,
+        totalLimit: 230,
+        isAddon: true,
+        description: '200 + 30 Extra Messages Booster (₹99) • Never Expires'
+    }
+};
+
+export function getTodayIST() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+}
+
+// --------------------------------------------------------------------------
+// Database & Tables Initialization
+// --------------------------------------------------------------------------
+export async function initDatabase() {
+    if (dbType === 'mysql') {
+        try {
+            await mysqlPool.query(`
+                CREATE TABLE IF NOT EXISTS whatsapp_sessions (
+                    session_id VARCHAR(100) NOT NULL,
+                    \`key\` VARCHAR(255) NOT NULL,
+                    value LONGTEXT NOT NULL,
+                    PRIMARY KEY (session_id, \`key\`)
+                );
+            `);
+
+            await mysqlPool.query(`
+                CREATE TABLE IF NOT EXISTS cortex_users (
+                    id VARCHAR(64) PRIMARY KEY,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    password_hash VARCHAR(255),
+                    access_token VARCHAR(100),
+                    convert_api_secret VARCHAR(50),
+                    role VARCHAR(50) DEFAULT 'user',
+                    avatar TEXT,
+                    plan VARCHAR(50) DEFAULT 'trial',
+                    plan_expires_at DATETIME NULL,
+                    messages_sent_today INT DEFAULT 0,
+                    last_message_date VARCHAR(20),
+                    messages_sent_total INT DEFAULT 0,
+                    addon_credits INT DEFAULT 0,
+                    claimed_addon BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                );
+            `);
+
+            try {
+                await mysqlPool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS access_token VARCHAR(100)`);
+                await mysqlPool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS convert_api_secret VARCHAR(50)`);
+            } catch {}
+
+            console.log("TiDB / MySQL database initialized successfully (tables verified).");
+        } catch (err) {
+            console.error("Failed to initialize MySQL database tables:", err);
+        }
+    } else if (dbType === 'postgres') {
+        try {
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS whatsapp_sessions (
+                    session_id VARCHAR(100) NOT NULL,
+                    key VARCHAR(255) NOT NULL,
+                    value TEXT NOT NULL,
+                    PRIMARY KEY (session_id, key)
+                );
+            `);
+
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS cortex_users (
+                    id VARCHAR(64) PRIMARY KEY,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    password_hash VARCHAR(255),
+                    access_token VARCHAR(100),
+                    convert_api_secret VARCHAR(50),
+                    role VARCHAR(50) DEFAULT 'user',
+                    avatar TEXT,
+                    plan VARCHAR(50) DEFAULT 'trial',
+                    plan_expires_at TIMESTAMP,
+                    messages_sent_today INT DEFAULT 0,
+                    last_message_date VARCHAR(20),
+                    messages_sent_total INT DEFAULT 0,
+                    addon_credits INT DEFAULT 0,
+                    claimed_addon BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            // Apply column migrations if table already existed
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS access_token VARCHAR(100)`);
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS convert_api_secret VARCHAR(50)`);
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS plan VARCHAR(50) DEFAULT 'trial'`);
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP`);
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS messages_sent_today INT DEFAULT 0`);
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS last_message_date VARCHAR(20)`);
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS messages_sent_total INT DEFAULT 0`);
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS addon_credits INT DEFAULT 0`);
+            await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS claimed_addon BOOLEAN DEFAULT FALSE`);
+
+            console.log("PostgreSQL database initialized successfully (tables verified).");
+        } catch (err) {
+            console.error("Failed to initialize PostgreSQL database tables:", err);
+        }
+    }
+
+    try {
+        await fs.mkdir('auth_info', { recursive: true });
+        await fs.mkdir('bot_configs', { recursive: true });
+    } catch {}
+
+    await seedDefaultUsers();
+}
+
+// --------------------------------------------------------------------------
+// Users Store & Management
+// --------------------------------------------------------------------------
+const LOCAL_USERS_FILE = 'users.json';
+
+async function readLocalUsers() {
+    try {
+        const data = await fs.readFile(LOCAL_USERS_FILE, 'utf-8');
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+            let modified = false;
+            parsed.forEach(u => {
+                if (!u.access_token || u.access_token.length !== 50) {
+                    u.access_token = generateAccessToken(50);
+                    modified = true;
+                }
+                if (!u.convert_api_secret || u.convert_api_secret.length !== 30) {
+                    u.convert_api_secret = generateConvertApiSecret(30);
+                    modified = true;
+                }
+            });
+            if (modified) {
+                await saveLocalUsers(parsed);
+            }
+            return parsed;
+        }
+        return [];
+    } catch {
+        return [];
+    }
+}
+
+async function saveLocalUsers(users) {
+    try {
+        await fs.writeFile(LOCAL_USERS_FILE, JSON.stringify(users, null, 2));
+    } catch (err) {
+        console.error("Error saving local users file:", err);
+    }
+}
+
+export async function seedDefaultUsers() {
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin.demo@gmail.com').toLowerCase().trim();
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Avoid@123';
+    const userEmail = (process.env.DEMO_USER_EMAIL || 'user.demo@gmail.com').toLowerCase().trim();
+    const userPassword = process.env.DEMO_USER_PASSWORD || 'Avoid@123';
+
+    try {
+        // Seed Admin with fixed 12-digit ID: 100000000001
+        let admin = (await getUserByEmail(adminEmail)) || (await getUserById('100000000001'));
+        if (!admin) {
+            await createUser({
+                id: '100000000001',
+                email: adminEmail,
+                name: 'Cortex Administrator',
+                password: adminPassword,
+                role: 'admin',
+                avatar: 'assets/images/avatar/avatar-1.jpg',
+                plan: 'pro_12m'
+            });
+            console.log(`Default Admin seeded with 12-digit UID [100000000001]: ${adminEmail}`);
+        } else {
+            // Ensure admin role and plan
+            if (admin.role !== 'admin' || admin.email !== adminEmail) {
+                if (pool) {
+                    await pool.query(
+                        `UPDATE cortex_users SET role = 'admin', email = $1, plan = 'pro_12m' WHERE id = $2`,
+                        [adminEmail, admin.id]
+                    );
+                }
+            }
+        }
+    } catch (adminErr) {
+        console.warn("Notice in seedDefaultUsers (Admin):", adminErr.message);
+    }
+
+    try {
+        // Seed Regular Demo User with fixed 12-digit ID: 200000000002
+        let demoUser = (await getUserByEmail(userEmail)) || (await getUserById('200000000002'));
+        if (!demoUser) {
+            await createUser({
+                id: '200000000002',
+                email: userEmail,
+                name: 'Demo Standard User',
+                password: userPassword,
+                role: 'user',
+                avatar: 'assets/images/avatar/avatar-2.jpg',
+                plan: 'trial'
+            });
+            console.log(`Default Demo User seeded with 12-digit UID [200000000002]: ${userEmail}`);
+        }
+    } catch (demoErr) {
+        console.warn("Notice in seedDefaultUsers (Demo User):", demoErr.message);
+    }
+
+    // Migration: ensure all existing local users have a 12-digit numeric UID and 50-character access token
+    if (!pool) {
+        const users = await readLocalUsers();
+        let changed = false;
+        users.forEach(u => {
+            if (!u.id || !/^\d{12}$/.test(u.id)) {
+                u.id = generate12DigitId();
+                changed = true;
+            }
+            if (!u.access_token || u.access_token.length !== 50) {
+                u.access_token = generateAccessToken(50);
+                changed = true;
+            }
+        });
+        if (changed) {
+            await saveLocalUsers(users);
+        }
+    } else {
+        // Auto-migrate existing local users to cloud database if not already present
+        try {
+            const localUsers = await readLocalUsers();
+            for (const lu of localUsers) {
+                const existing = (await getUserByEmail(lu.email)) || (await getUserById(lu.id));
+                if (!existing) {
+                    await pool.query(
+                        `INSERT INTO cortex_users (
+                            id, email, name, password_hash, access_token, role, avatar, plan, plan_expires_at, 
+                            messages_sent_today, last_message_date, messages_sent_total, addon_credits, claimed_addon
+                         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                         ON DUPLICATE KEY UPDATE name = VALUES(name)`,
+                        [
+                            lu.id || generate12DigitId(),
+                            lu.email,
+                            lu.name || lu.email.split('@')[0],
+                            lu.password_hash || null,
+                            lu.access_token || generateAccessToken(50),
+                            lu.role || 'user',
+                            lu.avatar || 'assets/images/avatar/avatar-1.jpg',
+                            lu.plan || 'trial',
+                            lu.plan_expires_at ? new Date(lu.plan_expires_at) : null,
+                            lu.messages_sent_today || 0,
+                            lu.last_message_date || getTodayIST(),
+                            lu.messages_sent_total || 0,
+                            lu.addon_credits || 0,
+                            lu.claimed_addon ? 1 : 0
+                        ]
+                    );
+                    console.log(`Auto-migrated local user account to cloud DB: ${lu.email}`);
+                } else if (!existing.access_token) {
+                    const newToken = generateAccessToken(50);
+                    if (dbType === 'mysql') {
+                        await pool.query('UPDATE cortex_users SET access_token = ? WHERE id = ?', [newToken, existing.id]);
+                    } else {
+                        await pool.query('UPDATE cortex_users SET access_token = $1 WHERE id = $2', [newToken, existing.id]);
+                    }
+                }
+            }
+        } catch (mErr) {
+            console.warn("Local user migration check notice:", mErr.message);
+        }
+    }
+}
+
+export async function getUserByEmail(email) {
+    if (!email) return null;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (pool) {
+        try {
+            const res = await pool.query(
+                `SELECT id, email, name, password_hash, access_token, convert_api_secret, role, avatar, plan, plan_expires_at, 
+                        messages_sent_today, last_message_date, messages_sent_total, addon_credits, claimed_addon, 
+                        created_at, last_login 
+                 FROM cortex_users WHERE email = $1`,
+                [normalizedEmail]
+            );
+            const user = res.rows[0] || null;
+            if (user && (!user.access_token || user.access_token.length !== 50)) {
+                user.access_token = await regenerateUserAccessToken(user.id);
+            }
+            if (user && (!user.convert_api_secret || user.convert_api_secret.length !== 30)) {
+                user.convert_api_secret = await regenerateUserConvertApiSecret(user.id);
+            }
+            return user;
+        } catch (err) {
+            console.error("Error fetching user from DB:", err);
+            return null;
+        }
+    } else {
+        const users = await readLocalUsers();
+        const user = users.find(u => u.email.toLowerCase() === normalizedEmail) || null;
+        let modified = false;
+        if (user && (!user.access_token || user.access_token.length !== 50)) {
+            user.access_token = generateAccessToken(50);
+            modified = true;
+        }
+        if (user && (!user.convert_api_secret || user.convert_api_secret.length !== 30)) {
+            user.convert_api_secret = generateConvertApiSecret(30);
+            modified = true;
+        }
+        if (modified) {
+            await saveLocalUsers(users);
+        }
+        return user;
+    }
+}
+
+export async function getUserById(id) {
+    if (!id) return null;
+
+    if (pool) {
+        try {
+            const res = await pool.query(
+                `SELECT id, email, name, role, avatar, access_token, convert_api_secret, plan, plan_expires_at, 
+                        messages_sent_today, last_message_date, messages_sent_total, addon_credits, claimed_addon, 
+                        created_at, last_login 
+                 FROM cortex_users WHERE id = $1`,
+                [id.toString()]
+            );
+            const user = res.rows[0] || null;
+            if (user && (!user.access_token || user.access_token.length !== 50)) {
+                user.access_token = await regenerateUserAccessToken(user.id);
+            }
+            if (user && (!user.convert_api_secret || user.convert_api_secret.length !== 30)) {
+                user.convert_api_secret = await regenerateUserConvertApiSecret(user.id);
+            }
+            return user;
+        } catch (err) {
+            console.error("Error fetching user by ID:", err);
+            return null;
+        }
+    } else {
+        const users = await readLocalUsers();
+        const user = users.find(u => u.id && u.id.toString() === id.toString()) || null;
+        let modified = false;
+        if (user && (!user.access_token || user.access_token.length !== 50)) {
+            user.access_token = generateAccessToken(50);
+            modified = true;
+        }
+        if (user && (!user.convert_api_secret || user.convert_api_secret.length !== 30)) {
+            user.convert_api_secret = generateConvertApiSecret(30);
+            modified = true;
+        }
+        if (modified) {
+            await saveLocalUsers(users);
+        }
+        return user;
+    }
+}
+
+export async function getUserByAccessToken(token) {
+    if (!token) return null;
+    const trimmed = token.trim();
+
+    if (pool) {
+        try {
+            const res = await pool.query(
+                `SELECT id, email, name, role, avatar, access_token, convert_api_secret, plan, plan_expires_at, 
+                        messages_sent_today, last_message_date, messages_sent_total, addon_credits, claimed_addon, 
+                        created_at, last_login 
+                 FROM cortex_users WHERE access_token = $1`,
+                [trimmed]
+            );
+            return res.rows[0] || null;
+        } catch (err) {
+            console.error("Error fetching user by access token from DB:", err);
+            return null;
+        }
+    } else {
+        const users = await readLocalUsers();
+        return users.find(u => u.access_token === trimmed) || null;
+    }
+}
+
+export async function getUserByConvertApiSecret(secret) {
+    if (!secret) return null;
+    const trimmed = secret.trim();
+
+    if (pool) {
+        try {
+            const res = await pool.query(
+                `SELECT id, email, name, role, avatar, access_token, convert_api_secret, plan, plan_expires_at, 
+                        messages_sent_today, last_message_date, messages_sent_total, addon_credits, claimed_addon, 
+                        created_at, last_login 
+                 FROM cortex_users WHERE convert_api_secret = $1`,
+                [trimmed]
+            );
+            return res.rows[0] || null;
+        } catch (err) {
+            console.error("Error fetching user by ConvertAPI secret from DB:", err);
+            return null;
+        }
+    } else {
+        const users = await readLocalUsers();
+        return users.find(u => u.convert_api_secret === trimmed) || null;
+    }
+}
+
+export async function regenerateUserAccessToken(userId) {
+    if (!userId) return null;
+    const newToken = generateAccessToken(50);
+
+    if (pool) {
+        try {
+            if (dbType === 'mysql') {
+                await pool.query('UPDATE cortex_users SET access_token = ? WHERE id = ?', [newToken, userId.toString()]);
+            } else {
+                await pool.query('UPDATE cortex_users SET access_token = $1 WHERE id = $2', [newToken, userId.toString()]);
+            }
+        } catch (err) {
+            console.error("Error regenerating access token in DB:", err);
+        }
+    } else {
+        const users = await readLocalUsers();
+        const idx = users.findIndex(u => u.id && u.id.toString() === userId.toString());
+        if (idx >= 0) {
+            users[idx].access_token = newToken;
+            await saveLocalUsers(users);
+        }
+    }
+    return newToken;
+}
+
+export async function regenerateUserConvertApiSecret(userId) {
+    if (!userId) return null;
+    const newSecret = generateConvertApiSecret(30);
+
+    if (pool) {
+        try {
+            if (dbType === 'mysql') {
+                await pool.query('UPDATE cortex_users SET convert_api_secret = ? WHERE id = ?', [newSecret, userId.toString()]);
+            } else {
+                await pool.query('UPDATE cortex_users SET convert_api_secret = $1 WHERE id = $2', [newSecret, userId.toString()]);
+            }
+        } catch (err) {
+            console.error("Error regenerating ConvertAPI secret in DB:", err);
+        }
+    } else {
+        const users = await readLocalUsers();
+        const idx = users.findIndex(u => u.id && u.id.toString() === userId.toString());
+        if (idx >= 0) {
+            users[idx].convert_api_secret = newSecret;
+            await saveLocalUsers(users);
+        }
+    }
+    return newSecret;
+}
+
+export async function getAllUsers() {
+    if (pool) {
+        try {
+            const res = await pool.query(`SELECT id, email, name, role, avatar, access_token, plan, plan_expires_at, messages_sent_today, messages_sent_total, addon_credits, created_at, last_login FROM cortex_users ORDER BY created_at ASC`);
+            return res.rows.map(u => ({
+                ...u,
+                plan: u.plan || (u.role === 'admin' ? 'pro_12m' : 'trial')
+            }));
+        } catch {
+            return [];
+        }
+    } else {
+        const users = await readLocalUsers();
+        return users.map(u => ({
+            ...u,
+            plan: u.plan || (u.role === 'admin' ? 'pro_12m' : 'trial')
+        }));
+    }
+}
+
+export async function createUser({ id, email, name, password, role = 'user', avatar = '', plan = null, accessToken = null }) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const userId = (id && /^\d{12}$/.test(id)) ? id : generate12DigitId();
+    const password_hash = password ? hashPassword(password) : null;
+    const userAvatar = avatar || (role === 'admin' ? 'assets/images/avatar/avatar-1.jpg' : 'assets/images/avatar/avatar-2.jpg');
+    const userRole = role;
+    const userAccessToken = (accessToken && accessToken.length === 50) ? accessToken : generateAccessToken(50);
+
+    const userPlan = plan || (role === 'admin' ? 'pro_12m' : 'trial');
+    const planDurationDays = SUBSCRIPTION_PLANS[userPlan]?.durationDays || (role === 'admin' ? 365 : 7);
+    const plan_expires_at = new Date(Date.now() + planDurationDays * 24 * 60 * 60 * 1000).toISOString();
+    const messages_sent_today = 0;
+    const last_message_date = getTodayIST();
+    const messages_sent_total = 0;
+    const addon_credits = 0;
+    const claimed_addon = false;
+
+    if (pool) {
+        try {
+            if (dbType === 'mysql') {
+                const planExpiresAtFormatted = plan_expires_at ? new Date(plan_expires_at) : null;
+                await pool.query(
+                    `INSERT INTO cortex_users (
+                        id, email, name, password_hash, access_token, role, avatar, 
+                        plan, plan_expires_at, messages_sent_today, last_message_date, 
+                        messages_sent_total, addon_credits, claimed_addon, created_at, last_login
+                     )
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                     ON DUPLICATE KEY UPDATE
+                        name = VALUES(name),
+                        password_hash = COALESCE(VALUES(password_hash), password_hash),
+                        access_token = COALESCE(VALUES(access_token), cortex_users.access_token),
+                        role = VALUES(role),
+                        avatar = VALUES(avatar),
+                        plan = VALUES(plan),
+                        plan_expires_at = COALESCE(VALUES(plan_expires_at), plan_expires_at),
+                        last_login = CURRENT_TIMESTAMP`,
+                    [
+                        userId, normalizedEmail, name || normalizedEmail.split('@')[0], password_hash, userAccessToken, userRole, userAvatar,
+                        userPlan, planExpiresAtFormatted, messages_sent_today, last_message_date,
+                        messages_sent_total, addon_credits, claimed_addon
+                    ]
+                );
+                return {
+                    id: userId,
+                    email: normalizedEmail,
+                    name: name || normalizedEmail.split('@')[0],
+                    role: userRole,
+                    avatar: userAvatar,
+                    access_token: userAccessToken,
+                    plan: userPlan,
+                    plan_expires_at,
+                    messages_sent_today,
+                    messages_sent_total,
+                    addon_credits,
+                    claimed_addon,
+                    created_at: new Date().toISOString(),
+                    last_login: new Date().toISOString()
+                };
+            } else {
+                const res = await pool.query(
+                    `INSERT INTO cortex_users (
+                        id, email, name, password_hash, access_token, role, avatar, 
+                        plan, plan_expires_at, messages_sent_today, last_message_date, 
+                        messages_sent_total, addon_credits, claimed_addon, created_at, last_login
+                     )
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                     ON CONFLICT (id) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        password_hash = COALESCE(EXCLUDED.password_hash, cortex_users.password_hash),
+                        access_token = COALESCE(cortex_users.access_token, EXCLUDED.access_token),
+                        role = EXCLUDED.role,
+                        avatar = EXCLUDED.avatar,
+                        plan = EXCLUDED.plan,
+                        plan_expires_at = COALESCE(EXCLUDED.plan_expires_at, cortex_users.plan_expires_at),
+                        last_login = CURRENT_TIMESTAMP
+                     RETURNING id, email, name, role, avatar, access_token, plan, plan_expires_at, messages_sent_today, messages_sent_total, addon_credits, claimed_addon, created_at, last_login`,
+                    [
+                        userId, normalizedEmail, name || normalizedEmail.split('@')[0], password_hash, userAccessToken, userRole, userAvatar,
+                        userPlan, plan_expires_at, messages_sent_today, last_message_date,
+                        messages_sent_total, addon_credits, claimed_addon
+                    ]
+                );
+                return res.rows[0] || (await getUserByEmail(normalizedEmail));
+            }
+        } catch (err) {
+            if (err.code === 'ER_DUP_ENTRY' || err.code === '23505' || err.errno === 1062) {
+                console.warn(`User already exists (${normalizedEmail} / ${userId}), retrieving existing user record...`);
+                const existing = (await getUserByEmail(normalizedEmail)) || (await getUserById(userId));
+                if (existing) return existing;
+            }
+            console.error("Error creating user in DB:", err);
+            throw err;
+        }
+    } else {
+        const users = await readLocalUsers();
+        const existingIdx = users.findIndex(u => u.email.toLowerCase() === normalizedEmail);
+        const newUser = {
+            id: userId,
+            email: normalizedEmail,
+            name: name || normalizedEmail.split('@')[0],
+            password_hash,
+            access_token: userAccessToken,
+            role: userRole,
+            avatar: userAvatar,
+            plan: userPlan,
+            plan_expires_at,
+            messages_sent_today,
+            last_message_date,
+            messages_sent_total,
+            addon_credits,
+            claimed_addon,
+            created_at: new Date().toISOString(),
+            last_login: new Date().toISOString()
+        };
+
+        if (existingIdx >= 0) {
+            users[existingIdx] = { ...users[existingIdx], ...newUser };
+        } else {
+            users.push(newUser);
+        }
+
+        await saveLocalUsers(users);
+        return newUser;
+    }
+}
+
+export async function updateUserRole(userId, newRole) {
+    if (!['admin', 'user'].includes(newRole)) throw new Error('Invalid role');
+
+    const isAdmin = newRole === 'admin';
+    const planExpiresAt = isAdmin ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null;
+
+    if (pool) {
+        if (isAdmin) {
+            await pool.query(`UPDATE cortex_users SET role = $1, plan = 'pro_12m', plan_expires_at = $2 WHERE id = $3`, [newRole, planExpiresAt, userId]);
+        } else {
+            await pool.query(`UPDATE cortex_users SET role = $1 WHERE id = $2`, [newRole, userId]);
+        }
+    } else {
+        const users = await readLocalUsers();
+        const idx = users.findIndex(u => u.id === userId);
+        if (idx >= 0) {
+            users[idx].role = newRole;
+            if (isAdmin) {
+                users[idx].plan = 'pro_12m';
+                users[idx].plan_expires_at = planExpiresAt;
+            }
+            await saveLocalUsers(users);
+        }
+    }
+}
+
+// --------------------------------------------------------------------------
+// Subscription Quota & Billing Management
+// --------------------------------------------------------------------------
+export async function getUserSubscription(userId) {
+    const user = await getUserById(userId);
+    if (!user) return null;
+
+    const isAdmin = user.role === 'admin';
+    const planKey = user.plan || (isAdmin ? 'pro_12m' : 'trial');
+    const planMeta = SUBSCRIPTION_PLANS[planKey] || SUBSCRIPTION_PLANS.trial;
+
+    const now = Date.now();
+    const durationDays = planMeta.durationDays || (isAdmin ? 365 : 7);
+    const expiresAt = user.plan_expires_at ? new Date(user.plan_expires_at).getTime() : (now + durationDays * 24 * 60 * 60 * 1000);
+    const isExpired = now > expiresAt;
+    const daysLeft = Math.max(0, Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)));
+
+    const todayIST = getTodayIST();
+    let sentToday = user.messages_sent_today || 0;
+    if (user.last_message_date !== todayIST) {
+        sentToday = 0;
+        // Reset today counter in DB
+        if (pool) {
+            await pool.query(`UPDATE cortex_users SET messages_sent_today = 0, last_message_date = $1 WHERE id = $2`, [todayIST, userId]);
+        } else {
+            const users = await readLocalUsers();
+            const idx = users.findIndex(u => u.id === userId);
+            if (idx >= 0) {
+                users[idx].messages_sent_today = 0;
+                users[idx].last_message_date = todayIST;
+                await saveLocalUsers(users);
+            }
+        }
+    }
+
+    const sentTotal = user.messages_sent_total || 0;
+    const addonCredits = user.addon_credits || 0;
+    const claimedAddon = !!user.claimed_addon;
+
+    // Daily limit calculation
+    const dailyLimit = planMeta.dailyLimit; // 15 for trial, null for paid
+    const dailyRemaining = dailyLimit ? Math.max(0, dailyLimit - sentToday) : 'Unlimited';
+
+    // Total limit calculation directly from plan specification
+    const totalLimit = planMeta.totalLimit;
+    const totalRemaining = Math.max(0, totalLimit - sentTotal) + addonCredits;
+
+    return {
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        plan: planKey,
+        planName: planMeta.name,
+        planPrice: planMeta.price,
+        planPeriod: planMeta.period,
+        planDescription: planMeta.description,
+        isTrial: planKey === 'trial',
+        isExpired,
+        expiresAt: new Date(expiresAt).toISOString(),
+        daysLeft,
+        dailyLimit,
+        messagesSentToday: sentToday,
+        dailyRemaining,
+        totalLimit,
+        messagesSentTotal: sentTotal,
+        totalRemaining,
+        addonCredits,
+        claimedAddon,
+        canClaimFreeAddon: !claimedAddon
+    };
+}
+
+export async function checkUserCanSendMessage(userId) {
+    const sub = await getUserSubscription(userId);
+    if (!sub) return { allowed: false, reason: 'User account not found.' };
+
+    if (sub.isExpired) {
+        return { 
+            allowed: false, 
+            reason: `Your ${sub.planName} has expired. Please upgrade or renew your plan in Subscription & Billing to continue automation.` 
+        };
+    }
+
+    // Check Daily Limit (For 7-Day Free Trial: 15 msgs/day)
+    if (sub.dailyLimit && sub.messagesSentToday >= sub.dailyLimit) {
+        if (sub.addonCredits > 0) {
+            return { allowed: true, usingAddon: true };
+        }
+        return { 
+            allowed: false, 
+            reason: `Daily quota limit reached (${sub.messagesSentToday}/${sub.dailyLimit} messages today for ${sub.planName}). Upgrade to a paid plan for higher volume or get the 200+30 msgs Booster Add-on!` 
+        };
+    }
+
+    // Check Total Plan Limit
+    if (sub.totalLimit && sub.messagesSentTotal >= sub.totalLimit) {
+        if (sub.addonCredits > 0) {
+            return { allowed: true, usingAddon: true };
+        }
+        return { 
+            allowed: false, 
+            reason: `Plan message quota exhausted (${sub.messagesSentTotal}/${sub.totalLimit} messages for ${sub.planName}). Please renew or upgrade your plan in Subscription & Billing.` 
+        };
+    }
+
+    return { allowed: true };
+}
+
+export async function recordUserMessageSent(userId) {
+    const todayIST = getTodayIST();
+    const sub = await getUserSubscription(userId);
+    if (!sub) return;
+
+    let useAddon = false;
+    if (sub.dailyLimit && sub.messagesSentToday >= sub.dailyLimit && sub.addonCredits > 0) {
+        useAddon = true;
+    } else if (sub.totalLimit && sub.messagesSentTotal >= sub.totalLimit && sub.addonCredits > 0) {
+        useAddon = true;
+    }
+
+    if (pool) {
+        if (useAddon) {
+            await pool.query(
+                `UPDATE cortex_users 
+                 SET addon_credits = GREATEST(0, addon_credits - 1),
+                     messages_sent_today = messages_sent_today + 1,
+                     messages_sent_total = messages_sent_total + 1,
+                     last_message_date = $1 
+                 WHERE id = $2`,
+                [todayIST, userId]
+            );
+        } else {
+            await pool.query(
+                `UPDATE cortex_users 
+                 SET messages_sent_today = messages_sent_today + 1,
+                     messages_sent_total = messages_sent_total + 1,
+                     last_message_date = $1 
+                 WHERE id = $2`,
+                [todayIST, userId]
+            );
+        }
+    } else {
+        const users = await readLocalUsers();
+        const idx = users.findIndex(u => u.id === userId);
+        if (idx >= 0) {
+            users[idx].messages_sent_today = (users[idx].messages_sent_today || 0) + 1;
+            users[idx].messages_sent_total = (users[idx].messages_sent_total || 0) + 1;
+            users[idx].last_message_date = todayIST;
+            if (useAddon) {
+                users[idx].addon_credits = Math.max(0, (users[idx].addon_credits || 0) - 1);
+            }
+            await saveLocalUsers(users);
+        }
+    }
+}
+
+export async function claimUserFreeAddon(userId) {
+    const sub = await getUserSubscription(userId);
+    if (!sub) throw new Error('User not found');
+    if (sub.claimedAddon) throw new Error('You have already claimed your free 300 messages add-on booster.');
+
+    if (pool) {
+        await pool.query(
+            `UPDATE cortex_users 
+             SET addon_credits = addon_credits + 300, claimed_addon = TRUE 
+             WHERE id = $1`,
+            [userId]
+        );
+    } else {
+        const users = await readLocalUsers();
+        const idx = users.findIndex(u => u.id === userId);
+        if (idx >= 0) {
+            users[idx].addon_credits = (users[idx].addon_credits || 0) + 300;
+            users[idx].claimed_addon = true;
+            await saveLocalUsers(users);
+        }
+    }
+
+    return { success: true, message: 'Free 300 messages add-on credited successfully!' };
+}
+
+export async function upgradeUserSubscription(userId, planId, transactionRef = '') {
+    const planMeta = SUBSCRIPTION_PLANS[planId];
+    if (!planMeta) throw new Error('Invalid plan selected.');
+
+    if (planMeta.isAddon || planId === 'addon_230' || planId === 'addon_300') {
+        const creditsToAdd = planMeta.totalLimit || 230;
+        if (pool) {
+            await pool.query(
+                `UPDATE cortex_users 
+                 SET addon_credits = addon_credits + ${creditsToAdd} 
+                 WHERE id = $1`,
+                [userId]
+            );
+        } else {
+            const users = await readLocalUsers();
+            const idx = users.findIndex(u => u.id === userId);
+            if (idx >= 0) {
+                users[idx].addon_credits = (users[idx].addon_credits || 0) + creditsToAdd;
+                await saveLocalUsers(users);
+            }
+        }
+        return {
+            success: true,
+            message: `200 + 30 Messages Booster (+${creditsToAdd} credits) added to your account for ₹99!`,
+            plan: planMeta
+        };
+    }
+
+    const now = Date.now();
+    const expiresAt = new Date(now + planMeta.durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+    if (pool) {
+        await pool.query(
+            `UPDATE cortex_users 
+             SET plan = $1, plan_expires_at = $2, messages_sent_today = 0, messages_sent_total = 0 
+             WHERE id = $3`,
+            [planId, expiresAt, userId]
+        );
+    } else {
+        const users = await readLocalUsers();
+        const idx = users.findIndex(u => u.id === userId);
+        if (idx >= 0) {
+            users[idx].plan = planId;
+            users[idx].plan_expires_at = expiresAt;
+            users[idx].messages_sent_today = 0;
+            users[idx].messages_sent_total = 0;
+            await saveLocalUsers(users);
+        }
+    }
+
+    return { 
+        success: true, 
+        message: `Plan successfully upgraded to ${planMeta.name}! Active for ${planMeta.period}.`,
+        plan: planMeta
+    };
+}
+
+export async function deleteUser(userId) {
+    if (pool) {
+        await pool.query(`DELETE FROM cortex_users WHERE id = $1`, [userId]);
+    } else {
+        const users = await readLocalUsers();
+        const filtered = users.filter(u => u.id !== userId);
+        await saveLocalUsers(filtered);
+    }
+
+    // Clean up user auth credentials and bot configs
+    await clearAuthState(`session_user_${userId}`);
+    try {
+        const configFile = path.join('bot_configs', `config_${userId}.json`);
+        await fs.rm(configFile, { force: true });
+    } catch {}
+}
+
+export async function findOrCreateGoogleUser({ email, name, avatar }) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin.demo@gmail.com').toLowerCase();
+    
+    let user = await getUserByEmail(normalizedEmail);
+    if (!user) {
+        const role = (normalizedEmail === adminEmail) ? 'admin' : 'user';
+        user = await createUser({
+            id: generate12DigitId(),
+            email: normalizedEmail,
+            name: name || normalizedEmail.split('@')[0],
+            role,
+            avatar: avatar || 'assets/images/avatar/avatar-3.jpg'
+        });
+    } else {
+        if (!user.id || !/^\d{12}$/.test(user.id)) {
+            user.id = generate12DigitId();
+        }
+
+        if (pool) {
+            await pool.query(
+                `UPDATE cortex_users SET last_login = CURRENT_TIMESTAMP, avatar = COALESCE($2, avatar), name = COALESCE($3, name), id = $4 WHERE email = $1`,
+                [normalizedEmail, avatar, name, user.id]
+            );
+        } else {
+            const users = await readLocalUsers();
+            const idx = users.findIndex(u => u.email.toLowerCase() === normalizedEmail);
+            if (idx >= 0) {
+                users[idx].last_login = new Date().toISOString();
+                users[idx].id = user.id;
+                if (avatar) users[idx].avatar = avatar;
+                if (name) users[idx].name = name;
+                await saveLocalUsers(users);
+            }
+        }
+    }
+
+    return user;
+}
+
+export async function updateUserPassword(userId, password) {
+    if (!userId || !password) return false;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    if (pool) {
+        if (dbType === 'mysql') {
+            await pool.query('UPDATE cortex_users SET password_hash = ? WHERE id = ?', [passwordHash, userId.toString()]);
+        } else {
+            await pool.query('UPDATE cortex_users SET password_hash = $1 WHERE id = $2', [passwordHash, userId.toString()]);
+        }
+        return true;
+    } else {
+        const users = await readLocalUsers();
+        const idx = users.findIndex(u => u.id && u.id.toString() === userId.toString());
+        if (idx >= 0) {
+            users[idx].password_hash = passwordHash;
+            await saveLocalUsers(users);
+            return true;
+        }
+        return false;
+    }
+}
+
+// --------------------------------------------------------------------------
+// OTP Management
+// --------------------------------------------------------------------------
+export function saveOtp(email, otp, expiryMinutes = 10) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const expiresAt = Date.now() + (expiryMinutes * 60 * 1000);
+    otpStore.set(normalizedEmail, { otp: String(otp), expiresAt });
+}
+
+export function verifyOtp(email, enteredOtp) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const demoOtp = process.env.DEMO_OTP || '123456';
+
+    if (enteredOtp && String(enteredOtp) === String(demoOtp)) {
+        return true;
+    }
+
+    const record = otpStore.get(normalizedEmail);
+    if (!record) return false;
+
+    if (Date.now() > record.expiresAt) {
+        otpStore.delete(normalizedEmail);
+        return false;
+    }
+
+    if (String(record.otp) === String(enteredOtp).trim()) {
+        otpStore.delete(normalizedEmail);
+        return true;
+    }
+
+    return false;
+}
+
+// --------------------------------------------------------------------------
+// Multi-Tenant Baileys Session & Configuration Storage
+// --------------------------------------------------------------------------
+async function writeData(sessionId, key, data) {
+    if (!pool) return;
+    try {
+        const json = JSON.stringify(data, BufferJSON.replacer);
+        if (dbType === 'mysql') {
+            await mysqlPool.query(
+                'REPLACE INTO whatsapp_sessions (session_id, `key`, value) VALUES (?, ?, ?)',
+                [sessionId, key, json]
+            );
+        } else {
+            await pool.query(
+                `INSERT INTO whatsapp_sessions (session_id, key, value) 
+                 VALUES ($1, $2, $3) 
+                 ON CONFLICT (session_id, key) 
+                 DO UPDATE SET value = EXCLUDED.value`,
+                [sessionId, key, json]
+            );
+        }
+    } catch (err) {
+        console.error(`Error writing data for session ${sessionId}, key ${key}:`, err);
+    }
+}
+
+async function readData(sessionId, key) {
+    if (!pool) return null;
+    try {
+        if (dbType === 'mysql') {
+            const [rows] = await mysqlPool.query(
+                'SELECT value FROM whatsapp_sessions WHERE session_id = ? AND `key` = ?',
+                [sessionId, key]
+            );
+            if (rows.length === 0) return null;
+            return JSON.parse(rows[0].value, BufferJSON.reviver);
+        } else {
+            const res = await pool.query(
+                `SELECT value FROM whatsapp_sessions WHERE session_id = $1 AND key = $2`,
+                [sessionId, key]
+            );
+            if (res.rows.length === 0) return null;
+            return JSON.parse(res.rows[0].value, BufferJSON.reviver);
+        }
+    } catch (err) {
+        console.error(`Error reading data for session ${sessionId}, key ${key}:`, err);
+        return null;
+    }
+}
+
+async function removeData(sessionId, key) {
+    if (!pool) return;
+    try {
+        if (dbType === 'mysql') {
+            await mysqlPool.query(
+                'DELETE FROM whatsapp_sessions WHERE session_id = ? AND `key` = ?',
+                [sessionId, key]
+            );
+        } else {
+            await pool.query(
+                `DELETE FROM whatsapp_sessions WHERE session_id = $1 AND key = $2`,
+                [sessionId, key]
+            );
+        }
+    } catch (err) {
+        console.error(`Error removing data for session ${sessionId}, key ${key}:`, err);
+    }
+}
+
+async function useDbAuthState(sessionId) {
+    const credsKey = 'creds';
+    let creds = await readData(sessionId, credsKey);
+    if (!creds) {
+        creds = initAuthCreds();
+        await writeData(sessionId, credsKey, creds);
+    }
+
+    return {
+        state: {
+            creds,
+            keys: {
+                get: async (type, ids) => {
+                    const data = {};
+                    await Promise.all(
+                        ids.map(async id => {
+                            let value = await readData(sessionId, `${type}-${id}`);
+                            if (type === 'app-state-sync-key' && value) {
+                                value = proto.Message.AppStateSyncKeyData.fromObject(value);
+                            }
+                            data[id] = value;
+                        })
+                    );
+                    return data;
+                },
+                set: async (data) => {
+                    const tasks = [];
+                    for (const category in data) {
+                        for (const id in data[category]) {
+                            const value = data[category][id];
+                            const keyName = `${category}-${id}`;
+                            tasks.push(value ? writeData(sessionId, keyName, value) : removeData(sessionId, keyName));
+                        }
+                    }
+                    await Promise.all(tasks);
+                }
+            }
+        },
+        saveCreds: async () => {
+            await writeData(sessionId, credsKey, creds);
+        }
+    };
+}
+
+export async function getAuthState(sessionId) {
+    const safeSessionId = String(sessionId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (pool) {
+        return useDbAuthState(safeSessionId);
+    } else {
+        const sessionFolder = path.join('auth_info', safeSessionId);
+        await fs.mkdir(sessionFolder, { recursive: true });
+        return useMultiFileAuthState(sessionFolder);
+    }
+}
+
+export async function clearAuthState(sessionId) {
+    const safeSessionId = String(sessionId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (pool) {
+        try {
+            await pool.query(
+                `DELETE FROM whatsapp_sessions WHERE session_id = $1`,
+                [safeSessionId]
+            );
+            console.log(`Cleared DB auth state for session: ${safeSessionId}`);
+        } catch (err) {
+            console.error(`Error clearing DB auth state for ${safeSessionId}:`, err);
+        }
+    } else {
+        try {
+            const sessionFolder = path.join('auth_info', safeSessionId);
+            await fs.rm(sessionFolder, { recursive: true, force: true });
+            console.log(`Deleted local auth folder for session: ${safeSessionId}`);
+        } catch (err) {
+            console.error(`Error deleting auth folder for ${safeSessionId}:`, err);
+        }
+    }
+}
+
+export async function getUserBotConfig(userId) {
+    const safeUserId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (pool) {
+        const config = await readData(`config_${safeUserId}`, 'bot_settings');
+        return config || {
+            targetNumber: '',
+            targetGroup: '',
+            morningMessage: '',
+            scheduleTime: '09:00'
+        };
+    } else {
+        try {
+            const configFile = path.join('bot_configs', `config_${safeUserId}.json`);
+            const data = await fs.readFile(configFile, 'utf-8');
+            return JSON.parse(data);
+        } catch {
+            return {
+                targetNumber: '',
+                targetGroup: '',
+                morningMessage: '',
+                scheduleTime: '09:00'
+            };
+        }
+    }
+}
+
+export async function saveUserBotConfig(userId, config) {
+    const safeUserId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (pool) {
+        await writeData(`config_${safeUserId}`, 'bot_settings', config);
+    } else {
+        await fs.mkdir('bot_configs', { recursive: true });
+        const configFile = path.join('bot_configs', `config_${safeUserId}.json`);
+        await fs.writeFile(configFile, JSON.stringify(config, null, 2));
+    }
+}
+
+export function formatJid(number) {
+    if (!number) return '';
+    if (number.includes('@')) return number;
+    const cleanNumber = number.replace(/[^\d]/g, '');
+    return `${cleanNumber}@s.whatsapp.net`;
+}
+
+// --------------------------------------------------------------------------
+// Database Stats & Storage Diagnostics
+// --------------------------------------------------------------------------
+export async function getDatabaseStats() {
+    const isDb = Boolean(pool);
+    const engineName = dbType === 'mysql' ? 'TiDB Cloud (MySQL)' : (dbType === 'postgres' ? 'PostgreSQL' : 'Local File Storage (JSON/FS)');
+    let hostName = 'Localhost Storage';
+    let dbName = 'Local Workspace';
+
+    if (dbType === 'mysql') {
+        hostName = process.env.DB_HOST || (process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).hostname : 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
+        dbName = (process.env.DB_DATABASE || 'whatsapp_db').replace(/^['"]|['"]$/g, '');
+    } else if (dbType === 'postgres') {
+        hostName = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).host : 'Remote PostgreSQL';
+        dbName = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).pathname.replace('/', '') : 'whatsapp_sessions';
+    }
+
+    let stats = {
+        engine: engineName,
+        mode: isDb ? `Production Managed Relational DB (${engineName})` : 'Local Filesystem Storage (Fallback)',
+        status: 'Connected & Active',
+        host: hostName,
+        databaseName: dbName,
+        sslEnabled: isDb,
+        tables: [],
+        totalUsers: 0,
+        totalSessions: 0,
+        totalConfigs: 0,
+        checkedAt: new Date().toISOString()
+    };
+
+    if (pool) {
+        try {
+            const usersCountRes = await pool.query('SELECT COUNT(*) as count FROM cortex_users');
+            const sessionsCountRes = await pool.query('SELECT COUNT(DISTINCT session_id) as count FROM whatsapp_sessions');
+            const keysCountRes = await pool.query('SELECT COUNT(*) as count FROM whatsapp_sessions');
+
+            stats.totalUsers = parseInt(usersCountRes.rows[0].count, 10);
+            stats.totalSessions = parseInt(sessionsCountRes.rows[0].count, 10);
+
+            stats.tables = [
+                { 
+                    name: 'cortex_users', 
+                    type: 'Relational Table (SQL)',
+                    records: stats.totalUsers, 
+                    purpose: 'Stores registered user accounts, 12-digit numeric IDs, PBKDF2 password hashes, and roles' 
+                },
+                { 
+                    name: 'whatsapp_sessions', 
+                    type: 'Key-Value Table (SQL)',
+                    records: parseInt(keysCountRes.rows[0].count, 10), 
+                    purpose: 'Stores isolated Baileys Multi-Device WhatsApp authentication tokens & session keys per user' 
+                }
+            ];
+        } catch (err) {
+            stats.status = 'Error';
+            stats.error = err.message;
+        }
+    } else {
+        try {
+            const users = await readLocalUsers();
+            stats.totalUsers = users.length;
+
+            let authFoldersCount = 0;
+            try {
+                const folders = await fs.readdir('auth_info');
+                authFoldersCount = folders.length;
+            } catch {}
+
+            let configFilesCount = 0;
+            try {
+                const configs = await fs.readdir('bot_configs');
+                configFilesCount = configs.length;
+            } catch {}
+
+            stats.totalSessions = authFoldersCount;
+            stats.totalConfigs = configFilesCount;
+
+            stats.tables = [
+                { 
+                    name: 'users.json', 
+                    type: 'JSON Document Store',
+                    records: stats.totalUsers, 
+                    purpose: 'Stores registered user accounts, 12-digit numeric IDs, PBKDF2 password hashes, and roles' 
+                },
+                { 
+                    name: 'auth_info/*', 
+                    type: 'Multi-Folder Auth Store',
+                    records: authFoldersCount, 
+                    purpose: 'Stores isolated Baileys Multi-Device WhatsApp credentials and auth state keys per user' 
+                },
+                { 
+                    name: 'bot_configs/*', 
+                    type: 'JSON Config Store',
+                    records: configFilesCount, 
+                    purpose: 'Stores per-user automation target phone numbers, groups, morning messages, and IST schedules' 
+                }
+            ];
+        } catch (err) {
+            stats.status = 'Error';
+            stats.error = err.message;
+        }
+    }
+
+    return stats;
+}
+
+// --------------------------------------------------------------------------
+// Official WATI / Meta Message Templates Store
+// --------------------------------------------------------------------------
+const DEFAULT_SAMPLE_TEMPLATES = [];
+
+export async function getMessageTemplates(userId) {
+    const uid = userId || '100000000001';
+    const filePath = path.join('bot_configs', `message_templates_${uid}.json`);
+    function normalizeTemplate(r) {
+        if (!r) return null;
+        const body = r.body_text || r.bodyText || '';
+        const headerT = r.header_type || r.headerType || 'None';
+        const headerV = r.header_value || r.headerContent || '';
+        const footer = r.footer_text || r.footerText || '';
+        const sub = r.sub_type || r.templateStyle || 'Standard';
+        const btns = typeof r.buttons === 'string' ? JSON.parse(r.buttons) : (r.buttons || []);
+        const samples = typeof (r.sample_content || r.sampleValues) === 'string' ? JSON.parse(r.sample_content || r.sampleValues) : (r.sample_content || r.sampleValues || {});
+
+        return {
+            id: r.id,
+            name: r.name,
+            category: r.category || 'Utility',
+            language: r.language || 'English',
+            sub_type: sub,
+            templateStyle: sub,
+            header_type: headerT,
+            headerType: headerT,
+            header_value: headerV,
+            headerContent: headerV,
+            body_text: body,
+            bodyText: body,
+            footer_text: footer,
+            footerText: footer,
+            buttons: btns,
+            sample_content: samples,
+            sampleValues: samples,
+            status: r.status || 'active',
+            createdAt: r.created_at || r.createdAt || new Date().toISOString()
+        };
+    }
+
+    try {
+        if (pool) {
+            try {
+                const res = await pool.query('SELECT * FROM cortex_message_templates WHERE user_id = $1 ORDER BY created_at DESC', [uid]);
+                if (res.rows && res.rows.length > 0) {
+                    return res.rows.map(normalizeTemplate);
+                }
+            } catch (err) {
+                // fallback to local file
+            }
+        }
+
+        const data = await fs.readFile(filePath, 'utf-8');
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+            return parsed.map(normalizeTemplate);
+        }
+    } catch {}
+
+    // Return empty list and seed local file with empty array
+    try {
+        await fs.mkdir('bot_configs', { recursive: true });
+        await fs.writeFile(filePath, JSON.stringify([], null, 2));
+    } catch {}
+    return [];
+}
+
+export async function saveMessageTemplate(userId, templateData) {
+    const uid = userId || '100000000001';
+    const templates = await getMessageTemplates(uid);
+    const existingIndex = templates.findIndex(t => t.id === templateData.id || (t.name || '').toLowerCase() === (templateData.name || '').toLowerCase());
+    
+    const templateRecord = {
+        id: templateData.id || `tmpl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        name: (templateData.name || '').trim().toLowerCase().replace(/\s+/g, '_'),
+        category: templateData.category || 'Marketing',
+        language: templateData.language || 'English',
+        sub_type: templateData.sub_type || templateData.templateStyle || 'Standard',
+        templateStyle: templateData.templateStyle || templateData.sub_type || 'Standard',
+        header_type: templateData.header_type || templateData.headerType || 'None',
+        headerType: templateData.headerType || templateData.header_type || 'None',
+        header_value: templateData.header_value || templateData.headerContent || '',
+        headerContent: templateData.headerContent || templateData.header_value || '',
+        body_text: templateData.body_text || templateData.bodyText || '',
+        bodyText: templateData.bodyText || templateData.body_text || '',
+        footer_text: templateData.footer_text || templateData.footerText || '',
+        footerText: templateData.footerText || templateData.footer_text || '',
+        buttons: Array.isArray(templateData.buttons) ? templateData.buttons : [],
+        sample_content: templateData.sample_content || templateData.sampleValues || {},
+        sampleValues: templateData.sampleValues || templateData.sample_content || {},
+        status: templateData.status || 'active',
+        updatedAt: new Date().toISOString()
+    };
+
+    if (existingIndex >= 0) {
+        templateRecord.id = templates[existingIndex].id;
+        templateRecord.createdAt = templates[existingIndex].createdAt || new Date().toISOString();
+        templates[existingIndex] = templateRecord;
+    } else {
+        templateRecord.createdAt = new Date().toISOString();
+        templates.unshift(templateRecord);
+    }
+
+    // Save to local file
+    const filePath = path.join('bot_configs', `message_templates_${uid}.json`);
+    await fs.mkdir('bot_configs', { recursive: true });
+    await fs.writeFile(filePath, JSON.stringify(templates, null, 2));
+
+    // Save to DB if pool active
+    if (pool) {
+        try {
+            await pool.query(`
+                INSERT INTO cortex_message_templates (id, user_id, name, category, language, template_style, header_type, header_content, body_text, footer_text, buttons, sample_values, status, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    category = EXCLUDED.category,
+                    language = EXCLUDED.language,
+                    template_style = EXCLUDED.template_style,
+                    header_type = EXCLUDED.header_type,
+                    header_content = EXCLUDED.header_content,
+                    body_text = EXCLUDED.body_text,
+                    footer_text = EXCLUDED.footer_text,
+                    buttons = EXCLUDED.buttons,
+                    sample_values = EXCLUDED.sample_values,
+                    status = EXCLUDED.status,
+                    updated_at = EXCLUDED.updated_at;
+            `, [
+                templateRecord.id,
+                uid,
+                templateRecord.name,
+                templateRecord.category,
+                templateRecord.language,
+                templateRecord.templateStyle,
+                templateRecord.headerType,
+                templateRecord.headerContent,
+                templateRecord.bodyText,
+                templateRecord.footerText,
+                JSON.stringify(templateRecord.buttons),
+                JSON.stringify(templateRecord.sampleValues),
+                templateRecord.status,
+                templateRecord.createdAt,
+                templateRecord.updatedAt
+            ]);
+        } catch (dbErr) {
+            console.warn("[DB] Could not sync template to SQL table:", dbErr.message);
+        }
+    }
+
+    return templateRecord;
+}
+
+export async function getMessageTemplateByName(userId, templateName) {
+    const uid = userId || '100000000001';
+    const name = (templateName || '').toString().trim().toLowerCase();
+    const templates = await getMessageTemplates(uid);
+    return templates.find(t => (t.name || '').toLowerCase() === name) || null;
+}
+
+export async function deleteMessageTemplate(userId, templateId) {
+    const uid = userId || '100000000001';
+    let templates = await getMessageTemplates(uid);
+    templates = templates.filter(t => t.id !== templateId && t.name !== templateId);
+
+    const filePath = path.join('bot_configs', `message_templates_${uid}.json`);
+    await fs.mkdir('bot_configs', { recursive: true });
+    await fs.writeFile(filePath, JSON.stringify(templates, null, 2));
+
+    if (pool) {
+        try {
+            await pool.query('DELETE FROM cortex_message_templates WHERE (id = $1 OR name = $1) AND user_id = $2', [templateId, uid]);
+        } catch {}
+    }
+
+    return true;
+}

@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+
+# Session credentials and runtime data
+auth_info/
+users.json
+bot_config.json
+bot_configs/
+
+# Build & exported output
+github/
+adminhmd-1.0.0/
+
+# System and logs
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
