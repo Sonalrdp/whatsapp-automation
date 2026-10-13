@@ -436,4 +436,3 @@ export async function convertTextToPdf(textContent, options = {}) {
     `;
     return await convertWebToPdf(html, options);
 }
-

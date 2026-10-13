@@ -201,6 +201,61 @@ function normalizeFileUrl(str) {
   return s;
 }
 
+/**
+ * Global queue & rate limiter for ConvertAPI requests.
+ * Enforces a 1-minute (60,000 ms) wait time between ConvertAPI conversions.
+ * Works across concurrent background executions using LockService + ScriptProperties.
+ */
+function fetchConvertApiWithRateLimit(url, options) {
+  const lock = LockService.getScriptLock();
+  const props = PropertiesService.getScriptProperties();
+  const MIN_GAP_MS = 60000; // 1 minute delay (60,000 ms)
+
+  let myStartTime = 0;
+
+  try {
+    lock.waitLock(30000);
+    const now = Date.now();
+    const lastFinish = parseInt(props.getProperty('LAST_CONVERT_FINISH_MS') || '0', 10);
+    const nextSlot = parseInt(props.getProperty('NEXT_CONVERT_SLOT_MS') || '0', 10);
+
+    myStartTime = Math.max(now, lastFinish + MIN_GAP_MS, nextSlot);
+    props.setProperty('NEXT_CONVERT_SLOT_MS', (myStartTime + MIN_GAP_MS).toString());
+  } catch (err) {
+    console.log("Queue lock note:", err.toString());
+    myStartTime = Date.now();
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+
+  const waitMs = myStartTime - Date.now();
+  if (waitMs > 0) {
+    console.log(`[ConvertAPI Rate Limit] Waiting ${(waitMs / 1000).toFixed(1)} seconds to enforce 1-minute delay between conversions...`);
+    Utilities.sleep(waitMs);
+  }
+
+  console.log("[ConvertAPI Rate Limit] Executing ConvertAPI conversion request...");
+  const response = UrlFetchApp.fetch(url, options);
+
+  try {
+    lock.waitLock(30000);
+    const finishTime = Date.now();
+    props.setProperty('LAST_CONVERT_FINISH_MS', finishTime.toString());
+    
+    const currentNextSlot = parseInt(props.getProperty('NEXT_CONVERT_SLOT_MS') || '0', 10);
+    const minNextSlot = finishTime + MIN_GAP_MS;
+    if (minNextSlot > currentNextSlot) {
+      props.setProperty('NEXT_CONVERT_SLOT_MS', minNextSlot.toString());
+    }
+  } catch (err) {
+    console.log("Queue finish lock note:", err.toString());
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+
+  return response;
+}
+
 function processAndSendImageTask(ss, apiEndpoint, accessToken, convertApiSecret, sheetName, rangeA1, phoneNumber, messageText) {
   try {
     // -------------------------------------------------------------
@@ -217,7 +272,7 @@ function processAndSendImageTask(ss, apiEndpoint, accessToken, convertApiSecret,
       // Resolve ConvertAPI Endpoint URL (Defaults to self-hosted server)
       let cleanEndpoint = (apiEndpoint || "").toString().trim().replace(/\/+$/, '');
       let convertBaseUrl = cleanEndpoint.replace(/\/api\/v1.*$/, '').replace(/\/\d{12}$/, '');
-      if (convertBaseUrl.includes("live-mt-server.") && (convertBaseUrl.includes(".loca.lt") || convertBaseUrl.includes(".ngrok"))) {
+      if (convertBaseUrl.includes("live-mt-server.")) {
         convertBaseUrl = convertBaseUrl.replace("://live-mt-server.", "://");
       }
 
@@ -303,7 +358,7 @@ function processAndSendImageTask(ss, apiEndpoint, accessToken, convertApiSecret,
         "muteHttpExceptions": true
       };
 
-      const convertResponse = UrlFetchApp.fetch(convertApiUrl, convertOptions);
+      const convertResponse = fetchConvertApiWithRateLimit(convertApiUrl, convertOptions);
       let convertResult = {};
       try {
         convertResult = JSON.parse(convertResponse.getContentText());
@@ -381,7 +436,7 @@ function processAndSendImageTask(ss, apiEndpoint, accessToken, convertApiSecret,
     // 2. Resolve ConvertAPI Endpoint URL (Defaults to self-hosted server)
     let cleanEndpoint = (apiEndpoint || "").toString().trim().replace(/\/+$/, '');
     let convertBaseUrl = cleanEndpoint.replace(/\/api\/v1.*$/, '').replace(/\/\d{12}$/, '');
-    if (convertBaseUrl.includes("live-mt-server.") && (convertBaseUrl.includes(".loca.lt") || convertBaseUrl.includes(".ngrok"))) {
+    if (convertBaseUrl.includes("live-mt-server.")) {
       convertBaseUrl = convertBaseUrl.replace("://live-mt-server.", "://");
     }
 
@@ -421,7 +476,7 @@ function processAndSendImageTask(ss, apiEndpoint, accessToken, convertApiSecret,
       "muteHttpExceptions": true
     };
 
-    const convertResponse = UrlFetchApp.fetch(convertApiUrl, convertOptions);
+    const convertResponse = fetchConvertApiWithRateLimit(convertApiUrl, convertOptions);
     let convertResult = {};
     try {
       convertResult = JSON.parse(convertResponse.getContentText());
@@ -484,7 +539,7 @@ function uploadToCortexBot(pngBlob, phoneNumber, messageText, apiEndpoint, acces
 
   // If endpoint uses live-mt-server prefix on localtunnel (loca.lt) or ngrok,
   // adapt the request host so single-level SSL wildcards (*.loca.lt) resolve and connect flawlessly
-  if (sendUrl.includes("live-mt-server.") && (sendUrl.includes(".loca.lt") || sendUrl.includes(".ngrok"))) {
+  if (sendUrl.includes("live-mt-server.")) {
     sendUrl = sendUrl.replace("://live-mt-server.", "://");
   }
 

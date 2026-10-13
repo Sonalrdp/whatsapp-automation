@@ -3798,7 +3798,14 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         const res = await fetch('/api/auth/me', {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        if (!res.ok) throw new Error('Session invalid');
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('cortex_token');
+            localStorage.removeItem('cortex_user');
+            window.location.href = 'login.html';
+          }
+          return;
+        }
         const data = await res.json();
         if (data.success && data.user) {
           currentUser = data.user;
@@ -3806,10 +3813,8 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
           applyUserProfile(currentUser);
         }
       } catch (err) {
-        console.warn("Session verification failed:", err);
-        localStorage.removeItem('cortex_token');
-        localStorage.removeItem('cortex_user');
-        window.location.href = 'login.html';
+        console.warn("Session verification warning (server offline or restarting):", err);
+        // Permanent session: Do NOT delete token on temporary network errors or server restarts
       }
     }
 
