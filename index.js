@@ -501,12 +501,34 @@ export async function connectUserWhatsApp(userId) {
             defaultQueryTimeoutMs: 60000,
             retryRequestDelayMs: 250,
             getMessage: async (key) => {
-                if (key?.id && messageStore.has(key.id)) {
-                    return messageStore.get(key.id);
+                if (!key?.id) return undefined;
+                const cached = messageStore.get(key.id);
+                if (cached) {
+                    if (!key.remoteJid && cached.remoteJid) {
+                        key.remoteJid = cached.remoteJid;
+                    }
+                    return cached.message || cached;
                 }
                 return undefined;
             }
         });
+
+        // Automatically store all sent messages into messageStore so retry decryptions succeed instantly
+        const rawSendMessage = sock.sendMessage.bind(sock);
+        sock.sendMessage = async (jid, content, options) => {
+            const result = await rawSendMessage(jid, content, options);
+            if (result?.key?.id && result?.message) {
+                messageStore.set(result.key.id, {
+                    message: result.message,
+                    remoteJid: result.key.remoteJid || jid
+                });
+                if (messageStore.size > 5000) {
+                    const firstKey = messageStore.keys().next().value;
+                    messageStore.delete(firstKey);
+                }
+            }
+            return result;
+        };
 
         session.sock = sock;
 
@@ -646,8 +668,11 @@ export async function connectUserWhatsApp(userId) {
                     for (const msg of m.messages) {
                         try {
                             if (msg.key?.id && msg.message) {
-                                messageStore.set(msg.key.id, msg.message);
-                                if (messageStore.size > 2000) {
+                                messageStore.set(msg.key.id, {
+                                    message: msg.message,
+                                    remoteJid: msg.key.remoteJid
+                                });
+                                if (messageStore.size > 5000) {
                                     const firstKey = messageStore.keys().next().value;
                                     messageStore.delete(firstKey);
                                 }
@@ -707,21 +732,24 @@ export async function connectUserWhatsApp(userId) {
                                         }
                                     }
 
-                                    // Direct 1-on-1: ALWAYS prefer sending directly to phone@s.whatsapp.net for guaranteed delivery
-                                    if (cleanSenderPhone) {
-                                        const fullPhone = cleanSenderPhone.length === 10 ? ('91' + cleanSenderPhone) : cleanSenderPhone;
-                                        const phoneJid = `${fullPhone}@s.whatsapp.net`;
-                                        try {
-                                            return await sock.sendMessage(phoneJid, payload);
-                                        } catch (ePhone) {
-                                            console.warn(`[sendCustomerReply] Phone JID send to ${phoneJid} failed (${ePhone.message}), trying directJid...`);
-                                        }
-                                    }
-
+                                    // Direct 1-on-1: ALWAYS reply directly to senderJid with { quoted: msg }
+                                    // This preserves the active session and prevents "Waiting for this message"
                                     const directJid = senderJid.includes(':') && senderJid.endsWith('@s.whatsapp.net')
                                         ? (senderJid.split(':')[0] + '@s.whatsapp.net')
                                         : senderJid;
-                                    return await sock.sendMessage(directJid, payload);
+
+                                    try {
+                                        return await sock.sendMessage(directJid, payload, { quoted: msg });
+                                    } catch (eDirect) {
+                                        console.warn(`[sendCustomerReply] Direct send to ${directJid} failed (${eDirect.message}), trying phoneJid fallback...`);
+                                        if (cleanSenderPhone) {
+                                            const fullPhone = cleanSenderPhone.length === 10 ? ('91' + cleanSenderPhone) : cleanSenderPhone;
+                                            const phoneJid = `${fullPhone}@s.whatsapp.net`;
+                                            if (phoneJid !== directJid) {
+                                                return await sock.sendMessage(phoneJid, payload, { quoted: msg });
+                                            }
+                                        }
+                                    }
                                 };
 
                                 // 1. Check if customer is responding to duration prompt
