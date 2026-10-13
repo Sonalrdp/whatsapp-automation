@@ -213,20 +213,35 @@ app.use(express.static('public')); // Serve the web dashboard
 app.use('/Google Script', express.static(path.join(__dirname, 'Google Script')));
 app.use('/Google Script', express.static(path.join(__dirname, '..', 'Google Script')));
 
-// Filter out noisy internal libsignal session retry errors (automatically resolved by Baileys pre-key exchange)
+// Filter out noisy internal libsignal & Baileys crypto retry logs to keep CMD completely clean
 const originalConsoleError = console.error;
 console.error = function (...args) {
     const msg = String(args[0] || '');
-    if (msg.includes('Session error:Error: Bad MAC') || 
-        msg.includes('Failed to decrypt message with any known session') ||
-        msg.includes('No matching sessions found for message')) {
+    if (msg.includes('Session error') || 
+        msg.includes('Failed to decrypt message') ||
+        msg.includes('No matching sessions found') ||
+        msg.includes('Key used already') ||
+        msg.includes('MessageCounterError') ||
+        msg.includes('Bad MAC')) {
         return;
     }
     originalConsoleError.apply(console, args);
 };
 
-// Logger
-const pinoLogger = pino({ level: 'error' });
+const originalConsoleInfo = console.info;
+console.info = function (...args) {
+    const msg = String(args[0] || '');
+    if (msg.includes('Closing session') || 
+        msg.includes('Removing old closed session') ||
+        msg.includes('Closing open session') ||
+        msg.includes('Decrypted message with closed session')) {
+        return;
+    }
+    originalConsoleInfo.apply(console, args);
+};
+
+// Logger (silent prevents internal Baileys/libsignal JSON traces from printing in CMD)
+const pinoLogger = pino({ level: 'silent' });
 
 // --------------------------------------------------------------------------
 // Multi-Tenant User Sessions Map
@@ -542,9 +557,8 @@ export async function connectUserWhatsApp(userId) {
                     session.qrCodeDataUrl = await QRCode.toDataURL(qr);
                     session.connectionStatus = 'qr_ready';
                     session.isConnecting = false;
-                    session.addLog("New WhatsApp QR Code generated. Scan to link your account.");
-                    const terminalQr = await QRCode.toString(qr, { type: 'terminal', small: true });
-                    console.log(`\n============================================================\n[User ${session.userEmail || userId}] SCAN THIS QR CODE IN WHATSAPP:\n============================================================\n${terminalQr}\n============================================================\n`);
+                    session.addLog("New WhatsApp QR Code generated. View and scan in the Web Dashboard.");
+                    console.log(`[User ${session.userEmail || userId}] New WhatsApp QR Code generated. Ready on Web Dashboard.`);
                 } catch (err) {
                     console.error(`[User ${userId}] QR generate error:`, err);
                 }
