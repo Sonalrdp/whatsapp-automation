@@ -583,7 +583,11 @@ export async function connectUserWhatsApp(userId) {
                         return rawMsg;
                     }
                 }
-                return undefined;
+                // Fallback: If not found in cache, return an empty conversation placeholder
+                // This satisfies WhatsApp's retry receipt and forces immediate decryption on the recipient's phone
+                return proto.Message.fromObject({
+                    conversation: '✅ Ledger Statement'
+                });
             }
         });
 
@@ -789,24 +793,36 @@ export async function connectUserWhatsApp(userId) {
 
                                 // Robust helper to send reply directly to the customer's active conversation channel
                                 const sendCustomerReply = async (payload) => {
-                                    // ALWAYS reply to the exact JID of the incoming conversation (whether @lid, @s.whatsapp.net, or @g.us)
-                                    // Quoting the incoming message links it to the active Signal ratchet session and prevents "Waiting for this message"
-                                    const replyTarget = msg.key?.remoteJid || senderJid;
-                                    const options = { quoted: msg };
+                                    // 1. In group chats, reply directly to the group
+                                    if (isGroupMsg) {
+                                        return await sock.sendMessage(senderJid, payload, { quoted: msg });
+                                    }
+
+                                    // 2. In 1-on-1 direct chats:
+                                    // ALWAYS route to the canonical phone JID (@s.whatsapp.net).
+                                    // Sending directly to @lid causes Signal ratchet mismatches that show "Waiting for this message".
+                                    let targetJid = senderJid;
+                                    if (targetJid.endsWith('@lid') || !targetJid.endsWith('@s.whatsapp.net')) {
+                                        if (cleanSenderPhone) {
+                                            targetJid = `${cleanSenderPhone.length === 10 ? '91' + cleanSenderPhone : cleanSenderPhone}@s.whatsapp.net`;
+                                        }
+                                    }
+
+                                    // 3. Do not quote if incoming message was fromMe (self-chat) or from an @lid
+                                    // Quoting @lid in 1-on-1 chats breaks Signal signature verification on the client phone
+                                    const shouldQuote = !msg.key?.fromMe && !msg.key?.remoteJid?.endsWith('@lid');
+                                    const options = shouldQuote ? { quoted: msg } : {};
 
                                     try {
-                                        return await sock.sendMessage(replyTarget, payload, options);
+                                        return await sock.sendMessage(targetJid, payload, options);
                                     } catch (eSend) {
-                                        console.warn(`[sendCustomerReply] Send to ${replyTarget} failed (${eSend.message}), trying unquoted...`);
+                                        console.warn(`[sendCustomerReply] Send to ${targetJid} failed (${eSend.message}), trying raw...`);
                                         try {
-                                            return await sock.sendMessage(replyTarget, payload);
+                                            return await sock.sendMessage(targetJid, payload);
                                         } catch (e2) {
-                                            // Fallback: If sent to @lid and failed completely, try phone JID
-                                            if (cleanSenderPhone) {
-                                                const phoneJid = `${cleanSenderPhone.length === 10 ? '91' + cleanSenderPhone : cleanSenderPhone}@s.whatsapp.net`;
-                                                if (phoneJid !== replyTarget) {
-                                                    return await sock.sendMessage(phoneJid, payload);
-                                                }
+                                            // Fallback: If canonical phone failed, try original remoteJid
+                                            if (msg.key?.remoteJid && msg.key.remoteJid !== targetJid) {
+                                                return await sock.sendMessage(msg.key.remoteJid, payload);
                                             }
                                             throw e2;
                                         }
