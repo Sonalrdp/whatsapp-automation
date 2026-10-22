@@ -4782,22 +4782,31 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
     function renderTriggerContactsList() {
       if (!triggerContactsList) return;
 
-      // Group cachedTriggerChats by contact/sender phone
+    // Group cachedTriggerChats by contact/sender phone
       const contactMap = new Map();
       cachedTriggerChats.forEach(c => {
-        const key = String(c.sender || '').trim();
-        if (!key) return;
-        if (!contactMap.has(key)) {
-          contactMap.set(key, {
-            phone: key,
-            name: c.senderName && !c.senderName.includes('@') ? c.senderName : key,
+        const rawKey = String(c.sender || '').trim();
+        if (!rawKey) return;
+        const normalizedKey = rawKey.replace(/@.*$/, '').replace(/[^0-9]/g, '') || rawKey;
+        if (!contactMap.has(normalizedKey)) {
+          contactMap.set(normalizedKey, {
+            phone: normalizedKey,
+            rawPhone: rawKey,
+            name: (c.senderName && !c.senderName.includes('@') && c.direction === 'incoming') ? c.senderName : (normalizedKey.length >= 10 ? '+' + normalizedKey : normalizedKey),
             lastMessage: c.message,
             lastTime: c.timestamp,
             trigger: c.trigger,
             messages: []
           });
         }
-        contactMap.get(key).messages.push(c);
+        const item = contactMap.get(normalizedKey);
+        if (c.direction === 'incoming' && c.senderName && !c.senderName.includes('@')) {
+          item.name = c.senderName;
+        }
+        item.lastMessage = c.message;
+        item.lastTime = c.timestamp;
+        if (c.trigger) item.trigger = c.trigger;
+        item.messages.push(c);
       });
 
       let contacts = Array.from(contactMap.values());
@@ -4823,8 +4832,8 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         return;
       }
 
-      // Automatically select first contact if none selected
-      if (!activeSelectedContact && contacts.length > 0) {
+      // Automatically select first contact if none selected or not present
+      if (!activeSelectedContact || !contacts.some(c => c.phone === activeSelectedContact)) {
         activeSelectedContact = contacts[0].phone;
       }
 
@@ -4844,16 +4853,19 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
             <div class="flex-grow-1 overflow-hidden">
               <div class="d-flex align-items-center justify-content-between mb-1">
                 <span class="fw-bold text-dark text-truncate" style="max-width: 140px; font-size: 0.92rem;">
-                  ${escapeHtml(c.name !== c.phone ? c.name : '+' + displayPhone)}
+                  ${escapeHtml(c.name)}
                 </span>
                 <small class="text-muted" style="font-size: 0.72rem;">${escapeHtml(c.lastTime || '')}</small>
               </div>
               <div class="text-muted small text-truncate" style="font-size: 0.82rem;">
                 ${escapeHtml(c.lastMessage || '')}
               </div>
-              <div class="mt-1">
+              <div class="mt-1 d-flex align-items-center justify-content-between">
                 <span class="badge bg-success-subtle text-success border border-success border-opacity-25" style="font-size: 0.68rem;">
                   <i class="bi bi-lightning-fill"></i> ${escapeHtml(c.trigger || 'Trigger')}
+                </span>
+                <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">
+                  +${escapeHtml(displayPhone)}
                 </span>
               </div>
             </div>
@@ -4884,20 +4896,27 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         return;
       }
 
+      // Normalize active selection
+      const activeClean = activeSelectedContact.replace(/@.*$/, '').replace(/[^0-9]/g, '');
+
       // Filter messages belonging to this phone number / thread
       const threadMessages = cachedTriggerChats
-        .filter(c => c.sender === activeSelectedContact)
+        .filter(c => {
+          const sClean = String(c.sender || '').replace(/@.*$/, '').replace(/[^0-9]/g, '');
+          return sClean === activeClean || c.sender === activeSelectedContact;
+        })
         .slice()
         .reverse(); // Older at top, newest at bottom
 
+      const latestIncoming = threadMessages.slice().reverse().find(m => m.direction === 'incoming') || {};
       const latestItem = threadMessages[threadMessages.length - 1] || {};
-      const displayPhone = activeSelectedContact.replace(/@.*$/, '');
-      const contactTitle = latestItem.senderName && !latestItem.senderName.includes('@') 
-        ? latestItem.senderName 
+      const displayPhone = activeClean || activeSelectedContact.replace(/@.*$/, '');
+      const contactTitle = latestIncoming.senderName && !latestIncoming.senderName.includes('@') 
+        ? latestIncoming.senderName 
         : '+' + displayPhone;
 
       if (activeChatTitle) activeChatTitle.innerText = contactTitle;
-      if (activeChatSubtitle) activeChatSubtitle.innerHTML = `<span class="status-dot status-on" style="width: 8px; height: 8px;"></span> +${escapeHtml(displayPhone)}`;
+      if (activeChatSubtitle) activeChatSubtitle.innerHTML = `<span class="status-dot status-on" style="width: 8px; height: 8px;"></span> Receiver: +${escapeHtml(displayPhone)}`;
       if (activeChatAvatar) activeChatAvatar.innerText = (contactTitle).replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase() || '#';
       if (activeChatTriggerTag) activeChatTriggerTag.innerHTML = `<i class="bi bi-lightning-charge-fill"></i> ${escapeHtml(latestItem.trigger || 'Trigger')}`;
 
@@ -4914,28 +4933,65 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       }
 
       triggerChatMessages.innerHTML = threadMessages.map(c => {
-        const isIncoming = c.direction === 'incoming';
-        return `
-          <div class="d-flex mb-3 ${isIncoming ? 'justify-content-start' : 'justify-content-end'}">
-            <div class="p-3 rounded-4 shadow-sm" style="max-width: 72%; background: ${isIncoming ? '#ffffff' : '#d9fdd3'}; color: #111b21; border: 1px solid ${isIncoming ? '#e2e8f0' : 'rgba(0,0,0,0.04)'}; border-top-${isIncoming ? 'left' : 'right'}-radius: 4px;">
-              <div class="d-flex align-items-center justify-content-between gap-3 mb-1" style="font-size: 0.75rem; opacity: 0.75;">
-                <span class="fw-bold ${isIncoming ? 'text-success' : 'text-primary'}">
-                  <i class="bi ${isIncoming ? 'bi-arrow-down-left' : 'bi-check2-all'} me-1"></i>
-                  ${escapeHtml(isIncoming ? (c.senderName || '+' + displayPhone) : 'Cortex AutoBot Reply')}
-                </span>
-                <span>${escapeHtml(c.timestamp)}</span>
-              </div>
-              <div class="mb-1" style="white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.45;">
-                ${escapeHtml(c.message)}
-              </div>
-              <div class="d-flex align-items-center justify-content-end pt-1" style="font-size: 0.7rem; opacity: 0.7;">
-                <span class="badge ${isIncoming ? 'bg-success-subtle text-success' : 'bg-success bg-opacity-25 text-dark'} rounded-pill">
-                  <i class="bi bi-lightning-fill"></i> ${escapeHtml(c.trigger || 'Rule')}
-                </span>
+        // RECEIVER (Incoming customer message) = LEFT SIDE (white bubble, left-aligned)
+        // SENDER (Outgoing bot / you reply)   = RIGHT SIDE (green bubble, right-aligned)
+        const isIncoming = (c.direction === 'incoming');
+
+        if (isIncoming) {
+          // LEFT SIDE: Receiver (Contact / Customer)
+          return `
+            <div class="d-flex mb-3 justify-content-start">
+              <div class="p-3 rounded-4 shadow-sm position-relative" style="max-width: 75%; background: #ffffff; color: #111b21; border: 1px solid #e2e8f0; border-top-left-radius: 4px;">
+                <div class="d-flex align-items-center justify-content-between gap-3 mb-1" style="font-size: 0.75rem;">
+                  <span class="fw-bold text-success d-inline-flex align-items-center gap-1">
+                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-1 py-0" style="font-size: 0.65rem;">RECEIVER</span>
+                    <i class="bi bi-arrow-down-left"></i>
+                    ${escapeHtml(c.senderName || '+' + displayPhone)}
+                  </span>
+                  <span class="text-muted" style="font-size: 0.72rem;">${escapeHtml(c.timestamp)}</span>
+                </div>
+                <div class="mb-2" style="white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.45;">
+                  ${escapeHtml(c.message)}
+                </div>
+                <div class="d-flex align-items-center justify-content-between pt-1 border-top border-light-subtle" style="font-size: 0.7rem; opacity: 0.85;">
+                  <span class="badge bg-light text-secondary border">
+                    <i class="bi bi-telephone-inbound me-1"></i>+${escapeHtml(displayPhone)}
+                  </span>
+                  <span class="badge bg-success-subtle text-success rounded-pill">
+                    <i class="bi bi-lightning-fill"></i> ${escapeHtml(c.trigger || 'Trigger')}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        `;
+          `;
+        } else {
+          // RIGHT SIDE: Sender (Bot / User Reply)
+          return `
+            <div class="d-flex mb-3 justify-content-end">
+              <div class="p-3 rounded-4 shadow-sm position-relative" style="max-width: 75%; background: #d9fdd3; color: #111b21; border: 1px solid rgba(0,0,0,0.06); border-top-right-radius: 4px;">
+                <div class="d-flex align-items-center justify-content-between gap-3 mb-1" style="font-size: 0.75rem;">
+                  <span class="fw-bold text-primary d-inline-flex align-items-center gap-1">
+                    <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 px-1 py-0" style="font-size: 0.65rem;">SENDER</span>
+                    <i class="bi bi-robot"></i>
+                    ${escapeHtml(c.senderName || 'Cortex AutoBot')}
+                  </span>
+                  <span class="text-muted" style="font-size: 0.72rem;">
+                    ${escapeHtml(c.timestamp)}
+                    <i class="bi bi-check2-all text-primary ms-1"></i>
+                  </span>
+                </div>
+                <div class="mb-2" style="white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.45;">
+                  ${escapeHtml(c.message)}
+                </div>
+                <div class="d-flex align-items-center justify-content-end pt-1 border-top border-dark-subtle border-opacity-10" style="font-size: 0.7rem; opacity: 0.85;">
+                  <span class="badge bg-success bg-opacity-25 text-dark rounded-pill">
+                    <i class="bi bi-lightning-charge-fill me-1"></i>${escapeHtml(c.trigger || 'Auto Reply')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
       }).join('');
 
       triggerChatMessages.scrollTop = triggerChatMessages.scrollHeight;

@@ -3168,6 +3168,18 @@ const sendMessageApiHandler = async (req, res) => {
         await recordUserMessageSent(userId);
         session.addLog(`[API Request] Message sent successfully to ${jid}`);
 
+        // Register outgoing chat for Trigger Chats view
+        const cleanRecipient = rawTarget.replace(/@.*$/, '').replace(/[^0-9]/g, '');
+        session.addChat({
+            id: sendResult?.key?.id || ('api_' + Date.now()),
+            sender: cleanRecipient || rawTarget,
+            senderName: 'You / Cortex AutoBot',
+            message: messageContent || (mediaUrl ? `[Media: ${mediaUrl}]` : '[Attachment]'),
+            direction: 'outgoing',
+            trigger: 'Direct / Manual Reply',
+            timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+        });
+
         res.json({
             result: true,
             success: true,
