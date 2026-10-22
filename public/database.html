@@ -4773,11 +4773,11 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       });
     }
 
-    function selectTriggerContact(phoneKey) {
+    window.selectTriggerContact = function(phoneKey) {
       activeSelectedContact = phoneKey;
       renderTriggerContactsList();
       renderActiveThreadMessages();
-    }
+    };
 
     function renderTriggerContactsList() {
       if (!triggerContactsList) return;
