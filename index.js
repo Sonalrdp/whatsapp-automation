@@ -529,15 +529,30 @@ export async function getOrCreateUserSession(userId, userEmail = '') {
         qrCodeDataUrl: null,
         groupsList: [],
         recentLogs: [],
+        triggeredLogs: [],
+        recentChats: [],
         config: initialConfig,
         isConnecting: false,
-        addLog(text) {
+        addLog(text, isTriggerMatched = false) {
             const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
             const logItem = `[${timestamp}] ${text}`;
             console.log(`[User ${this.userEmail || this.userId}] ${logItem}`);
             this.recentLogs.unshift(logItem);
             if (this.recentLogs.length > 50) {
                 this.recentLogs.pop();
+            }
+            if (isTriggerMatched) {
+                this.triggeredLogs.unshift(logItem);
+                if (this.triggeredLogs.length > 50) {
+                    this.triggeredLogs.pop();
+                }
+            }
+        },
+        addChat(chatItem) {
+            // chatItem: { id, sender, senderName, message, direction: 'incoming'|'outgoing', trigger: 'Template Name', timestamp }
+            this.recentChats.unshift(chatItem);
+            if (this.recentChats.length > 100) {
+                this.recentChats.pop();
             }
         }
     };
@@ -782,7 +797,8 @@ export async function connectUserWhatsApp(userId) {
                             session.config = currentConfig;
 
                             console.log(`[User ${userId}] 📩 Incoming message from ${senderJid}${isGroupMsg ? ` (participant: ${participantJid})` : ''} (${msg.pushName || 'Customer'}): "${textMsg || content.type}" (fromMe: ${msg.key.fromMe})`);
-                            session.addLog(`[Incoming] From ${isGroupMsg ? (participantJid || senderJid) : senderJid}: "${textMsg || content.type}"`);
+                            // We do NOT add raw un-triggered incoming messages to session.addLog/session.triggeredLogs yet.
+                            // Only when a trigger rule matches (or outgoing reply) will it be recorded.
 
                             // ==============================================================
                             // TALLY INTEGRATION: Automated Ledger Statement Delivery
@@ -979,7 +995,16 @@ export async function connectUserWhatsApp(userId) {
                                     if (!isTrigger) continue;
 
                                     tallyTriggerMatched = true;
-                                    session.addLog(`[Tally Ledger Bot] 🔍 Received keyword trigger "${textMsg}" from ${formatPhoneDisplay(cleanSenderPhone || senderJid)}. Verifying registered mobile in Tally...`);
+                                    session.addLog(`[Tally Ledger Bot] 🔍 Received keyword trigger "${textMsg}" from ${formatPhoneDisplay(cleanSenderPhone || senderJid)}. Verifying registered mobile in Tally...`, true);
+                                    session.addChat({
+                                        id: msg.key?.id || String(Date.now()),
+                                        sender: cleanSenderPhone || senderJid,
+                                        senderName: msg.pushName || 'Customer',
+                                        message: textMsg,
+                                        direction: 'incoming',
+                                        trigger: tpl.name || 'Tally Ledger Bot',
+                                        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+                                    });
 
                                     // Verify registered number in Tally (strictly matches 10 digits ignoring country codes)
                                     const checkResult = await findLedgerByPhone({
@@ -989,18 +1014,36 @@ export async function connectUserWhatsApp(userId) {
                                     });
 
                                     if (checkResult.tallyUnavailable) {
-                                        session.addLog(`[Tally Ledger Bot] ⏳ Tally accounting server is synchronizing/offline. Notifying customer...`);
+                                        session.addLog(`[Tally Ledger Bot] ⏳ Tally accounting server is synchronizing/offline. Notifying customer...`, true);
                                         await sendCustomerReply({
                                             text: `⏳ *Our accounting system is currently synchronizing. Please try later.*`
+                                        });
+                                        session.addChat({
+                                            id: 'reply_' + Date.now(),
+                                            sender: cleanSenderPhone || senderJid,
+                                            senderName: 'Bot Reply',
+                                            message: '⏳ Our accounting system is currently synchronizing. Please try later.',
+                                            direction: 'outgoing',
+                                            trigger: tpl.name || 'Tally Ledger Bot',
+                                            timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
                                         });
                                         break;
                                     }
 
                                     if (!checkResult.found) {
-                                        session.addLog(`[Tally Ledger Bot] ⚠️ Mobile ${formatPhoneDisplay(cleanSenderPhone || senderJid)} is NOT registered in Tally. Sending notice...`);
+                                        session.addLog(`[Tally Ledger Bot] ⚠️ Mobile ${formatPhoneDisplay(cleanSenderPhone || senderJid)} is NOT registered in Tally. Sending notice...`, true);
                                         const unregMsg = tpl.unregisteredMessage || `❌ *Notice:* Your mobile number (${formatPhoneDisplay(cleanSenderPhone || 'your number')}) is not registered with our accounting records.\n\nPlease contact our accounts department to link your mobile number.`;
                                         await sendCustomerReply({ text: unregMsg });
-                                        session.addLog(`[Tally Ledger Bot] 📤 Unregistered notice delivered to ${formatPhoneDisplay(cleanSenderPhone || senderJid)}`);
+                                        session.addLog(`[Tally Ledger Bot] 📤 Unregistered notice delivered to ${formatPhoneDisplay(cleanSenderPhone || senderJid)}`, true);
+                                        session.addChat({
+                                            id: 'reply_' + Date.now(),
+                                            sender: cleanSenderPhone || senderJid,
+                                            senderName: 'Bot Reply',
+                                            message: unregMsg,
+                                            direction: 'outgoing',
+                                            trigger: tpl.name || 'Tally Ledger Bot',
+                                            timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+                                        });
                                         break;
                                     }
 
@@ -1015,11 +1058,20 @@ export async function connectUserWhatsApp(userId) {
                                         invalidCount: 0
                                     });
 
-                                    session.addLog(`[Tally Ledger Bot] ✅ Verified party "${partyName}". Sending duration choices...`);
+                                    session.addLog(`[Tally Ledger Bot] ✅ Verified party "${partyName}". Sending duration choices...`, true);
 
                                     const promptMenu = `*Hello ${partyName}* 👋\n\nPlease select the statement duration for your Ledger Account:\n\n1️⃣ *1 Month* (Last 30 Days)\n2️⃣ *3 Months* (Last 90 Days)\n3️⃣ *6 Months* (Last 180 Days)\n4️⃣ *12 Months* (Last 1 Year)\n\n👉 Reply with *1, 2, 3, or 4* (or type the duration name).`;
                                     await sendCustomerReply({ text: promptMenu });
-                                    session.addLog(`[Tally Ledger Bot] 📤 Duration choices menu delivered to ${formatPhoneDisplay(cleanSenderPhone)}`);
+                                    session.addLog(`[Tally Ledger Bot] 📤 Duration choices menu delivered to ${formatPhoneDisplay(cleanSenderPhone)}`, true);
+                                    session.addChat({
+                                        id: 'reply_' + Date.now(),
+                                        sender: cleanSenderPhone || senderJid,
+                                        senderName: 'Bot Reply',
+                                        message: promptMenu,
+                                        direction: 'outgoing',
+                                        trigger: tpl.name || 'Tally Ledger Bot',
+                                        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+                                    });
                                     break;
                                 }
 
@@ -1108,7 +1160,16 @@ export async function connectUserWhatsApp(userId) {
                                 continue;
                             }
 
-                            session.addLog(`[${templateName}] 🎯 Matched source: ${sourceLabel} (incoming ${content.type}${content.fileName ? ` "${content.fileName}"` : ''})`);
+                            session.addLog(`[${templateName}] 🎯 Matched source: ${sourceLabel} (incoming ${content.type}${content.fileName ? ` "${content.fileName}"` : ''})`, true);
+                            session.addChat({
+                                id: msg.key?.id || String(Date.now()),
+                                sender: isGroupMsg ? participantJid : senderJid,
+                                senderName: msg.pushName || sourceLabel,
+                                message: textMsg || `[${content.type}] ${content.fileName || ''}`,
+                                direction: 'incoming',
+                                trigger: templateName,
+                                timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+                            });
 
                             // Check allowed sharing media types
                             const shareTypes = tpl.shareTypes || ['pdf', 'document', 'image', 'video', 'audio', 'text'];
@@ -1169,7 +1230,16 @@ export async function connectUserWhatsApp(userId) {
                                         deliveredCount++;
                                     }
                                     if (deliveredCount > 0) {
-                                        session.addLog(`[${templateName}] ✅ Forwarded text to ${deliveredCount} destination(s).`);
+                                        session.addLog(`[${templateName}] ✅ Forwarded text to ${deliveredCount} destination(s).`, true);
+                                        session.addChat({
+                                            id: 'fwd_' + Date.now(),
+                                            sender: targetDestinations.join(', '),
+                                            senderName: 'Forwarded Outgoing',
+                                            message: messageText,
+                                            direction: 'outgoing',
+                                            trigger: templateName,
+                                            timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+                                        });
 
                                         const notifyTarget = session.config?.notificationTargetNumber || tpl.notificationTargetNumber;
                                         if (notifyTarget) {
@@ -2041,6 +2111,8 @@ app.get('/api/status', authenticateUser, async (req, res) => {
             },
             groups: session.groupsList || [],
             logs: session.recentLogs || [],
+            triggeredLogs: session.triggeredLogs || [],
+            chats: session.recentChats || [],
             user: {
                 ...req.user,
                 access_token: fullUser.access_token,

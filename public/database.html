@@ -90,6 +90,10 @@
           <span class="nav-icon"><i class="bi bi-code-slash text-info" aria-hidden="true"></i></span>
           <span class="nav-text">API &amp; Access Token</span>
         </a>
+        <a class="nav-link" href="#trigger-chats" data-sheet="trigger-chats">
+          <span class="nav-icon"><i class="bi bi-chat-left-dots-fill text-success" aria-hidden="true"></i></span>
+          <span class="nav-text">Trigger Chats</span>
+        </a>
         <a class="nav-link" href="#live-logs" data-sheet="live-logs">
           <span class="nav-icon"><i class="bi bi-terminal" aria-hidden="true"></i></span>
           <span class="nav-text">My Live Logs</span>
@@ -2164,6 +2168,45 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
           </section>
 
           <!-- =============================================================== -->
+          <!-- SHEET 4B: TRIGGER CHATS (INCOMING / OUTGOING ONLY) -->
+          <!-- =============================================================== -->
+          <section id="sheet-trigger-chats" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(16, 185, 129, 0.15); color: #10b981;"><i class="bi bi-chat-left-dots-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">Trigger-Matched Communications Only</p>
+                  <h1 class="h3 mb-1">Trigger Chats &amp; Automated Replies</h1>
+                  <p class="text-muted mb-0">Only incoming messages matching active triggers and their outgoing automated responses appear here.</p>
+                </div>
+              </div>
+              <div class="d-flex gap-2">
+                <span class="badge text-bg-success d-inline-flex align-items-center gap-1 px-3 py-2">
+                  <i class="bi bi-funnel-fill"></i> Trigger Filter Active
+                </span>
+              </div>
+            </div>
+
+            <!-- Trigger Chats Container -->
+            <div class="panel">
+              <div class="panel-header border-bottom p-3 d-flex justify-content-between align-items-center">
+                <h2 class="h6 mb-0 fw-bold d-flex align-items-center gap-2">
+                  <i class="bi bi-shield-check text-success"></i>
+                  <span>Verified Trigger Conversations</span>
+                </h2>
+                <span class="badge text-bg-light border" id="trigger-chats-count">0 Messages</span>
+              </div>
+              <div class="p-3" id="trigger-chats-container" style="min-height: 480px; max-height: 650px; overflow-y: auto;">
+                <div class="text-center py-5 text-muted">
+                  <i class="bi bi-chat-square-text fs-1 d-block mb-3 opacity-50"></i>
+                  <h6 class="fw-bold">No Trigger Messages Yet</h6>
+                  <p class="small mb-0">When an incoming message matches one of your active triggers (e.g., Tally statement or keyword rule), the chat and automated reply will be captured here.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
           <!-- SHEET 5: MY LIVE LOGS -->
           <!-- =============================================================== -->
           <section id="sheet-live-logs" class="dashboard-sheet d-none">
@@ -2176,7 +2219,16 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                   <p class="text-muted mb-0">Real-time terminal event feed of your personal WhatsApp bot activity.</p>
                 </div>
               </div>
-              <div class="d-flex gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <!-- Log Filter Toggle -->
+                <div class="btn-group btn-group-sm" role="group" aria-label="Log Filter Toggle">
+                  <button type="button" class="btn btn-outline-success active" id="btn-filter-trigger-logs">
+                    <i class="bi bi-funnel-fill me-1"></i> Trigger Only
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary" id="btn-filter-all-logs">
+                    All System Logs
+                  </button>
+                </div>
                 <button id="btn-clear-terminal" class="btn btn-sm btn-outline-secondary" title="Clear log output">
                   <i class="bi bi-trash3"></i> Clear Console
                 </button>
@@ -2188,13 +2240,13 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                 <div class="d-flex align-items-center gap-2">
                   <span class="status-dot status-on pulsing"></span>
                   <h2 class="h6 mb-0 fw-bold">Active WhatsApp Daemon Console</h2>
-                  <span class="badge text-bg-secondary ms-2" id="logs-counter">Live Streaming</span>
+                  <span class="badge text-bg-success ms-2" id="logs-counter">Trigger View</span>
                 </div>
                 <small class="text-muted font-monospace">Auto-Scroll Enabled</small>
               </div>
               <div class="log-console-wrapper" style="min-height: 520px;">
                 <div id="log-console" class="log-console" style="min-height: 500px;">
-                  <div class="log-line system-msg">[System] Instance initialized. Awaiting live WhatsApp event logs...</div>
+                  <div class="log-line system-msg">[System] Instance initialized. Waiting for trigger-matched events...</div>
                 </div>
               </div>
             </div>
@@ -4383,7 +4435,11 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
           populateModalGroupDropdown(data.config ? data.config.targetGroup : null);
         }
 
-        updateLogs(data.logs);
+        if (data.chats) {
+          updateTriggerChats(data.chats);
+        }
+
+        updateLogs(data.logs, data.triggeredLogs);
 
       } catch (err) {
         console.error("Error polling bot status:", err);
@@ -4537,23 +4593,102 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       }
     }
 
-    function updateLogs(logs) {
-      if (!logs || logs.length === 0) return;
-      
-      const logContent = logs.map(log => {
+    let logFilterMode = 'trigger'; // 'trigger' or 'all'
+    let cachedAllLogs = [];
+    let cachedTriggeredLogs = [];
+
+    const btnFilterTriggerLogs = document.getElementById('btn-filter-trigger-logs');
+    const btnFilterAllLogs = document.getElementById('btn-filter-all-logs');
+    const logsCounter = document.getElementById('logs-counter');
+    const triggerChatsContainer = document.getElementById('trigger-chats-container');
+    const triggerChatsCount = document.getElementById('trigger-chats-count');
+
+    if (btnFilterTriggerLogs && btnFilterAllLogs) {
+      btnFilterTriggerLogs.addEventListener('click', () => {
+        logFilterMode = 'trigger';
+        btnFilterTriggerLogs.classList.add('active', 'btn-outline-success');
+        btnFilterTriggerLogs.classList.remove('btn-outline-secondary');
+        btnFilterAllLogs.classList.remove('active', 'btn-outline-success');
+        btnFilterAllLogs.classList.add('btn-outline-secondary');
+        if (logsCounter) logsCounter.innerText = 'Trigger View';
+        renderCurrentLogs();
+      });
+
+      btnFilterAllLogs.addEventListener('click', () => {
+        logFilterMode = 'all';
+        btnFilterAllLogs.classList.add('active', 'btn-outline-success');
+        btnFilterAllLogs.classList.remove('btn-outline-secondary');
+        btnFilterTriggerLogs.classList.remove('active', 'btn-outline-success');
+        btnFilterTriggerLogs.classList.add('btn-outline-secondary');
+        if (logsCounter) logsCounter.innerText = 'All Logs';
+        renderCurrentLogs();
+      });
+    }
+
+    function renderCurrentLogs() {
+      const activeList = logFilterMode === 'trigger' ? cachedTriggeredLogs : cachedAllLogs;
+      if (!logConsole) return;
+
+      if (!activeList || activeList.length === 0) {
+        logConsole.innerHTML = `<div class="log-line text-muted">${logFilterMode === 'trigger' ? '[Filter] No trigger-matched event logs yet. Unmatched messages are suppressed.' : '[System] No logs recorded.'}</div>`;
+        return;
+      }
+
+      const logContent = activeList.map(log => {
         let cssClass = '';
-        if (log.includes('Successfully') || log.includes('established') || log.includes('connected') || log.includes('activated')) cssClass = 'log-success';
-        else if (log.includes('Error') || log.includes('Failed') || log.includes('closed') || log.includes('expired') || log.includes('limit')) cssClass = 'log-error';
-        else if (log.includes('Scheduler') || log.includes('Scheduling') || log.includes('Pending')) cssClass = 'log-warn';
-        else if (log.includes('Received') || log.includes('Forwarded') || log.includes('Found')) cssClass = 'log-info';
+        if (log.includes('Successfully') || log.includes('established') || log.includes('connected') || log.includes('activated') || log.includes('Verified')) cssClass = 'log-success';
+        else if (log.includes('Error') || log.includes('Failed') || log.includes('closed') || log.includes('expired') || log.includes('limit') || log.includes('Skipped')) cssClass = 'log-error';
+        else if (log.includes('Scheduler') || log.includes('Scheduling') || log.includes('Pending') || log.includes('Notice')) cssClass = 'log-warn';
+        else if (log.includes('Received') || log.includes('Forwarded') || log.includes('Found') || log.includes('Matched')) cssClass = 'log-info';
         
         return `<div class="log-line ${cssClass}">${escapeHtml(log)}</div>`;
       }).reverse().join('');
-      
-      if (logConsole) {
-        logConsole.innerHTML = logContent;
-        logConsole.scrollTop = logConsole.scrollHeight;
+
+      logConsole.innerHTML = logContent;
+      logConsole.scrollTop = logConsole.scrollHeight;
+    }
+
+    function updateLogs(allLogs = [], triggeredLogs = []) {
+      cachedAllLogs = allLogs;
+      cachedTriggeredLogs = triggeredLogs;
+      renderCurrentLogs();
+    }
+
+    function updateTriggerChats(chats = []) {
+      if (!triggerChatsContainer) return;
+      if (triggerChatsCount) triggerChatsCount.innerText = `${chats.length} Messages`;
+
+      if (chats.length === 0) {
+        triggerChatsContainer.innerHTML = `
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-chat-square-text fs-1 d-block mb-3 opacity-50"></i>
+            <h6 class="fw-bold">No Trigger Messages Yet</h6>
+            <p class="small mb-0">When an incoming message matches one of your active triggers (e.g., Tally statement or keyword rule), the chat and automated reply will be captured here.</p>
+          </div>
+        `;
+        return;
       }
+
+      triggerChatsContainer.innerHTML = chats.map(c => {
+        const isIncoming = c.direction === 'incoming';
+        return `
+          <div class="d-flex mb-3 ${isIncoming ? 'justify-content-start' : 'justify-content-end'}">
+            <div class="p-3 rounded-4 shadow-sm" style="max-width: 80%; background: ${isIncoming ? 'var(--cortex-surface, #f8fafc)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)'}; color: ${isIncoming ? 'inherit' : '#ffffff'}; border: 1px solid ${isIncoming ? '#e2e8f0' : 'transparent'};">
+              <div class="d-flex align-items-center justify-content-between gap-3 mb-1 small" style="opacity: 0.85;">
+                <span class="fw-bold"><i class="bi ${isIncoming ? 'bi-arrow-down-left text-success' : 'bi-arrow-up-right text-light'} me-1"></i> ${escapeHtml(c.senderName || c.sender)}</span>
+                <span style="font-size: 0.75rem;">${escapeHtml(c.timestamp)}</span>
+              </div>
+              <div class="mb-2" style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.message)}</div>
+              <div class="d-flex align-items-center justify-content-between pt-1 border-top" style="border-color: ${isIncoming ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.2)'} !important; font-size: 0.72rem;">
+                <span class="badge ${isIncoming ? 'bg-success-subtle text-success' : 'bg-white bg-opacity-25 text-white'} rounded-pill">
+                  <i class="bi bi-lightning-fill"></i> Trigger: ${escapeHtml(c.trigger || 'Auto-Reply')}
+                </span>
+                <span class="text-truncate ms-2" style="max-width: 140px;">${escapeHtml(c.sender)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     function escapeHtml(text) {
