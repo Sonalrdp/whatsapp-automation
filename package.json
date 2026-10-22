@@ -9,6 +9,7 @@
     "dev": "node index.js"
   },
   "dependencies": {
+    "@tidbcloud/serverless": "^0.3.0",
     "@whiskeysockets/baileys": "^6.6.0",
     "body-parser": "^1.20.2",
     "dotenv": "^16.3.1",

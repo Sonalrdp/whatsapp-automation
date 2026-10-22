@@ -6,9 +6,12 @@ import { initAuthCreds, BufferJSON, proto, useMultiFileAuthState } from '@whiske
 import fs from 'fs/promises';
 import path from 'path';
 
+import { connect as tidbConnect } from '@tidbcloud/serverless';
+
 let dbType = null; // 'mysql' | 'postgres' | null
 let pgPool = null;
 let mysqlPool = null;
+let tidbHttpConn = null;
 let pool = null;
 
 const rawDbUrl = (process.env.DATABASE_URL || '').trim();
@@ -59,24 +62,49 @@ if (isMysql) {
             console.error("Invalid MySQL DATABASE_URL:", e.message);
         }
     }
-    console.log(`TiDB Cloud / MySQL detected. Initializing connection to ${config.host}:${config.port}/${config.database}...`);
-    mysqlPool = mysql.createPool(config);
 
-    pool = {
-        query: async (sql, params = []) => {
-            if (!mysqlPool) {
-                throw new Error("MySQL pool is not active. Using local fallback.");
+    const isTiDBCloud = config.host && config.host.includes('tidbcloud.com');
+
+    if (isTiDBCloud) {
+        console.log(`TiDB Cloud detected (${config.host}). Initializing via TiDB Serverless HTTPS Engine (Port 443)...`);
+        const tidbUrl = `mysql://${encodeURIComponent(config.user)}:${encodeURIComponent(config.password)}@${config.host}:${config.port}/${config.database}`;
+        tidbHttpConn = tidbConnect({ url: tidbUrl });
+
+        pool = {
+            query: async (sql, params = []) => {
+                if (!tidbHttpConn) {
+                    throw new Error("TiDB Cloud connection is not active.");
+                }
+                const mysqlSql = sql.replace(/\$\d+/g, '?');
+                const rows = await tidbHttpConn.execute(mysqlSql, params);
+                const isArr = Array.isArray(rows);
+                return {
+                    rows: isArr ? rows : [],
+                    rowCount: isArr ? rows.length : (rows?.affectedRows || 0),
+                    raw: rows
+                };
             }
-            const mysqlSql = sql.replace(/\$\d+/g, '?');
-            const [rows] = await mysqlPool.query(mysqlSql, params);
-            const isArr = Array.isArray(rows);
-            return {
-                rows: isArr ? rows : [],
-                rowCount: isArr ? rows.length : (rows?.affectedRows || 0),
-                raw: rows
-            };
-        }
-    };
+        };
+    } else {
+        console.log(`MySQL detected. Initializing connection to ${config.host}:${config.port}/${config.database}...`);
+        mysqlPool = mysql.createPool(config);
+
+        pool = {
+            query: async (sql, params = []) => {
+                if (!mysqlPool) {
+                    throw new Error("MySQL pool is not active. Using local fallback.");
+                }
+                const mysqlSql = sql.replace(/\$\d+/g, '?');
+                const [rows] = await mysqlPool.query(mysqlSql, params);
+                const isArr = Array.isArray(rows);
+                return {
+                    rows: isArr ? rows : [],
+                    rowCount: isArr ? rows.length : (rows?.affectedRows || 0),
+                    raw: rows
+                };
+            }
+        };
+    }
 } else if (isPostgres) {
     dbType = 'postgres';
     console.log("PostgreSQL DATABASE_URL detected. Initializing PostgreSQL pool...");
@@ -324,9 +352,9 @@ export async function initDatabase() {
     if (dbType === 'mysql') {
         try {
             // Test connection first
-            const [testRes] = await mysqlPool.query('SELECT 1');
+            const [testRes] = (await pool.query('SELECT 1')).rows;
             
-            await mysqlPool.query(`
+            await pool.query(`
                 CREATE TABLE IF NOT EXISTS whatsapp_sessions (
                     session_id VARCHAR(100) NOT NULL,
                     \`key\` VARCHAR(255) NOT NULL,
@@ -335,7 +363,7 @@ export async function initDatabase() {
                 );
             `);
 
-            await mysqlPool.query(`
+            await pool.query(`
                 CREATE TABLE IF NOT EXISTS cortex_users (
                     id VARCHAR(64) PRIMARY KEY,
                     email VARCHAR(255) UNIQUE NOT NULL,
@@ -358,8 +386,8 @@ export async function initDatabase() {
             `);
 
             try {
-                await mysqlPool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS access_token VARCHAR(100)`);
-                await mysqlPool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS convert_api_secret VARCHAR(50)`);
+                await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS access_token VARCHAR(100)`);
+                await pool.query(`ALTER TABLE cortex_users ADD COLUMN IF NOT EXISTS convert_api_secret VARCHAR(50)`);
             } catch {}
 
             console.log("TiDB / MySQL database initialized successfully (tables verified).");
@@ -369,6 +397,7 @@ export async function initDatabase() {
             console.warn("🔄 Automatically switching to Local Storage Fallback (users.json & bot_configs).");
             pool = null;
             mysqlPool = null;
+            tidbHttpConn = null;
             dbType = null;
         }
     } else if (dbType === 'postgres') {
@@ -1309,7 +1338,7 @@ async function writeData(sessionId, key, data) {
     try {
         const json = JSON.stringify(data, BufferJSON.replacer);
         if (dbType === 'mysql') {
-            await mysqlPool.query(
+            await pool.query(
                 'REPLACE INTO whatsapp_sessions (session_id, `key`, value) VALUES (?, ?, ?)',
                 [sessionId, key, json]
             );
@@ -1331,12 +1360,12 @@ async function readData(sessionId, key) {
     if (!pool) return null;
     try {
         if (dbType === 'mysql') {
-            const [rows] = await mysqlPool.query(
+            const res = await pool.query(
                 'SELECT value FROM whatsapp_sessions WHERE session_id = ? AND `key` = ?',
                 [sessionId, key]
             );
-            if (rows.length === 0) return null;
-            return JSON.parse(rows[0].value, BufferJSON.reviver);
+            if (!res.rows || res.rows.length === 0) return null;
+            return JSON.parse(res.rows[0].value, BufferJSON.reviver);
         } else {
             const res = await pool.query(
                 `SELECT value FROM whatsapp_sessions WHERE session_id = $1 AND key = $2`,
@@ -1355,7 +1384,7 @@ async function removeData(sessionId, key) {
     if (!pool) return;
     try {
         if (dbType === 'mysql') {
-            await mysqlPool.query(
+            await pool.query(
                 'DELETE FROM whatsapp_sessions WHERE session_id = ? AND `key` = ?',
                 [sessionId, key]
             );
