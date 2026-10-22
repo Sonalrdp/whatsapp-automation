@@ -258,7 +258,18 @@ export function getApiEndpointForUser(req, userId) {
 
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static('public')); // Serve the web dashboard
+
+// Explicit root route: serve index.html (Landing page) at http://localhost:3005/
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Direct dashboard route: serves database.html
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'database.html'));
+});
+
+app.use(express.static('public')); // Serve static assets
 app.use('/Google Script', express.static(path.join(__dirname, 'Google Script')));
 app.use('/Google Script', express.static(path.join(__dirname, '..', 'Google Script')));
 

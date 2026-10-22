@@ -33,7 +33,7 @@
 
   <!-- Top Action Navigation -->
   <header class="auth-top-nav position-fixed top-0 start-0 w-100 p-3 d-flex align-items-center justify-content-between" style="z-index: 100;">
-    <a href="landing.html" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-2 bg-white bg-opacity-75 shadow-sm" style="backdrop-filter: blur(10px);">
+    <a href="index.html" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-2 bg-white bg-opacity-75 shadow-sm" style="backdrop-filter: blur(10px);">
       <i class="bi bi-arrow-left"></i> <span>Back to Public Site</span>
     </a>
 
@@ -349,7 +349,7 @@
         sessionStorage.setItem('cortex_new_user_onboarding', 'true');
         showToast("Authentication successful! Redirecting...", "success");
         setTimeout(() => {
-          window.location.href = `index.html?uid=${data.user.id}`;
+          window.location.href = `database.html?uid=${data.user.id}`;
         }, 600);
       }
     }
