@@ -20,7 +20,7 @@ if (isMysql) {
     dbType = 'mysql';
     let config = {};
     if (hasMysqlHost) {
-        const host = process.env.DB_HOST.trim();
+        const host = process.env.DB_HOST.replace(/^['"]|['"]$/g, '').trim();
         const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
         let dbName = (process.env.DB_DATABASE || 'whatsapp_db').replace(/^['"]|['"]$/g, '').trim();
         if (!dbName || dbName === 'sys') dbName = 'whatsapp_db';
@@ -33,12 +33,13 @@ if (isMysql) {
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0,
-            connectTimeout: 5000,
+            connectTimeout: 15000,
             ssl: isLocal ? false : { minVersion: 'TLSv1.2', rejectUnauthorized: true }
         };
     } else {
         try {
-            const parsed = new URL(rawDbUrl);
+            const cleanUrl = rawDbUrl.replace(/^['"]|['"]$/g, '').trim();
+            const parsed = new URL(cleanUrl);
             const isLocal = parsed.hostname.includes('localhost') || parsed.hostname.includes('127.0.0.1');
             let dbName = parsed.pathname ? parsed.pathname.replace(/^\//, '') : 'whatsapp_db';
             if (!dbName || dbName === 'sys') dbName = 'whatsapp_db';
@@ -51,7 +52,7 @@ if (isMysql) {
                 waitForConnections: true,
                 connectionLimit: 10,
                 queueLimit: 0,
-                connectTimeout: 5000,
+                connectTimeout: 15000,
                 ssl: isLocal ? false : { minVersion: 'TLSv1.2', rejectUnauthorized: true }
             };
         } catch (e) {
