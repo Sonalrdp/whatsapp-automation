@@ -4944,7 +4944,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         : '+' + displayPhone;
 
       if (activeChatTitle) activeChatTitle.innerText = contactTitle;
-      if (activeChatSubtitle) activeChatSubtitle.innerHTML = `<span class="status-dot status-on" style="width: 8px; height: 8px;"></span> Sender: +${escapeHtml(displayPhone)}`;
+      if (activeChatSubtitle) activeChatSubtitle.innerHTML = `<span class="status-dot status-on" style="width: 8px; height: 8px;"></span> +${escapeHtml(displayPhone)} &bull; online`;
       if (activeChatAvatar) activeChatAvatar.innerText = (contactTitle).replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase() || '#';
       if (activeChatTriggerTag) activeChatTriggerTag.innerHTML = `<i class="bi bi-lightning-charge-fill"></i> ${escapeHtml(latestItem.trigger || 'Trigger')}`;
 
@@ -4961,61 +4961,55 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       }
 
       triggerChatMessages.innerHTML = threadMessages.map(c => {
-        // SENDER (The contact who sent message to us) = LEFT SIDE (white bubble, left-aligned)
-        // RECEIVER / BOT (You / Bot replying)        = RIGHT SIDE (green bubble, right-aligned)
+        // SENDER (The customer / contact who sent incoming message) = LEFT SIDE (white bubble, left-aligned)
+        // RECEIVER / BOT (You / AutoBot outgoing message)            = RIGHT SIDE (green bubble, right-aligned)
         const isIncoming = (c.direction === 'incoming');
 
         if (isIncoming) {
-          // LEFT SIDE: Sender (The Customer / Contact who sent the incoming message)
+          // LEFT SIDE: Incoming Customer Message (Authentic WhatsApp Web Incoming Style)
           return `
-            <div class="d-flex mb-3 justify-content-start">
-              <div class="p-3 rounded-4 shadow-sm position-relative" style="max-width: 75%; background: #ffffff; color: #111b21; border: 1px solid #e2e8f0; border-top-left-radius: 4px;">
-                <div class="d-flex align-items-center justify-content-between gap-3 mb-1" style="font-size: 0.75rem;">
-                  <span class="fw-bold text-success d-inline-flex align-items-center gap-1">
-                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-1 py-0" style="font-size: 0.65rem;">SENDER</span>
-                    <i class="bi bi-person-fill"></i>
-                    ${escapeHtml(c.senderName || '+' + displayPhone)}
-                  </span>
-                  <span class="text-muted" style="font-size: 0.72rem;">${escapeHtml(c.timestamp)}</span>
+            <div class="d-flex mb-2 justify-content-start">
+              <div class="position-relative shadow-sm px-3 pt-2 pb-2" 
+                   style="max-width: 68%; min-width: 140px; background: #ffffff; color: #111b21; border-radius: 8px; border-top-left-radius: 0px; box-shadow: 0 1px 0.5px rgba(11,20,26,.13);">
+                <!-- Sender display name if present -->
+                <div class="fw-semibold text-success mb-1 d-flex align-items-center justify-content-between gap-2" style="font-size: 0.8rem;">
+                  <span>${escapeHtml(c.senderName || '+' + displayPhone)}</span>
+                  ${c.trigger ? `<span class="badge bg-light text-muted border" style="font-size: 0.65rem; font-weight: 500;"><i class="bi bi-lightning-fill text-success me-1"></i>${escapeHtml(c.trigger)}</span>` : ''}
                 </div>
-                <div class="mb-2" style="white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.45;">
+                <!-- Message body text -->
+                <div style="white-space: pre-wrap; word-break: break-word; font-size: 0.93rem; line-height: 1.42; color: #111b21;">
                   ${escapeHtml(c.message)}
                 </div>
-                <div class="d-flex align-items-center justify-content-between pt-1 border-top border-light-subtle" style="font-size: 0.7rem; opacity: 0.85;">
-                  <span class="badge bg-light text-secondary border">
-                    <i class="bi bi-telephone me-1"></i>+${escapeHtml(displayPhone)}
-                  </span>
-                  <span class="badge bg-success-subtle text-success rounded-pill">
-                    <i class="bi bi-lightning-fill"></i> ${escapeHtml(c.trigger || 'Trigger')}
-                  </span>
+                <!-- Inline WhatsApp Time stamp -->
+                <div class="d-flex align-items-center justify-content-end gap-1 mt-1" style="font-size: 0.68rem; color: #667781; float: right; margin-left: 12px; margin-top: -4px;">
+                  <span>${escapeHtml(c.timestamp)}</span>
                 </div>
+                <div style="clear: both;"></div>
               </div>
             </div>
           `;
         } else {
-          // RIGHT SIDE: Receiver / You / AutoBot (Replying back to sender)
+          // RIGHT SIDE: Outgoing Reply Message (Authentic WhatsApp Web Outgoing Style #d9fdd3)
           return `
-            <div class="d-flex mb-3 justify-content-end">
-              <div class="p-3 rounded-4 shadow-sm position-relative" style="max-width: 75%; background: #d9fdd3; color: #111b21; border: 1px solid rgba(0,0,0,0.06); border-top-right-radius: 4px;">
-                <div class="d-flex align-items-center justify-content-between gap-3 mb-1" style="font-size: 0.75rem;">
-                  <span class="fw-bold text-primary d-inline-flex align-items-center gap-1">
-                    <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 px-1 py-0" style="font-size: 0.65rem;">RECEIVER (YOU / BOT)</span>
-                    <i class="bi bi-robot"></i>
-                    ${escapeHtml(c.senderName || 'Cortex AutoBot')}
-                  </span>
-                  <span class="text-muted" style="font-size: 0.72rem;">
-                    ${escapeHtml(c.timestamp)}
-                    <i class="bi bi-check2-all text-primary ms-1"></i>
-                  </span>
-                </div>
-                <div class="mb-2" style="white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.45;">
+            <div class="d-flex mb-2 justify-content-end">
+              <div class="position-relative shadow-sm px-3 pt-2 pb-2" 
+                   style="max-width: 68%; min-width: 140px; background: #d9fdd3; color: #111b21; border-radius: 8px; border-top-right-radius: 0px; box-shadow: 0 1px 0.5px rgba(11,20,26,.13);">
+                <!-- Outgoing badge / trigger header -->
+                ${c.trigger ? `
+                <div class="d-flex align-items-center justify-content-between mb-1 gap-2" style="font-size: 0.72rem; color: #128c7e;">
+                  <span class="fw-semibold">${escapeHtml(c.senderName || 'You')}</span>
+                  <span class="badge bg-white bg-opacity-75 text-dark border-0" style="font-size: 0.63rem;">${escapeHtml(c.trigger)}</span>
+                </div>` : ''}
+                <!-- Message body text -->
+                <div style="white-space: pre-wrap; word-break: break-word; font-size: 0.93rem; line-height: 1.42; color: #111b21;">
                   ${escapeHtml(c.message)}
                 </div>
-                <div class="d-flex align-items-center justify-content-end pt-1 border-top border-dark-subtle border-opacity-10" style="font-size: 0.7rem; opacity: 0.85;">
-                  <span class="badge bg-success bg-opacity-25 text-dark rounded-pill">
-                    <i class="bi bi-lightning-charge-fill me-1"></i>${escapeHtml(c.trigger || 'Auto Reply')}
-                  </span>
+                <!-- Inline WhatsApp Time stamp + Double Blue Check -->
+                <div class="d-flex align-items-center justify-content-end gap-1 mt-1" style="font-size: 0.68rem; color: #667781; float: right; margin-left: 12px; margin-top: -4px;">
+                  <span>${escapeHtml(c.timestamp)}</span>
+                  <i class="bi bi-check2-all" style="color: #53bdeb; font-size: 0.95rem; line-height: 1;"></i>
                 </div>
+                <div style="clear: both;"></div>
               </div>
             </div>
           `;

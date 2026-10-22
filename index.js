@@ -1168,9 +1168,10 @@ export async function connectUserWhatsApp(userId) {
                             }
 
                             session.addLog(`[${templateName}] 🎯 Matched source: ${sourceLabel} (incoming ${content.type}${content.fileName ? ` "${content.fileName}"` : ''})`, true);
+                            const contactKey = senderPhone || (isGroupMsg ? participantJid : senderJid);
                             session.addChat({
                                 id: msg.key?.id || String(Date.now()),
-                                sender: isGroupMsg ? participantJid : senderJid,
+                                sender: contactKey,
                                 senderName: msg.pushName || sourceLabel,
                                 message: textMsg || `[${content.type}] ${content.fileName || ''}`,
                                 direction: 'incoming',
