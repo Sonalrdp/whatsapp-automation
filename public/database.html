@@ -2168,7 +2168,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
           </section>
 
           <!-- =============================================================== -->
-          <!-- SHEET 4B: TRIGGER CHATS (INCOMING / OUTGOING ONLY) -->
+          <!-- SHEET 4B: TRIGGER CHATS (2-COLUMN WHATSAPP WEB STYLE) -->
           <!-- =============================================================== -->
           <section id="sheet-trigger-chats" class="dashboard-sheet d-none">
             <div class="sheet-header">
@@ -2177,7 +2177,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                 <div>
                   <p class="eyebrow mb-1">Trigger-Matched Communications Only</p>
                   <h1 class="h3 mb-1">Trigger Chats &amp; Automated Replies</h1>
-                  <p class="text-muted mb-0">Only incoming messages matching active triggers and their outgoing automated responses appear here.</p>
+                  <p class="text-muted mb-0">Select a phone number on the left to view the complete trigger conversation and automated responses.</p>
                 </div>
               </div>
               <div class="d-flex gap-2">
@@ -2187,20 +2187,72 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
               </div>
             </div>
 
-            <!-- Trigger Chats Container -->
-            <div class="panel">
-              <div class="panel-header border-bottom p-3 d-flex justify-content-between align-items-center">
-                <h2 class="h6 mb-0 fw-bold d-flex align-items-center gap-2">
-                  <i class="bi bi-shield-check text-success"></i>
-                  <span>Verified Trigger Conversations</span>
-                </h2>
-                <span class="badge text-bg-light border" id="trigger-chats-count">0 Messages</span>
-              </div>
-              <div class="p-3" id="trigger-chats-container" style="min-height: 480px; max-height: 650px; overflow-y: auto;">
-                <div class="text-center py-5 text-muted">
-                  <i class="bi bi-chat-square-text fs-1 d-block mb-3 opacity-50"></i>
-                  <h6 class="fw-bold">No Trigger Messages Yet</h6>
-                  <p class="small mb-0">When an incoming message matches one of your active triggers (e.g., Tally statement or keyword rule), the chat and automated reply will be captured here.</p>
+            <!-- WhatsApp Web 2-Column Chat Panel -->
+            <div class="panel p-0 overflow-hidden shadow-sm" style="border-radius: 16px; border: 1px solid rgba(0,0,0,0.08);">
+              <div class="row g-0" style="min-height: 600px; max-height: 750px;">
+                <!-- Left Column: Contact Numbers / Thread List (Width: 340px / col-12 col-md-4) -->
+                <div class="col-12 col-md-4 col-lg-3 border-end d-flex flex-column" style="background: #ffffff;">
+                  <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-light bg-opacity-50">
+                    <div class="fw-bold d-flex align-items-center gap-2">
+                      <i class="bi bi-person-lines-fill text-success"></i>
+                      <span>Contacts</span>
+                    </div>
+                    <span class="badge text-bg-success rounded-pill" id="trigger-contacts-count">0 Numbers</span>
+                  </div>
+                  <!-- Contact Search Filter -->
+                  <div class="p-2 border-bottom bg-white">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                      <input type="text" id="input-search-trigger-contacts" class="form-control border-0 bg-light" placeholder="Search number or name...">
+                    </div>
+                  </div>
+                  <!-- Number List Items -->
+                  <div class="flex-grow-1 overflow-auto" id="trigger-contacts-list" style="max-height: 620px;">
+                    <div class="text-center py-5 text-muted small px-3">
+                      <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                      No trigger numbers yet
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Column: Chat Messages View & Reply Area (col-12 col-md-8) -->
+                <div class="col-12 col-md-8 col-lg-9 d-flex flex-column" style="background: #f0f2f5;">
+                  <!-- Active Chat Header -->
+                  <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-sm" id="active-chat-header">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center bg-success text-white fw-bold shadow-sm" id="active-chat-avatar" style="width: 44px; height: 44px; font-size: 1.1rem;">
+                        <i class="bi bi-person"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0 fw-bold" id="active-chat-title">Select a Contact</h6>
+                        <small class="text-muted d-flex align-items-center gap-1" id="active-chat-subtitle">
+                          <span class="status-dot status-on" style="width: 8px; height: 8px;"></span> Trigger Session
+                        </small>
+                      </div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1" id="active-chat-trigger-tag">
+                      <i class="bi bi-lightning-charge-fill"></i> Trigger Filtered
+                    </span>
+                  </div>
+
+                  <!-- Messages Bubble Scroll Area -->
+                  <div class="flex-grow-1 p-3 overflow-auto" id="trigger-chat-messages" style="background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-color: #efeae2; min-height: 480px; max-height: 560px;">
+                    <div class="text-center py-5 text-muted">
+                      <div class="p-3 bg-white bg-opacity-75 rounded-4 shadow-sm d-inline-block">
+                        <i class="bi bi-arrow-left-circle fs-3 text-success d-block mb-2"></i>
+                        <span class="fw-bold">Select a contact number from the left</span>
+                        <p class="small text-muted mb-0 mt-1">Their trigger request &amp; automated reply will appear here.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Quick Reply Bar -->
+                  <div class="p-3 bg-white border-top d-flex align-items-center gap-2">
+                    <input type="text" id="input-manual-reply-text" class="form-control rounded-pill px-3 py-2 bg-light border-0" placeholder="Type a direct reply to this customer..." disabled>
+                    <button type="button" id="btn-send-manual-reply" class="btn btn-success rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px; flex-shrink: 0;" disabled title="Send Reply">
+                      <i class="bi bi-send-fill"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -4654,41 +4706,244 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       renderCurrentLogs();
     }
 
-    function updateTriggerChats(chats = []) {
-      if (!triggerChatsContainer) return;
-      if (triggerChatsCount) triggerChatsCount.innerText = `${chats.length} Messages`;
+    let cachedTriggerChats = [];
+    let activeSelectedContact = null;
+    let contactSearchQuery = '';
 
-      if (chats.length === 0) {
-        triggerChatsContainer.innerHTML = `
-          <div class="text-center py-5 text-muted">
-            <i class="bi bi-chat-square-text fs-1 d-block mb-3 opacity-50"></i>
-            <h6 class="fw-bold">No Trigger Messages Yet</h6>
-            <p class="small mb-0">When an incoming message matches one of your active triggers (e.g., Tally statement or keyword rule), the chat and automated reply will be captured here.</p>
+    const triggerContactsList = document.getElementById('trigger-contacts-list');
+    const triggerContactsCount = document.getElementById('trigger-contacts-count');
+    const triggerChatMessages = document.getElementById('trigger-chat-messages');
+    const activeChatTitle = document.getElementById('active-chat-title');
+    const activeChatSubtitle = document.getElementById('active-chat-subtitle');
+    const activeChatAvatar = document.getElementById('active-chat-avatar');
+    const activeChatTriggerTag = document.getElementById('active-chat-trigger-tag');
+    const inputManualReplyText = document.getElementById('input-manual-reply-text');
+    const btnSendManualReply = document.getElementById('btn-send-manual-reply');
+    const inputSearchTriggerContacts = document.getElementById('input-search-trigger-contacts');
+
+    if (inputSearchTriggerContacts) {
+      inputSearchTriggerContacts.addEventListener('input', (e) => {
+        contactSearchQuery = e.target.value.trim().toLowerCase();
+        renderTriggerContactsList();
+      });
+    }
+
+    if (btnSendManualReply && inputManualReplyText) {
+      btnSendManualReply.addEventListener('click', async () => {
+        const text = inputManualReplyText.value.trim();
+        if (!text || !activeSelectedContact) return;
+
+        btnSendManualReply.setAttribute('disabled', 'true');
+        btnSendManualReply.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+          const uid = currentUser?.id || '100000000001';
+          const res = await fetch(`/api/v1/${uid}/messages`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentUserAccessToken || authToken}`
+            },
+            body: JSON.stringify({
+              to: activeSelectedContact,
+              message: text
+            })
+          });
+
+          const data = await res.json();
+          if (data.success || data.result) {
+            inputManualReplyText.value = '';
+            showToast("Reply sent to " + activeSelectedContact, "success");
+            fetchStatus();
+          } else {
+            showToast(data.message || data.error || "Failed to send reply.", "error");
+          }
+        } catch (err) {
+          showToast("Network error sending reply.", "error");
+        } finally {
+          btnSendManualReply.removeAttribute('disabled');
+          btnSendManualReply.innerHTML = '<i class="bi bi-send-fill"></i>';
+        }
+      });
+
+      inputManualReplyText.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          btnSendManualReply.click();
+        }
+      });
+    }
+
+    function selectTriggerContact(phoneKey) {
+      activeSelectedContact = phoneKey;
+      renderTriggerContactsList();
+      renderActiveThreadMessages();
+    }
+
+    function renderTriggerContactsList() {
+      if (!triggerContactsList) return;
+
+      // Group cachedTriggerChats by contact/sender phone
+      const contactMap = new Map();
+      cachedTriggerChats.forEach(c => {
+        const key = String(c.sender || '').trim();
+        if (!key) return;
+        if (!contactMap.has(key)) {
+          contactMap.set(key, {
+            phone: key,
+            name: c.senderName && !c.senderName.includes('@') ? c.senderName : key,
+            lastMessage: c.message,
+            lastTime: c.timestamp,
+            trigger: c.trigger,
+            messages: []
+          });
+        }
+        contactMap.get(key).messages.push(c);
+      });
+
+      let contacts = Array.from(contactMap.values());
+      if (triggerContactsCount) {
+        triggerContactsCount.innerText = `${contacts.length} Numbers`;
+      }
+
+      if (contactSearchQuery) {
+        contacts = contacts.filter(c => 
+          c.phone.toLowerCase().includes(contactSearchQuery) || 
+          c.name.toLowerCase().includes(contactSearchQuery) ||
+          (c.lastMessage && c.lastMessage.toLowerCase().includes(contactSearchQuery))
+        );
+      }
+
+      if (contacts.length === 0) {
+        triggerContactsList.innerHTML = `
+          <div class="text-center py-5 text-muted small px-3">
+            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+            ${contactSearchQuery ? 'No contacts match your search' : 'No trigger numbers yet'}
           </div>
         `;
         return;
       }
 
-      triggerChatsContainer.innerHTML = chats.map(c => {
-        const isIncoming = c.direction === 'incoming';
+      // Automatically select first contact if none selected
+      if (!activeSelectedContact && contacts.length > 0) {
+        activeSelectedContact = contacts[0].phone;
+      }
+
+      triggerContactsList.innerHTML = contacts.map(c => {
+        const isSelected = c.phone === activeSelectedContact;
+        const initial = (c.name || c.phone).replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase() || '#';
+        const displayPhone = c.phone.replace(/@.*$/, '');
+
         return `
-          <div class="d-flex mb-3 ${isIncoming ? 'justify-content-start' : 'justify-content-end'}">
-            <div class="p-3 rounded-4 shadow-sm" style="max-width: 80%; background: ${isIncoming ? 'var(--cortex-surface, #f8fafc)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)'}; color: ${isIncoming ? 'inherit' : '#ffffff'}; border: 1px solid ${isIncoming ? '#e2e8f0' : 'transparent'};">
-              <div class="d-flex align-items-center justify-content-between gap-3 mb-1 small" style="opacity: 0.85;">
-                <span class="fw-bold"><i class="bi ${isIncoming ? 'bi-arrow-down-left text-success' : 'bi-arrow-up-right text-light'} me-1"></i> ${escapeHtml(c.senderName || c.sender)}</span>
-                <span style="font-size: 0.75rem;">${escapeHtml(c.timestamp)}</span>
-              </div>
-              <div class="mb-2" style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(c.message)}</div>
-              <div class="d-flex align-items-center justify-content-between pt-1 border-top" style="border-color: ${isIncoming ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.2)'} !important; font-size: 0.72rem;">
-                <span class="badge ${isIncoming ? 'bg-success-subtle text-success' : 'bg-white bg-opacity-25 text-white'} rounded-pill">
-                  <i class="bi bi-lightning-fill"></i> Trigger: ${escapeHtml(c.trigger || 'Auto-Reply')}
+          <div class="trigger-contact-item p-3 border-bottom d-flex align-items-center gap-3" 
+               style="cursor: pointer; transition: all 0.15s ease; background: ${isSelected ? 'rgba(16, 185, 129, 0.12)' : '#ffffff'}; border-left: ${isSelected ? '4px solid #10b981' : '4px solid transparent'};"
+               onclick="selectTriggerContact('${escapeHtml(c.phone)}')">
+            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm flex-shrink-0" 
+                 style="width: 44px; height: 44px; background: ${isSelected ? '#10b981' : '#e2e8f0'}; color: ${isSelected ? '#ffffff' : '#334155'}; font-size: 1.1rem;">
+              ${escapeHtml(initial)}
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="fw-bold text-dark text-truncate" style="max-width: 140px; font-size: 0.92rem;">
+                  ${escapeHtml(c.name !== c.phone ? c.name : '+' + displayPhone)}
                 </span>
-                <span class="text-truncate ms-2" style="max-width: 140px;">${escapeHtml(c.sender)}</span>
+                <small class="text-muted" style="font-size: 0.72rem;">${escapeHtml(c.lastTime || '')}</small>
+              </div>
+              <div class="text-muted small text-truncate" style="font-size: 0.82rem;">
+                ${escapeHtml(c.lastMessage || '')}
+              </div>
+              <div class="mt-1">
+                <span class="badge bg-success-subtle text-success border border-success border-opacity-25" style="font-size: 0.68rem;">
+                  <i class="bi bi-lightning-fill"></i> ${escapeHtml(c.trigger || 'Trigger')}
+                </span>
               </div>
             </div>
           </div>
         `;
       }).join('');
+
+      renderActiveThreadMessages();
+    }
+
+    function renderActiveThreadMessages() {
+      if (!triggerChatMessages) return;
+
+      if (!activeSelectedContact) {
+        if (activeChatTitle) activeChatTitle.innerText = "Select a Contact";
+        if (activeChatSubtitle) activeChatSubtitle.innerText = "Trigger Session";
+        if (inputManualReplyText) inputManualReplyText.setAttribute('disabled', 'true');
+        if (btnSendManualReply) btnSendManualReply.setAttribute('disabled', 'true');
+        triggerChatMessages.innerHTML = `
+          <div class="text-center py-5 text-muted">
+            <div class="p-3 bg-white bg-opacity-75 rounded-4 shadow-sm d-inline-block">
+              <i class="bi bi-arrow-left-circle fs-3 text-success d-block mb-2"></i>
+              <span class="fw-bold">Select a contact number from the left</span>
+              <p class="small text-muted mb-0 mt-1">Their trigger request &amp; automated reply will appear here.</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // Filter messages belonging to this phone number / thread
+      const threadMessages = cachedTriggerChats
+        .filter(c => c.sender === activeSelectedContact)
+        .slice()
+        .reverse(); // Older at top, newest at bottom
+
+      const latestItem = threadMessages[threadMessages.length - 1] || {};
+      const displayPhone = activeSelectedContact.replace(/@.*$/, '');
+      const contactTitle = latestItem.senderName && !latestItem.senderName.includes('@') 
+        ? latestItem.senderName 
+        : '+' + displayPhone;
+
+      if (activeChatTitle) activeChatTitle.innerText = contactTitle;
+      if (activeChatSubtitle) activeChatSubtitle.innerHTML = `<span class="status-dot status-on" style="width: 8px; height: 8px;"></span> +${escapeHtml(displayPhone)}`;
+      if (activeChatAvatar) activeChatAvatar.innerText = (contactTitle).replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase() || '#';
+      if (activeChatTriggerTag) activeChatTriggerTag.innerHTML = `<i class="bi bi-lightning-charge-fill"></i> ${escapeHtml(latestItem.trigger || 'Trigger')}`;
+
+      if (inputManualReplyText) inputManualReplyText.removeAttribute('disabled');
+      if (btnSendManualReply) btnSendManualReply.removeAttribute('disabled');
+
+      if (threadMessages.length === 0) {
+        triggerChatMessages.innerHTML = `
+          <div class="text-center py-5 text-muted">
+            <span class="small">No messages in this thread yet.</span>
+          </div>
+        `;
+        return;
+      }
+
+      triggerChatMessages.innerHTML = threadMessages.map(c => {
+        const isIncoming = c.direction === 'incoming';
+        return `
+          <div class="d-flex mb-3 ${isIncoming ? 'justify-content-start' : 'justify-content-end'}">
+            <div class="p-3 rounded-4 shadow-sm" style="max-width: 72%; background: ${isIncoming ? '#ffffff' : '#d9fdd3'}; color: #111b21; border: 1px solid ${isIncoming ? '#e2e8f0' : 'rgba(0,0,0,0.04)'}; border-top-${isIncoming ? 'left' : 'right'}-radius: 4px;">
+              <div class="d-flex align-items-center justify-content-between gap-3 mb-1" style="font-size: 0.75rem; opacity: 0.75;">
+                <span class="fw-bold ${isIncoming ? 'text-success' : 'text-primary'}">
+                  <i class="bi ${isIncoming ? 'bi-arrow-down-left' : 'bi-check2-all'} me-1"></i>
+                  ${escapeHtml(isIncoming ? (c.senderName || '+' + displayPhone) : 'Cortex AutoBot Reply')}
+                </span>
+                <span>${escapeHtml(c.timestamp)}</span>
+              </div>
+              <div class="mb-1" style="white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.45;">
+                ${escapeHtml(c.message)}
+              </div>
+              <div class="d-flex align-items-center justify-content-end pt-1" style="font-size: 0.7rem; opacity: 0.7;">
+                <span class="badge ${isIncoming ? 'bg-success-subtle text-success' : 'bg-success bg-opacity-25 text-dark'} rounded-pill">
+                  <i class="bi bi-lightning-fill"></i> ${escapeHtml(c.trigger || 'Rule')}
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      triggerChatMessages.scrollTop = triggerChatMessages.scrollHeight;
+    }
+
+    function updateTriggerChats(chats = []) {
+      cachedTriggerChats = chats;
+      renderTriggerContactsList();
     }
 
     function escapeHtml(text) {
