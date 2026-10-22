@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Cortex WA AutoBot - Multi-User WhatsApp Automation Dashboard">
   <title>Cortex WA AutoBot | Multi-User Automation Dashboard</title>
 
@@ -21,40 +21,41 @@
 </head>
 
 <body>
+  <!-- =============================================================== -->
+  <!-- NATIVE MOBILE APP NAVIGATION BAR & FLOATING ACTION BUTTON (FAB) -->
+  <!-- Placed directly on <body> to ensure absolute viewport anchoring -->
+  <!-- =============================================================== -->
+  <!-- Mobile Floating Action Button (+) -->
+  <button class="mobile-fab-btn d-lg-none" id="mobile-fab-new-template" aria-label="Create New Template" title="Create New Template" data-bs-toggle="modal" data-bs-target="#modalTemplatePicker">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+
+  <!-- Fixed Bottom App Navigation Bar -->
+  <nav class="mobile-bottom-nav d-lg-none" aria-label="Mobile Navigation">
+    <a href="#dashboard" class="mobile-nav-item active btn-nav-to-sheet" data-target-sheet="dashboard">
+      <i class="bi bi-speedometer2"></i>
+      <span>Home</span>
+    </a>
+    <a href="#bot-configurations" class="mobile-nav-item btn-nav-to-sheet" data-target-sheet="bot-configurations">
+      <i class="bi bi-sliders"></i>
+      <span>Templates</span>
+    </a>
+    <a href="#whatsapp-link" class="mobile-nav-item btn-nav-to-sheet" data-target-sheet="whatsapp-link">
+      <i class="bi bi-whatsapp"></i>
+      <span>WhatsApp</span>
+    </a>
+    <a href="#subscription-plans" class="mobile-nav-item btn-nav-to-sheet" data-target-sheet="subscription-plans">
+      <i class="bi bi-credit-card-2-front"></i>
+      <span>Plans</span>
+    </a>
+    <a href="#live-logs" class="mobile-nav-item btn-nav-to-sheet" data-target-sheet="live-logs">
+      <i class="bi bi-terminal"></i>
+      <span>Logs</span>
+    </a>
+  </nav>
+
   <div class="admin-shell">
     <div class="sidebar-backdrop" data-sidebar-close></div>
-
-    <!-- =============================================================== -->
-    <!-- NATIVE MOBILE APP NAVIGATION BAR & FLOATING ACTION BUTTON (FAB) -->
-    <!-- =============================================================== -->
-    <!-- Mobile Floating Action Button (+) -->
-    <button class="mobile-fab-btn d-lg-none" id="mobile-fab-new-template" aria-label="Create New Template" title="Create New Template" data-bs-toggle="modal" data-bs-target="#modalTemplatePicker">
-      <i class="bi bi-plus-lg"></i>
-    </button>
-
-    <!-- Fixed Bottom App Navigation Bar -->
-    <nav class="mobile-bottom-nav d-lg-none" aria-label="Mobile Navigation">
-      <a href="#dashboard" class="mobile-nav-item active btn-nav-to-sheet" data-target-sheet="dashboard">
-        <i class="bi bi-speedometer2"></i>
-        <span>Home</span>
-      </a>
-      <a href="#bot-configurations" class="mobile-nav-item btn-nav-to-sheet" data-target-sheet="bot-configurations">
-        <i class="bi bi-sliders"></i>
-        <span>Templates</span>
-      </a>
-      <a href="#whatsapp-link" class="mobile-nav-item btn-nav-to-sheet" data-target-sheet="whatsapp-link">
-        <i class="bi bi-whatsapp"></i>
-        <span>WhatsApp</span>
-      </a>
-      <a href="#subscription-plans" class="mobile-nav-item btn-nav-to-sheet" data-target-sheet="subscription-plans">
-        <i class="bi bi-credit-card-2-front"></i>
-        <span>Plans</span>
-      </a>
-      <a href="#live-logs" class="mobile-nav-item btn-nav-to-sheet" data-target-sheet="live-logs">
-        <i class="bi bi-terminal"></i>
-        <span>Logs</span>
-      </a>
-    </nav>
 
     <!-- Sidebar Navigation -->
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Main navigation">
@@ -157,7 +158,7 @@
               <button class="profile-button dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <span class="navbar-user-icon me-1"><i class="bi bi-person-fill"></i></span>
                 <span class="profile-name d-none d-sm-inline" id="navbar-username">User</span>
-                <span id="navbar-role-tag" class="badge role-badge role-badge-admin ms-1">ADMIN</span>
+                <span id="navbar-role-tag" class="badge role-badge role-badge-admin ms-1 d-none d-sm-inline-block">ADMIN</span>
               </button>
               <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                 <li class="px-3 py-2 border-bottom">
@@ -476,7 +477,7 @@
                   <p class="text-muted mb-0">Create, customize, and manage multiple sharing templates and automation workflows.</p>
                 </div>
               </div>
-              <div class="d-flex align-items-center gap-2">
+              <div class="d-flex align-items-center gap-2" id="template-header-actions">
                 <button type="button" class="btn btn-outline-success px-3 py-2 d-inline-flex align-items-center gap-2 shadow-sm rounded-pill" id="btn-open-new-template-message">
                   <i class="bi bi-chat-square-quote-fill"></i> New Template Message
                 </button>
@@ -2033,24 +2034,18 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
               <!-- API Endpoint Card -->
               <div class="col-12 col-xl-4">
                 <div class="panel p-4 h-100 shadow-sm" style="border-top: 3px solid #0ea5e9;">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
                     <label class="form-label fw-bold text-dark mb-0 fs-6 d-flex align-items-center gap-2">
                       <i class="bi bi-link-45deg text-info fs-5"></i> API Endpoint
                     </label>
-                    <span class="badge text-bg-info text-white" style="font-size: 0.72rem; letter-spacing: 0.5px;">LIVE GATEWAY</span>
                   </div>
-                  <p class="text-muted small mb-3">Your dedicated server endpoint URL configured dynamically for this instance and User UID.</p>
                   
-                  <div class="input-group mb-3">
+                  <div class="input-group mb-0">
                     <span class="input-group-text bg-light text-muted"><i class="bi bi-globe2"></i></span>
-                    <input type="text" id="input-api-endpoint" class="form-control font-monospace bg-light" readonly value="https://live-mt-server.localhost/100000000001" style="font-size: 0.85rem; font-weight: 500;">
+                    <input type="text" id="input-api-endpoint" class="form-control font-monospace bg-light" readonly value="https://live-mt-server.cortex-ai.in/100000000001" style="font-size: 0.85rem; font-weight: 500;">
                     <button class="btn btn-outline-primary px-3" type="button" id="btn-copy-api-endpoint" title="Copy API Endpoint">
                       <i class="bi bi-clipboard me-1"></i> Copy
                     </button>
-                  </div>
-                  <div class="small text-muted d-flex align-items-center gap-2">
-                    <i class="bi bi-info-circle text-primary"></i>
-                    <span style="font-size: 0.76rem;">Format: <code>https://live-mt-server.&lt;domain&gt;/&lt;uid&gt;</code></span>
                   </div>
                 </div>
               </div>
@@ -2058,15 +2053,13 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
               <!-- Access Token Card -->
               <div class="col-12 col-md-6 col-xl-4">
                 <div class="panel p-4 h-100 shadow-sm" style="border-top: 3px solid #10b981;">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
                     <label class="form-label fw-bold text-dark mb-0 fs-6 d-flex align-items-center gap-2">
                       <i class="bi bi-shield-lock text-success fs-5"></i> Access Token
                     </label>
-                    <span class="badge text-bg-success" style="font-size: 0.72rem; letter-spacing: 0.5px;">50-CHAR RANDOM KEY</span>
                   </div>
-                  <p class="text-muted small mb-3">50 random letters &amp; numbers key assigned to your user account for Bearer authentication.</p>
                   
-                  <div class="input-group mb-3">
+                  <div class="input-group mb-0">
                     <span class="input-group-text bg-light text-muted"><i class="bi bi-key"></i></span>
                     <input type="password" id="input-access-token" class="form-control font-monospace bg-light" readonly value="••••••••••••••••••••••••••••••••••••••••••••••••••" style="font-size: 0.85rem; font-weight: 500; letter-spacing: 1px;">
                     <button class="btn btn-outline-secondary px-2" type="button" id="btn-toggle-token-visibility" title="Show/Hide Token">
@@ -2076,27 +2069,19 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                       <i class="bi bi-clipboard me-1"></i> Copy
                     </button>
                   </div>
-                  <div class="d-flex justify-content-between align-items-center small">
-                    <span class="text-muted"><i class="bi bi-lock-fill text-success me-1"></i> Keep secret</span>
-                    <button class="btn btn-link btn-sm p-0 text-decoration-none text-danger fw-medium" type="button" data-bs-toggle="modal" data-bs-target="#regenerateTokenModal">
-                      <i class="bi bi-arrow-repeat me-1"></i> Regenerate
-                    </button>
-                  </div>
                 </div>
               </div>
 
               <!-- ConvertAPI Secret Card -->
               <div class="col-12 col-md-6 col-xl-4">
                 <div class="panel p-4 h-100 shadow-sm" style="border-top: 3px solid #f59e0b;">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
                     <label class="form-label fw-bold text-dark mb-0 fs-6 d-flex align-items-center gap-2">
                       <i class="bi bi-file-earmark-pdf-fill text-warning fs-5"></i> ConvertAPI Secret
                     </label>
-                    <span class="badge text-bg-warning text-dark" style="font-size: 0.72rem; letter-spacing: 0.5px;">30-CHAR RANDOM KEY</span>
                   </div>
-                  <p class="text-muted small mb-3">30 random letters &amp; numbers key for self-hosted ConvertAPI (PDF to PNG &amp; Auto-Crop).</p>
                   
-                  <div class="input-group mb-3">
+                  <div class="input-group mb-0">
                     <span class="input-group-text bg-light text-muted"><i class="bi bi-file-earmark-code"></i></span>
                     <input type="password" id="input-convert-secret" class="form-control font-monospace bg-light" readonly value="••••••••••••••••••••••••••••••" style="font-size: 0.85rem; font-weight: 500; letter-spacing: 1px;">
                     <button class="btn btn-outline-secondary px-2" type="button" id="btn-toggle-convert-visibility" title="Show/Hide Secret">
@@ -2104,12 +2089,6 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                     </button>
                     <button class="btn btn-outline-warning px-3 text-dark fw-medium" type="button" id="btn-copy-convert-secret" title="Copy ConvertAPI Secret">
                       <i class="bi bi-clipboard me-1"></i> Copy
-                    </button>
-                  </div>
-                  <div class="d-flex justify-content-between align-items-center small">
-                    <span class="text-muted"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Built-in Engine</span>
-                    <button class="btn btn-link btn-sm p-0 text-decoration-none text-warning fw-medium" type="button" data-bs-toggle="modal" data-bs-target="#regenerateConvertSecretModal">
-                      <i class="bi bi-arrow-repeat me-1"></i> Regenerate
                     </button>
                   </div>
                 </div>
@@ -3300,10 +3279,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
     let isConvertSecretMasked = true;
 
     function computeDynamicApiEndpoint(userId) {
-      const host = window.location.hostname || 'localhost';
-      const isLocal = host === 'localhost' || host === '127.0.0.1';
-      const siteLink = isLocal ? 'localhost' : host;
-      return `https://live-mt-server.${siteLink}/${userId || '100000000001'}`;
+      return `https://live-mt-server.cortex-ai.in/${userId || '100000000001'}`;
     }
 
     function updateApiCredentialsUI(user) {
@@ -4599,6 +4575,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
 
     const templatesListView = document.getElementById('templates-list-view');
     const templateEditorView = document.getElementById('template-editor-view');
+    const templateHeaderActions = document.getElementById('template-header-actions');
     const templatesContainer = document.getElementById('templates-container');
     const emptyTemplatesState = document.getElementById('empty-templates-state');
     const templateEditorForm = document.getElementById('template-editor-form');
@@ -4776,11 +4753,6 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
               </div>
             </div>
 
-            <!-- Variables List -->
-            <div class="linear-media-col d-flex align-items-center flex-wrap gap-1">
-              ${varBadges || '<span class="badge text-bg-light border text-muted small" style="font-size: 0.65rem;">NO VARIABLES</span>'}
-            </div>
-
             <!-- Actions: View Phone Simulator, Edit, Duplicate, Delete -->
             <div class="linear-actions-col d-flex align-items-center gap-2">
               <button type="button" class="btn btn-outline-success btn-sm btn-view-msg-template d-inline-flex align-items-center gap-1 px-2 py-1 fw-bold" data-id="${t.id}" title="View Live Phone Preview">
@@ -4904,12 +4876,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
               </div>
             </div>
 
-            <!-- 4. Media Badges -->
-            <div class="linear-media-col d-flex align-items-center flex-wrap gap-1">
-              ${mediaBadges || '<span class="badge text-bg-light border text-muted small" style="font-size: 0.68rem;">ALL TYPES</span>'}
-            </div>
-
-            <!-- 5. Right Action Group -->
+            <!-- 4. Right Action Group -->
             <div class="linear-actions-col d-flex align-items-center gap-2">
               <div class="form-check form-switch fs-5 mb-0 me-1" title="${isPaused ? 'Click to Activate' : 'Click to Pause'}">
                 <input class="form-check-input toggle-template-active" type="checkbox" data-id="${t.id}" ${!isPaused ? 'checked' : ''}>
@@ -4999,6 +4966,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       currentEditingMsgTemplateId = templateId;
       if (templatesListView) templatesListView.classList.add('d-none');
       if (templateEditorView) templateEditorView.classList.add('d-none');
+      if (templateHeaderActions) templateHeaderActions.classList.add('d-none');
       if (templateMsgEditorView) templateMsgEditorView.classList.remove('d-none');
 
       const inputMsgTplId = document.getElementById('input-msg-tpl-id');
@@ -5048,6 +5016,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
     function closeMessageTemplateEditor() {
       if (templateMsgEditorView) templateMsgEditorView.classList.add('d-none');
       if (templatesListView) templatesListView.classList.remove('d-none');
+      if (templateHeaderActions) templateHeaderActions.classList.remove('d-none');
       renderTemplatesList();
     }
 
@@ -5728,6 +5697,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
     function openTemplateEditor(templateId = null, defaultType = 'forwarding') {
       currentEditingTemplateId = templateId;
       templatesListView.classList.add('d-none');
+      if (templateHeaderActions) templateHeaderActions.classList.add('d-none');
       templateEditorView.classList.remove('d-none');
 
       // Hide all form sections
@@ -6008,6 +5978,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
     function closeTemplateEditor() {
       templateEditorView.classList.add('d-none');
       templatesListView.classList.remove('d-none');
+      if (templateHeaderActions) templateHeaderActions.classList.remove('d-none');
       currentEditingTemplateId = null;
       renderTemplatesList();
     }

@@ -251,13 +251,9 @@ async function resolveSenderPhone(effectiveJid, msg, sock, currentConfig) {
 const app = express();
 const PORT = process.env.PORT || 3005;
 
-// Helper to compute API Endpoint URL based on current host (dynamic localhost or site domain)
+// Helper to compute API Endpoint URL based on fixed cortex-ai.in domain
 export function getApiEndpointForUser(req, userId) {
-    const host = req ? (req.get('host') || 'localhost') : 'localhost';
-    const hostname = host.split(':')[0];
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-    const siteLink = isLocal ? 'localhost' : hostname;
-    return `https://live-mt-server.${siteLink}/${userId}`;
+    return `https://live-mt-server.cortex-ai.in/${userId}`;
 }
 
 app.use(bodyParser.json({ limit: '50mb' }));

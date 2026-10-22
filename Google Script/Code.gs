@@ -41,7 +41,7 @@ function initializeSpreadsheet() {
   // Setup Global Config
   setup.getRange("A1:B1").setValues([["⚙️ GLOBAL CONFIG", ""]]).setBackground("#10b981").setFontColor("white").setFontWeight("bold");
   setup.getRange("A2:B5").setValues([
-    ["Cortex WA API Endpoint", "https://live-mt-server.ready-doodles-study.loca.lt/100000000001"],
+    ["Cortex WA API Endpoint", "https://live-mt-server.cortex-ai.in/100000000001"],
     ["Cortex WA Access Token", "aK8mN2vP9qL4wX1yT7bN5mC3jH6fG0dE8sA1xK9qW2vL5tY7pB"],
     ["ConvertAPI Secret", "kL9mN2vP4qW1xT7bN5mC3jH6fG0dE8"],
     ["ConvertAPI Min Gap (Seconds)", "10"]

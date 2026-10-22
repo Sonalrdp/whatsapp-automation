@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Cortex WA AutoBot - Multi-User Login and Authentication">
-  <title>Login | Cortex WA AutoBot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Cortex WA AutoBot - Multi-User Login, Sign Up, and Authentication Portal">
+  <title>Sign In &amp; Sign Up | Cortex WA AutoBot</title>
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Plus Jakarta Sans, Outfit & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Core adminHMD CSS -->
   <link rel="stylesheet" href="assets/css/bootstrap.min.css">
@@ -23,150 +23,193 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
-<body class="auth-body">
-  <!-- Theme Toggle Top Right -->
-  <button class="icon-button theme-toggle position-fixed top-0 end-0 m-3" type="button" data-theme-toggle aria-label="Switch color theme" title="Switch color theme">
-    <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
-  </button>
+<body class="auth-body auth-premium-backdrop">
+  <!-- Interactive Canvas Particle Field -->
+  <canvas id="auth-particles" class="auth-canvas"></canvas>
 
-  <main class="auth-card-modern">
-    <!-- Header & Branding -->
-    <div class="auth-header">
-      <a class="auth-brand-logo" href="login.html">
-        <span class="brand-icon-wa"><i class="bi bi-whatsapp"></i></span>
-        <h2>Cortex <span>WA AutoBot</span></h2>
-      </a>
-      <p class="text-muted small mb-2">Multi-User WhatsApp Automation Platform</p>
-      <div class="badge text-bg-warning-subtle text-warning border border-warning-subtle py-1 px-3 mb-2 d-inline-flex align-items-center gap-1" style="font-size: 0.76rem;">
-        <i class="bi bi-gift-fill"></i> Free 7-Day Trial (15 msgs/day) on Sign Up
-      </div>
-    </div>
+  <!-- Ambient Glow Orbs -->
+  <div class="ambient-glow glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow glow-2" aria-hidden="true"></div>
 
-    <!-- Auth Method Tabs: Sign In & New Sign Up -->
-    <div class="auth-tabs">
-      <button class="auth-tab-btn active" id="tab-btn-password" type="button">
-        <i class="bi bi-key-fill me-1"></i> Sign In
-      </button>
-      <button class="auth-tab-btn" id="tab-btn-signup" type="button">
-        <i class="bi bi-person-plus-fill me-1"></i> New Sign Up
-      </button>
-    </div>
+  <!-- Top Action Navigation -->
+  <header class="auth-top-nav position-fixed top-0 start-0 w-100 p-3 d-flex align-items-center justify-content-between" style="z-index: 100;">
+    <a href="landing.html" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-2 bg-white bg-opacity-75 shadow-sm" style="backdrop-filter: blur(10px);">
+      <i class="bi bi-arrow-left"></i> <span>Back to Public Site</span>
+    </a>
 
-    <!-- 1. Password Login View -->
-    <form id="form-password-login" class="auth-form-view">
-      <div class="mb-3">
-        <label for="input-email-pass" class="form-label small fw-bold">Email address</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-          <input type="email" class="form-control" id="input-email-pass" placeholder="name@example.com" value="" required>
-        </div>
-      </div>
+    <!-- Theme Toggle -->
+    <button class="icon-button theme-toggle rounded-circle shadow-sm bg-white bg-opacity-75" type="button" data-theme-toggle aria-label="Switch color theme" title="Switch color theme" style="backdrop-filter: blur(10px);">
+      <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
+    </button>
+  </header>
 
-      <div class="mb-3">
-        <div class="d-flex justify-content-between">
-          <label for="input-password" class="form-label small fw-bold">Password (8+ characters)</label>
-        </div>
-        <div class="input-group password-toggle-group">
-          <span class="input-group-text"><i class="bi bi-lock"></i></span>
-          <input type="password" class="form-control" id="input-password" placeholder="Enter your password (min 8 characters)" value="" minlength="8" required>
-          <button type="button" class="btn-toggle-eye" id="btn-toggle-password" title="Show/Hide password">
-            <i class="bi bi-eye" id="eye-icon"></i>
+  <main class="slider-wrapper" style="position: relative; z-index: 10;">
+    <div class="slider-container" id="container">
+      <!-- =============================================================== -->
+      <!-- 1. SIGN UP PANEL (LEFT IN SLIDING LAYOUT) -->
+      <!-- =============================================================== -->
+      <div class="form-panel sign-up-container">
+        <!-- Step 1: User Registration Details -->
+        <form id="signup-step-form-details" class="auth-form-panel">
+          <h1 class="panel-title mb-1">Create Account</h1>
+          <p class="panel-subtitle text-muted mb-2">Get started with Cortex WA AutoBot</p>
+
+          <!-- Free Trial Badge -->
+          <div class="badge text-bg-warning-subtle text-warning border border-warning-subtle py-1 px-3 mb-2 rounded-pill shadow-xs" style="font-size: 0.72rem;">
+            <i class="bi bi-gift-fill text-warning me-1"></i> Free 7-Day Trial (15 msgs/day)
+          </div>
+
+          <!-- Google Quick Auth -->
+          <div class="google-btn-slot mb-2">
+            <div id="g_id_onload"
+                 data-client_id="438922701114-d4k71rd817gglqa510pv9kj06vjhnup2.apps.googleusercontent.com"
+                 data-context="signup"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleLoginResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="pill"
+                 data-theme="outline"
+                 data-text="signup_with"
+                 data-size="medium"
+                 data-logo_alignment="left"
+                 data-width="260">
+            </div>
+          </div>
+
+          <span class="divider-text text-muted small my-1">or use your email for registration</span>
+
+          <div class="input-field-wrap">
+            <i class="bi bi-person field-icon"></i>
+            <input type="text" id="input-signup-name" placeholder="Full Name" required />
+          </div>
+
+          <div class="input-field-wrap">
+            <i class="bi bi-envelope field-icon"></i>
+            <input type="email" id="input-signup-email" placeholder="Email Address" required />
+          </div>
+
+          <div class="input-field-wrap">
+            <i class="bi bi-lock field-icon"></i>
+            <input type="password" id="input-signup-password" placeholder="Password (8+ chars)" minlength="8" required />
+            <button type="button" class="btn-eye" id="btn-toggle-signup-password" tabindex="-1">
+              <i class="bi bi-eye" id="eye-icon-signup"></i>
+            </button>
+          </div>
+
+          <button type="submit" id="btn-signup-request-otp" class="btn-action btn-submit-slider mt-2">
+            <i class="bi bi-send-check me-1"></i> Sign Up
           </button>
-        </div>
+
+          <!-- Mobile Only Switcher -->
+          <div class="d-md-none mt-3 text-center">
+            <span class="text-muted small">Already have an account?</span>
+            <a href="javascript:void(0)" class="fw-bold ms-1 text-primary mobile-switch-link" id="mobileSignIn">Sign In</a>
+          </div>
+        </form>
+
+        <!-- Step 2: Email OTP Verification -->
+        <form id="signup-step-form-otp" class="auth-form-panel d-none">
+          <h1 class="panel-title mb-1">Verify Email</h1>
+          <p class="panel-subtitle text-muted mb-2">We sent a 6-digit OTP code to</p>
+          <div class="badge bg-primary-subtle text-primary py-1 px-3 mb-3 text-truncate" style="max-width: 260px;" id="signup-otp-target-email">your email</div>
+
+          <div class="input-field-wrap mb-2">
+            <i class="bi bi-shield-lock field-icon"></i>
+            <input type="text" id="input-signup-otp-code" class="text-center font-monospace fs-4 letter-spacing-2" placeholder="123456" maxlength="6" required />
+          </div>
+          <small class="text-muted mb-3" style="font-size: 0.72rem;">Check your inbox or spam folder</small>
+
+          <button type="submit" id="btn-signup-verify-otp" class="btn-action btn-submit-slider mb-2">
+            <i class="bi bi-check-circle-fill me-1"></i> Verify &amp; Finish
+          </button>
+
+          <div class="d-flex justify-content-between w-100 px-3 mt-1">
+            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-muted" id="btn-signup-back-step1">
+              <i class="bi bi-arrow-left"></i> Back
+            </button>
+            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-primary" id="btn-signup-resend-otp">
+              <i class="bi bi-arrow-clockwise"></i> Resend
+            </button>
+          </div>
+        </form>
       </div>
 
-      <button type="submit" id="btn-submit-password" class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
-        <i class="bi bi-box-arrow-in-right"></i> Sign In to Dashboard
-      </button>
-    </form>
+      <!-- =============================================================== -->
+      <!-- 2. SIGN IN PANEL (RIGHT IN SLIDING LAYOUT) -->
+      <!-- =============================================================== -->
+      <div class="form-panel sign-in-container">
+        <form id="form-password-login" class="auth-form-panel">
+          <h1 class="panel-title mb-1">Sign In</h1>
+          <p class="panel-subtitle text-muted mb-3">Welcome back! Sign in to continue</p>
 
-    <!-- 1b. New User Sign Up View (With Google Apps Script Email OTP) -->
-    <div id="form-signup" class="auth-form-view d-none">
-      <!-- Step 1: Fill Name, Email, Password -->
-      <form id="signup-step-form-details">
-        <div class="mb-3">
-          <label for="input-signup-name" class="form-label small fw-bold">Your Name</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-person"></i></span>
-            <input type="text" class="form-control" id="input-signup-name" placeholder="John Doe" required>
+          <!-- Google Quick Auth -->
+          <div class="google-btn-slot mb-2">
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="pill"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-size="medium"
+                 data-logo_alignment="left"
+                 data-width="260">
+            </div>
           </div>
-        </div>
 
-        <div class="mb-3">
-          <label for="input-signup-email" class="form-label small fw-bold">Email address</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-            <input type="email" class="form-control" id="input-signup-email" placeholder="name@example.com" required>
+          <span class="divider-text text-muted small my-2">or use your email account</span>
+
+          <div class="input-field-wrap">
+            <i class="bi bi-envelope field-icon"></i>
+            <input type="email" id="input-email-pass" placeholder="Email Address" required />
           </div>
-        </div>
 
-        <div class="mb-3">
-          <label for="input-signup-password" class="form-label small fw-bold">Create Password (8+ characters)</label>
-          <div class="input-group password-toggle-group">
-            <span class="input-group-text"><i class="bi bi-lock"></i></span>
-            <input type="password" class="form-control" id="input-signup-password" placeholder="Min 8 characters" minlength="8" required>
+          <div class="input-field-wrap">
+            <i class="bi bi-lock field-icon"></i>
+            <input type="password" id="input-password" placeholder="Password (8+ chars)" minlength="8" required />
+            <button type="button" class="btn-eye" id="btn-toggle-password" tabindex="-1">
+              <i class="bi bi-eye" id="eye-icon"></i>
+            </button>
           </div>
-          <small class="text-muted" style="font-size: 0.72rem;">7-Day Free Trial (15 msgs/day) automatically credited.</small>
-        </div>
 
-        <button type="submit" id="btn-signup-request-otp" class="btn btn-success w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
-          <i class="bi bi-send-check"></i> Send Verification OTP &amp; Continue
-        </button>
-      </form>
-
-      <!-- Step 2: Enter 6-digit OTP Code sent via Email -->
-      <form id="signup-step-form-otp" class="d-none mt-2">
-        <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3" style="border-radius: 10px;">
-          <i class="bi bi-envelope-check-fill fs-5 text-primary flex-shrink-0"></i>
-          <div>A 6-digit verification code was sent to <strong id="signup-otp-target-email">your email</strong>.</div>
-        </div>
-
-        <div class="mb-3">
-          <label for="input-signup-otp-code" class="form-label small fw-bold">Enter 6-Digit OTP Code</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-            <input type="text" class="form-control font-monospace fs-4 text-center letter-spacing-2" id="input-signup-otp-code" placeholder="123456" maxlength="6" required>
-          </div>
-          <small class="text-muted" style="font-size: 0.72rem;">Please check your inbox or spam folder.</small>
-        </div>
-
-        <button type="submit" id="btn-signup-verify-otp" class="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
-          <i class="bi bi-check-circle-fill"></i> Verify &amp; Create Account
-        </button>
-
-        <div class="d-flex justify-content-between align-items-center mt-2">
-          <button type="button" class="btn btn-link btn-sm text-decoration-none" id="btn-signup-back-step1">
-            <i class="bi bi-arrow-left"></i> Change Details
+          <button type="submit" id="btn-submit-password" class="btn-action btn-submit-slider mt-3">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
           </button>
-          <button type="button" class="btn btn-link btn-sm text-decoration-none" id="btn-signup-resend-otp">
-            <i class="bi bi-arrow-clockwise"></i> Resend OTP
-          </button>
-        </div>
-      </form>
-    </div>
 
-    <!-- Divider: Moved Google Sign-In below email form! -->
-    <div class="auth-divider my-4">
-      <span>Or Sign In With Google</span>
-    </div>
-
-    <!-- Official Google Sign-In Container (Moved to bottom!) -->
-    <div class="google-btn-container mb-2">
-      <div id="g_id_onload"
-           data-client_id="438922701114-d4k71rd817gglqa510pv9kj06vjhnup2.apps.googleusercontent.com"
-           data-context="signin"
-           data-ux_mode="popup"
-           data-callback="handleGoogleLoginResponse"
-           data-auto_prompt="false">
+          <!-- Mobile Only Switcher -->
+          <div class="d-md-none mt-3 text-center">
+            <span class="text-muted small">Don't have an account?</span>
+            <a href="javascript:void(0)" class="fw-bold ms-1 text-success mobile-switch-link" id="mobileSignUp">Sign Up</a>
+          </div>
+        </form>
       </div>
-      <div class="g_id_signin"
-           data-type="standard"
-           data-shape="rectangular"
-           data-theme="outline"
-           data-text="signin_with"
-           data-size="large"
-           data-logo_alignment="left"
-           data-width="380">
+
+      <!-- =============================================================== -->
+      <!-- 3. SLIDING OVERLAY CONTAINER -->
+      <!-- =============================================================== -->
+      <div class="overlay-container">
+        <div class="overlay">
+          <!-- Left Overlay: Displays when Sign Up is active -->
+          <div class="overlay-panel overlay-left">
+            <div class="overlay-brand mb-2">
+              <span class="brand-icon-wa"><i class="bi bi-whatsapp"></i></span>
+            </div>
+            <h1 class="text-white fw-bold">Welcome Back!</h1>
+            <p class="text-white text-opacity-90">To stay synced with your WhatsApp automation bot, please sign in with your credentials.</p>
+            <button class="ghost-btn" id="signIn">Sign In</button>
+          </div>
+
+          <!-- Right Overlay: Displays when Sign In is active -->
+          <div class="overlay-panel overlay-right">
+            <div class="overlay-brand mb-2">
+              <span class="brand-icon-wa"><i class="bi bi-whatsapp"></i></span>
+            </div>
+            <h1 class="text-white fw-bold">Hello, Friend!</h1>
+            <p class="text-white text-opacity-90">Enter your personal details, start your 7-day free trial, and automate WhatsApp today.</p>
+            <button class="ghost-btn" id="signUp">Sign Up</button>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -211,10 +254,10 @@
             </div>
 
             <div class="d-flex justify-content-between align-items-center pt-2">
-              <button type="button" class="btn btn-outline-secondary px-3" id="btn-skip-google-password">
+              <button type="button" class="btn btn-outline-secondary px-3 rounded-pill" id="btn-skip-google-password">
                 Skip for Now
               </button>
-              <button type="submit" class="btn btn-success px-4 fw-bold" id="btn-save-google-password">
+              <button type="submit" class="btn btn-success px-4 fw-bold rounded-pill" id="btn-save-google-password">
                 <i class="bi bi-check-circle-fill me-1"></i> Save &amp; Continue <i class="bi bi-arrow-right"></i>
               </button>
             </div>
@@ -237,9 +280,7 @@
   <script src="assets/js/main.js"></script>
 
   <script>
-    // Elements
-    const tabBtnPassword = document.getElementById('tab-btn-password');
-    const tabBtnSignup = document.getElementById('tab-btn-signup');
+    // Form Elements
 
     const formPasswordLogin = document.getElementById('form-password-login');
     const formSignup = document.getElementById('form-signup');
@@ -256,6 +297,8 @@
     const inputSignupEmail = document.getElementById('input-signup-email');
     const inputSignupPassword = document.getElementById('input-signup-password');
     const btnSignupRequestOtp = document.getElementById('btn-signup-request-otp');
+    const btnToggleSignupPassword = document.getElementById('btn-toggle-signup-password');
+    const eyeIconSignup = document.getElementById('eye-icon-signup');
 
     const inputSignupOtpCode = document.getElementById('input-signup-otp-code');
     const btnSignupVerifyOtp = document.getElementById('btn-signup-verify-otp');
@@ -311,37 +354,88 @@
       }
     }
 
-    // Tab Switching
-    function activateTab(tab) {
-      tabBtnPassword.classList.remove('active');
-      if (tabBtnSignup) tabBtnSignup.classList.remove('active');
-      formPasswordLogin.classList.add('d-none');
-      if (formSignup) formSignup.classList.add('d-none');
+    // Double Slider Elements
+    const sliderContainer = document.getElementById('container');
+    const signUpButton = document.getElementById('signUp');
+    const signInButton = document.getElementById('signIn');
+    const mobileSignUp = document.getElementById('mobileSignUp');
+    const mobileSignIn = document.getElementById('mobileSignIn');
 
-      if (tab === 'password') {
-        tabBtnPassword.classList.add('active');
-        formPasswordLogin.classList.remove('d-none');
-      } else if (tab === 'signup') {
-        if (tabBtnSignup) tabBtnSignup.classList.add('active');
-        if (formSignup) formSignup.classList.remove('d-none');
-        // Reset to Step 1
-        if (signupStepFormDetails) signupStepFormDetails.classList.remove('d-none');
-        if (signupStepFormOtp) signupStepFormOtp.classList.add('d-none');
-      }
+    function switchToSignUp() {
+      if (sliderContainer) sliderContainer.classList.add("right-panel-active");
+      // Reset to Step 1 if previously left at OTP step
+      if (signupStepFormDetails) signupStepFormDetails.classList.remove('d-none');
+      if (signupStepFormOtp) signupStepFormOtp.classList.add('d-none');
     }
 
-    tabBtnPassword.addEventListener('click', () => activateTab('password'));
-    if (tabBtnSignup) tabBtnSignup.addEventListener('click', () => activateTab('signup'));
+    function switchToSignIn() {
+      if (sliderContainer) sliderContainer.classList.remove("right-panel-active");
+    }
+
+    if (signUpButton) signUpButton.addEventListener('click', switchToSignUp);
+    if (signInButton) signInButton.addEventListener('click', switchToSignIn);
+    if (mobileSignUp) mobileSignUp.addEventListener('click', switchToSignUp);
+    if (mobileSignIn) mobileSignIn.addEventListener('click', switchToSignIn);
+
+    // Check URL parameters (e.g. login.html?tab=signup)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'signup') {
+      switchToSignUp();
+    }
 
     // Toggle Password Visibility
-    btnTogglePassword.addEventListener('click', () => {
-      if (inputPassword.type === 'password') {
-        inputPassword.type = 'text';
-        eyeIcon.className = 'bi bi-eye-slash';
-      } else {
-        inputPassword.type = 'password';
-        eyeIcon.className = 'bi bi-eye';
-      }
+    if (btnTogglePassword && inputPassword) {
+      btnTogglePassword.addEventListener('click', () => {
+        if (inputPassword.type === 'password') {
+          inputPassword.type = 'text';
+          eyeIcon.className = 'bi bi-eye-slash';
+        } else {
+          inputPassword.type = 'password';
+          eyeIcon.className = 'bi bi-eye';
+        }
+      });
+    }
+
+    if (btnToggleSignupPassword && inputSignupPassword) {
+      btnToggleSignupPassword.addEventListener('click', () => {
+        if (inputSignupPassword.type === 'password') {
+          inputSignupPassword.type = 'text';
+          eyeIconSignup.className = 'bi bi-eye-slash';
+        } else {
+          inputSignupPassword.type = 'password';
+          eyeIconSignup.className = 'bi bi-eye';
+        }
+      });
+    }
+
+    // 1-Click Demo Quick Login
+    document.querySelectorAll('.btn-demo-quick').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const role = btn.dataset.role || 'user';
+        const originalHtml = btn.innerHTML;
+        btn.setAttribute('disabled', 'true');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+          const res = await fetch('/api/auth/demo-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role })
+          });
+          const data = await res.json();
+          if (data.success) {
+            saveAuthAndRedirect(data);
+          } else {
+            showToast(data.error || 'Demo login failed.', 'error');
+          }
+        } catch (err) {
+          console.error('Demo login error:', err);
+          showToast('Network error on demo login.', 'error');
+        } finally {
+          btn.removeAttribute('disabled');
+          btn.innerHTML = originalHtml;
+        }
+      });
     });
 
     // 1. Password Form Submission
@@ -420,7 +514,6 @@
             signupStepFormOtp.classList.remove('d-none');
             if (signupOtpTargetEmail) signupOtpTargetEmail.innerText = email;
             if (data.demoOtp && inputSignupOtpCode) {
-              // Populate OTP if fallback mode
               inputSignupOtpCode.value = data.demoOtp;
             }
             if (inputSignupOtpCode) inputSignupOtpCode.focus();
@@ -479,21 +572,41 @@
     // Signup navigation: Back to details
     if (btnSignupBackStep1) {
       btnSignupBackStep1.addEventListener('click', () => {
-        if (signupStepFormOtp) signupStepFormOtp.classList.add('d-none');
-        if (signupStepFormDetails) signupStepFormDetails.classList.remove('d-none');
+        signupStepFormOtp.classList.add('d-none');
+        signupStepFormDetails.classList.remove('d-none');
       });
     }
 
     // Signup navigation: Resend OTP
     if (btnSignupResendOtp) {
-      btnSignupResendOtp.addEventListener('click', () => {
-        if (signupStepFormDetails) {
-          signupStepFormDetails.dispatchEvent(new Event('submit'));
+      btnSignupResendOtp.addEventListener('click', async () => {
+        const name = inputSignupName ? inputSignupName.value.trim() : '';
+        const email = inputSignupEmail ? inputSignupEmail.value.trim() : '';
+        const password = inputSignupPassword ? inputSignupPassword.value : '';
+
+        showToast("Resending verification OTP...", "info");
+        try {
+          const res = await fetch('/api/auth/signup-request-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast("Fresh OTP sent to your email!", "success");
+            if (data.demoOtp && inputSignupOtpCode) {
+              inputSignupOtpCode.value = data.demoOtp;
+            }
+          } else {
+            showToast(data.error || "Failed to resend OTP.", "error");
+          }
+        } catch (err) {
+          showToast("Network error resending OTP.", "error");
         }
       });
     }
 
-    // 4. Official Google Sign-In Callback Handler
+    // Google Sign-In Callback
     window.handleGoogleLoginResponse = async function(response) {
       if (!response || !response.credential) {
         showToast("Google sign-in credential missing.", "error");
@@ -511,7 +624,6 @@
 
         const data = await res.json();
         if (data.success) {
-          // If newly registered Google user or has no password set, prompt password creation (No OTP sent!)
           if (data.isNewUser || !data.hasPassword) {
             pendingGoogleAuthData = data;
             if (!modalGooglePassword && modalGooglePasswordEl && window.bootstrap) {
@@ -588,6 +700,50 @@
           saveAuthAndRedirect(pendingGoogleAuthData);
         }
       });
+    }
+
+    // Canvas Background Particles for Login
+    const authCanvas = document.getElementById('auth-particles');
+    if (authCanvas) {
+      const ctx = authCanvas.getContext('2d');
+      let w, h;
+      let pts = [];
+
+      function resizeAuth() {
+        w = authCanvas.width = window.innerWidth;
+        h = authCanvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeAuth);
+      resizeAuth();
+
+      for (let i = 0; i < 35; i++) {
+        pts.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 2 + 1,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          a: Math.random() * 0.4 + 0.1
+        });
+      }
+
+      function drawAuth() {
+        ctx.clearRect(0, 0, w, h);
+        for (let p of pts) {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0 || p.x > w || p.y < 0 || p.y > h) {
+            p.x = Math.random() * w;
+            p.y = Math.random() * h;
+          }
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(37, 211, 102, ${p.a})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(drawAuth);
+      }
+      drawAuth();
     }
   </script>
 </body>
