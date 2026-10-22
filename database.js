@@ -33,6 +33,7 @@ if (isMysql) {
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0,
+            connectTimeout: 5000,
             ssl: isLocal ? false : { minVersion: 'TLSv1.2', rejectUnauthorized: true }
         };
     } else {
@@ -50,6 +51,7 @@ if (isMysql) {
                 waitForConnections: true,
                 connectionLimit: 10,
                 queueLimit: 0,
+                connectTimeout: 5000,
                 ssl: isLocal ? false : { minVersion: 'TLSv1.2', rejectUnauthorized: true }
             };
         } catch (e) {
@@ -61,6 +63,9 @@ if (isMysql) {
 
     pool = {
         query: async (sql, params = []) => {
+            if (!mysqlPool) {
+                throw new Error("MySQL pool is not active. Using local fallback.");
+            }
             const mysqlSql = sql.replace(/\$\d+/g, '?');
             const [rows] = await mysqlPool.query(mysqlSql, params);
             const isArr = Array.isArray(rows);
@@ -77,6 +82,7 @@ if (isMysql) {
     const { Pool } = pg;
     pgPool = new Pool({
         connectionString: rawDbUrl,
+        connectionTimeoutMillis: 5000,
         ssl: rawDbUrl.includes('localhost') ? false : {
             rejectUnauthorized: false // Required for Render Postgres connections
         }
@@ -316,6 +322,9 @@ export function getTodayIST() {
 export async function initDatabase() {
     if (dbType === 'mysql') {
         try {
+            // Test connection first
+            const [testRes] = await mysqlPool.query('SELECT 1');
+            
             await mysqlPool.query(`
                 CREATE TABLE IF NOT EXISTS whatsapp_sessions (
                     session_id VARCHAR(100) NOT NULL,
@@ -354,10 +363,15 @@ export async function initDatabase() {
 
             console.log("TiDB / MySQL database initialized successfully (tables verified).");
         } catch (err) {
-            console.error("Failed to initialize MySQL database tables:", err);
+            console.error(`⚠️ MySQL / TiDB Cloud connection failed (${err.code || err.message}).`);
+            console.warn("🔄 Automatically switching to Local Storage Fallback (users.json & bot_configs).");
+            pool = null;
+            mysqlPool = null;
+            dbType = null;
         }
     } else if (dbType === 'postgres') {
         try {
+            await pool.query('SELECT 1');
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS whatsapp_sessions (
                     session_id VARCHAR(100) NOT NULL,
@@ -402,7 +416,11 @@ export async function initDatabase() {
 
             console.log("PostgreSQL database initialized successfully (tables verified).");
         } catch (err) {
-            console.error("Failed to initialize PostgreSQL database tables:", err);
+            console.error(`⚠️ PostgreSQL connection failed (${err.code || err.message}).`);
+            console.warn("🔄 Automatically switching to Local Storage Fallback (users.json & bot_configs).");
+            pool = null;
+            pgPool = null;
+            dbType = null;
         }
     }
 
