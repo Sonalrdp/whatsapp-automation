@@ -1514,6 +1514,35 @@ export async function saveUserBotConfig(userId, config) {
     }
 }
 
+export async function getUserTriggerChats(userId) {
+    const safeUserId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (pool) {
+        const chats = await readData(`chats_${safeUserId}`, 'trigger_chats');
+        return Array.isArray(chats) ? chats : [];
+    } else {
+        try {
+            const chatsFile = path.join('bot_configs', `chats_${safeUserId}.json`);
+            const data = await fs.readFile(chatsFile, 'utf-8');
+            const parsed = JSON.parse(data);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }
+}
+
+export async function saveUserTriggerChats(userId, chats) {
+    const safeUserId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeChats = Array.isArray(chats) ? chats.slice(0, 200) : [];
+    if (pool) {
+        await writeData(`chats_${safeUserId}`, 'trigger_chats', safeChats);
+    } else {
+        await fs.mkdir('bot_configs', { recursive: true });
+        const chatsFile = path.join('bot_configs', `chats_${safeUserId}.json`);
+        await fs.writeFile(chatsFile, JSON.stringify(safeChats, null, 2));
+    }
+}
+
 export function formatJid(number) {
     if (!number) return '';
     if (number.includes('@')) return number;

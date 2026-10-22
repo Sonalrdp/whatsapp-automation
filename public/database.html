@@ -2180,7 +2180,10 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                   <p class="text-muted mb-0">Select a phone number on the left to view the complete trigger conversation and automated responses.</p>
                 </div>
               </div>
-              <div class="d-flex gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1 px-3 py-2" id="btn-clear-trigger-chats" onclick="clearAllTriggerChats()">
+                  <i class="bi bi-trash3-fill"></i> Clear History
+                </button>
                 <span class="badge text-bg-success d-inline-flex align-items-center gap-1 px-3 py-2">
                   <i class="bi bi-funnel-fill"></i> Trigger Filter Active
                 </span>
@@ -4777,6 +4780,31 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       activeSelectedContact = phoneKey;
       renderTriggerContactsList();
       renderActiveThreadMessages();
+    };
+
+    window.clearAllTriggerChats = async function() {
+      if (!confirm("Are you sure you want to clear all trigger chat history?")) return;
+      try {
+        const res = await fetch('/api/trigger-chats/clear', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUserAccessToken || authToken}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          cachedTriggerChats = [];
+          activeSelectedContact = null;
+          renderTriggerContactsList();
+          renderActiveThreadMessages();
+          showToast("Chat history cleared successfully.", "success");
+        } else {
+          showToast(data.error || "Failed to clear chats", "error");
+        }
+      } catch (e) {
+        showToast("Error clearing chat history", "error");
+      }
     };
 
     function renderTriggerContactsList() {

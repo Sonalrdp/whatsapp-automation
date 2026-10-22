@@ -72,6 +72,8 @@ import {
     clearAuthState, 
     getUserBotConfig, 
     saveUserBotConfig, 
+    getUserTriggerChats,
+    saveUserTriggerChats,
     formatJid,
     getUserByEmail,
     getUserById,
@@ -520,6 +522,7 @@ export async function getOrCreateUserSession(userId, userEmail = '') {
     }
 
     const initialConfig = await getUserBotConfig(userId);
+    const savedChats = await getUserTriggerChats(userId);
 
     const sessionObj = {
         userId,
@@ -530,7 +533,7 @@ export async function getOrCreateUserSession(userId, userEmail = '') {
         groupsList: [],
         recentLogs: [],
         triggeredLogs: [],
-        recentChats: [],
+        recentChats: savedChats || [],
         config: initialConfig,
         isConnecting: false,
         addLog(text, isTriggerMatched = false) {
@@ -551,9 +554,13 @@ export async function getOrCreateUserSession(userId, userEmail = '') {
         addChat(chatItem) {
             // chatItem: { id, sender, senderName, message, direction: 'incoming'|'outgoing', trigger: 'Template Name', timestamp }
             this.recentChats.unshift(chatItem);
-            if (this.recentChats.length > 100) {
+            if (this.recentChats.length > 200) {
                 this.recentChats.pop();
             }
+            // Persist chats so they are never lost on redeploy/server restart
+            saveUserTriggerChats(this.userId, this.recentChats).catch(e => {
+                console.warn(`[User ${this.userId}] Error persisting trigger chats:`, e.message);
+            });
         }
     };
 
@@ -2131,6 +2138,21 @@ app.get('/api/status', authenticateUser, async (req, res) => {
     } catch (err) {
         console.error("Status error for user:", req.user.email, err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Clear trigger chats endpoint (both in-memory and database)
+app.post('/api/trigger-chats/clear', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const session = userSessions.get(userId);
+        if (session) {
+            session.recentChats = [];
+        }
+        await saveUserTriggerChats(userId, []);
+        res.json({ success: true, message: 'All trigger chats have been cleared.' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
