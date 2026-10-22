@@ -364,7 +364,8 @@ export async function initDatabase() {
 
             console.log("TiDB / MySQL database initialized successfully (tables verified).");
         } catch (err) {
-            console.error(`⚠️ MySQL / TiDB Cloud connection failed (${err.code || err.message}).`);
+            console.error(`⚠️ MySQL / TiDB Cloud connection failed: ${err.message} (code: ${err.code || 'UNKNOWN'})`);
+            if (err.fatal) console.error("Fatal connection error details:", { syscall: err.syscall, code: err.code, errno: err.errno, address: err.address, port: err.port });
             console.warn("🔄 Automatically switching to Local Storage Fallback (users.json & bot_configs).");
             pool = null;
             mysqlPool = null;
