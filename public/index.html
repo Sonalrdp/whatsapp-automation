@@ -78,90 +78,89 @@
     <div class="container-xl">
       <div class="row align-items-center g-5">
         <div class="col-12 col-lg-7">
-          <!-- Live Status Pill -->
-          <div class="hero-status-pill mb-3">
-            <span class="live-dot pulse"></span>
-            <span class="fw-semibold">Multi-Tenant Baileys Daemon Active</span>
-            <span class="pill-divider">•</span>
-            <span class="pill-highlight">Zero WhatsApp Business API Fees</span>
+          <!-- Status Line -->
+          <div class="hero-status-pill mb-4">
+            <span class="live-dot"></span>
+            <span>Independent WhatsApp daemon</span>
+            <span class="pill-divider">/</span>
+            <span class="pill-highlight">No per-message Meta fees</span>
           </div>
 
-          <h1 class="hero-headline mb-3">
-            Enterprise WhatsApp Automation &amp; Messaging <span class="gradient-text">Engine</span>
+          <h1 class="hero-headline mb-4">
+            WhatsApp automation for teams that run on spreadsheets, bills, and ledgers.
           </h1>
 
           <p class="hero-lead mb-4">
-            Connect unlimited accounts with session isolation. Auto-share PDFs, trigger campaigns directly from Google Sheets, sync live Tally ERP account statements, and broadcast WATI-format template messages at scale.
+            Directly connect numbers without going through third-party aggregators. Auto-crop invoice PDFs on arrival, trigger dispatches row-by-row from Google Sheets, and answer customer ledger inquiries straight out of local Tally ERP.
           </p>
 
           <!-- Action Buttons -->
-          <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+          <div class="d-flex flex-wrap align-items-center gap-3 mb-5">
             <a href="login.html?tab=signup" class="btn btn-hero-primary d-inline-flex align-items-center gap-2">
-              <i class="bi bi-rocket-takeoff-fill"></i>
-              <span>Claim Free 7-Day Trial</span>
+              <span>Try free for 7 days</span>
+              <i class="bi bi-arrow-right"></i>
             </a>
             <a href="login.html" class="btn btn-hero-secondary d-inline-flex align-items-center gap-2" id="btn-quick-demo-login">
-              <i class="bi bi-play-circle-fill"></i>
-              <span>Live Interactive Demo</span>
+              <span>View dashboard preview</span>
             </a>
           </div>
 
           <!-- Trust Badges -->
           <div class="hero-trust-bar d-flex flex-wrap align-items-center gap-4">
             <div class="trust-item">
-              <i class="bi bi-shield-check text-success"></i>
-              <span>100% End-to-End Encrypted</span>
+              <i class="bi bi-shield-check"></i>
+              <span>Encrypted local session cache</span>
             </div>
             <div class="trust-item">
-              <i class="bi bi-lightning-charge-fill text-warning"></i>
-              <span>Under 45ms Dispatch</span>
+              <i class="bi bi-check2"></i>
+              <span>Instant socket dispatch</span>
             </div>
             <div class="trust-item">
-              <i class="bi bi-credit-card text-primary"></i>
-              <span>No Credit Card Required</span>
+              <i class="bi bi-dash-circle"></i>
+              <span>No card required to start</span>
             </div>
           </div>
         </div>
 
-        <!-- Right: Animated Glass Terminal / Live Mockup Card -->
+        <!-- Right: Honest Minimal Monospace Console Card -->
         <div class="col-12 col-lg-5">
           <div class="hero-mockup-wrapper">
             <div class="glass-terminal-card">
               <!-- Window Chrome -->
               <div class="terminal-chrome d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
-                  <span class="dot red"></span>
-                  <span class="dot yellow"></span>
-                  <span class="dot green"></span>
-                  <span class="terminal-title ms-2">cortex-engine-daemon // live</span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                  <span class="terminal-title ms-2">daemon // live-log</span>
                 </div>
-                <span class="badge text-bg-success-subtle text-success border border-success-subtle font-monospace" style="font-size: 0.65rem;">
-                  <i class="bi bi-wifi"></i> CONNECTED
+                <span class="badge text-bg-light border font-monospace" style="font-size: 0.65rem;">
+                  socket connected
                 </span>
               </div>
 
               <!-- Terminal Stream -->
-              <div class="terminal-body font-monospace" id="terminalStream">
-                <div class="term-line"><span class="term-time">00:01:14</span> <span class="term-dim">[SYSTEM]</span> <span class="term-cyan">Multi-Tenant Baileys Socket</span> initialized.</div>
-                <div class="term-line"><span class="term-time">00:01:15</span> <span class="term-dim">[AUTH]</span> Tenant <span class="term-green">#100000000001</span> session restored from TiDB.</div>
-                <div class="term-line"><span class="term-time">00:01:16</span> <span class="term-dim">[SHEETS]</span> Synced 1,240 rows from Google Sheet tab "Dispatches".</div>
-                <div class="term-line"><span class="term-time">00:01:17</span> <span class="term-dim">[TALLY]</span> Ledger statement generated for client <span class="term-yellow">Rattanlall Spares</span>.</div>
-                <div class="term-line"><span class="term-time">00:01:18</span> <span class="term-dim">[SEND]</span> PDF dispatched + auto-crop thumbnail delivered via WhatsApp.</div>
-                <div class="term-line term-active"><span class="term-cursor">▶</span> Dispatching live automation tasks...</div>
+              <div class="terminal-body" id="terminalStream">
+                <div class="term-line"><span class="term-time">09:14:02</span> <span class="term-dim">[socket]</span> Handshake established with WhatsApp Web.</div>
+                <div class="term-line"><span class="term-time">09:14:03</span> <span class="term-dim">[tenant]</span> Session loaded from local store (#100000000001).</div>
+                <div class="term-line"><span class="term-time">09:14:05</span> <span class="term-dim">[sheets]</span> Read 48 rows from Google Sheet "Dispatches_Oct".</div>
+                <div class="term-line"><span class="term-time">09:14:06</span> <span class="term-dim">[tally]</span> Exported statement for client "Rattanlall Spares".</div>
+                <div class="term-line"><span class="term-time">09:14:07</span> <span class="term-dim">[deliver]</span> PDF sent with preview thumbnail (1.2s total).</div>
+                <div class="term-line term-active"><span class="term-cursor">&gt;</span> Listening for keyword triggers...</div>
               </div>
 
               <!-- Floating Simulation Card -->
               <div class="floating-sim-card">
                 <div class="d-flex align-items-center gap-3">
                   <div class="sim-icon-circle">
-                    <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                    <i class="bi bi-file-earmark-pdf"></i>
                   </div>
                   <div class="flex-grow-1 overflow-hidden">
-                    <div class="fw-bold small text-dark text-truncate">Invoice_Statement_Oct2026.pdf</div>
-                    <div class="text-muted" style="font-size: 0.7rem;">Auto-cropped &amp; delivered in 1.4s</div>
+                    <div class="fw-semibold small text-truncate">Invoice_Oct2026.pdf</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Delivered with first-page thumbnail</div>
                   </div>
-                  <span class="badge text-bg-success rounded-pill px-2 py-1" style="font-size: 0.65rem;">
-                    <i class="bi bi-check2-all"></i> Sent
+                  <span class="badge text-bg-light border text-muted" style="font-size: 0.65rem;">
+                    Delivered
                   </span>
                 </div>
               </div>
@@ -175,145 +174,137 @@
   <!-- =============================================================== -->
   <!-- 3. METRICS / STATS RIBBON -->
   <!-- =============================================================== -->
-  <section class="stats-ribbon py-4">
+  <section class="stats-ribbon">
     <div class="container-xl">
       <div class="row g-4 text-center">
         <div class="col-6 col-md-3">
-          <div class="stat-number">99.98%</div>
-          <div class="stat-label">Message Delivery Rate</div>
+          <div class="stat-number">99.9%</div>
+          <div class="stat-label">Delivery reliability</div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="stat-number">&lt; 45ms</div>
-          <div class="stat-label">Instant Trigger Latency</div>
+          <div class="stat-number">&lt; 50ms</div>
+          <div class="stat-label">Socket dispatch latency</div>
         </div>
         <div class="col-6 col-md-3">
           <div class="stat-number">10M+</div>
-          <div class="stat-label">Messages Processed Monthly</div>
+          <div class="stat-label">Dispatched through daemon</div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="stat-number">0 &#8377;</div>
-          <div class="stat-label">WhatsApp Cloud API Meta Fees</div>
+          <div class="stat-number">&#8377;0</div>
+          <div class="stat-label">Cloud API conversation fees</div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- =============================================================== -->
-  <!-- 4. CORE FEATURES SHOWCASE -->
+  <!-- 4. CORE FEATURES SHOWCASE (ASYMMETRICAL 2-COLUMN & WIDE CARDS) -->
   <!-- =============================================================== -->
-  <section class="section-padding" id="features">
+  <section class="section-padding-spacious" id="features">
     <div class="container-xl">
-      <div class="text-center section-header mb-5">
-        <span class="eyebrow-pill mb-2"><i class="bi bi-cpu-fill"></i> POWERFUL WORKFLOWS</span>
-        <h2 class="section-heading">Everything You Need to Automate WhatsApp</h2>
-        <p class="section-subheading">Built from the ground up for agencies, accountants, e-commerce stores, and high-volume businesses.</p>
+      <!-- Asymmetrical Section Header -->
+      <div class="row align-items-end mb-5">
+        <div class="col-12 col-lg-7">
+          <span class="eyebrow-pill mb-2">Capabilities</span>
+          <h2 class="section-heading">Designed for real operational work, not marketing blasts.</h2>
+        </div>
+        <div class="col-12 col-lg-5 mt-3 mt-lg-0">
+          <p class="section-subheading mb-0">We focus on eliminating the manual work between your billing software, your spreadsheets, and the messages your customers actually read.</p>
+        </div>
       </div>
 
+      <!-- Asymmetrical Bento-style Layout -->
       <div class="row g-4">
-        <!-- Feature 1: PDF Auto-Sharing & Crop -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <!-- Feature 1: Wide Card (col-lg-8) -->
+        <div class="col-12 col-lg-8">
           <div class="feature-card h-100">
-            <div class="feature-icon bg-primary-subtle text-primary">
-              <i class="bi bi-file-earmark-pdf"></i>
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div class="feature-icon">
+                <i class="bi bi-file-earmark-pdf"></i>
+              </div>
+              <span class="badge text-bg-light border font-mono small">Auto-crop engine</span>
             </div>
-            <h3 class="feature-title">PDF Auto-Forwarding &amp; Auto-Crop</h3>
+            <h3 class="feature-title">PDF auto-forwarding with first-page preview</h3>
             <p class="feature-desc">
-              Listen to incoming invoices and documents, convert first-page thumbnails automatically via our built-in ConvertAPI engine, and route them to target groups or contacts in real-time.
+              When an invoice or bill arrives in a designated chat, Cortex crops the header and first page into a crisp image preview before forwarding both image and document to client groups. Recipients get an immediate visual glance without having to open the PDF viewer.
             </p>
             <div class="feature-tags">
-              <span class="tag">Auto-Crop</span>
-              <span class="tag">Keyword Filter</span>
-              <span class="tag">Custom Prefix</span>
+              <span class="tag">Auto-crop</span>
+              <span class="tag">Keyword filters</span>
+              <span class="tag">Sender prefixes</span>
+              <span class="tag">Delivery logs</span>
             </div>
           </div>
         </div>
 
-        <!-- Feature 2: Google Sheets Live Sync -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <!-- Feature 2: Side Card (col-lg-4) -->
+        <div class="col-12 col-lg-4">
           <div class="feature-card h-100">
-            <div class="feature-icon bg-success-subtle text-success">
+            <div class="feature-icon">
               <i class="bi bi-table"></i>
             </div>
-            <h3 class="feature-title">Google Sheets Live Dispatch</h3>
+            <h3 class="feature-title">Google Sheets dispatches</h3>
             <p class="feature-desc">
-              Connect your Google Sheets with custom GIDs and tab names. Send personalized row-by-row messages, order confirmations, and scheduled greetings without writing a line of code.
+              Point Cortex to any sheet and tab. Each new or marked row triggers a personalized message with column variables filled in automatically. No third-party connectors or Zapier subscriptions needed.
             </p>
             <div class="feature-tags">
-              <span class="tag">Auto-Polling</span>
-              <span class="tag">Dynamic Variables</span>
-              <span class="tag">Multi-Tab GID</span>
+              <span class="tag">GID tab support</span>
+              <span class="tag">Custom delay</span>
+              <span class="tag">Direct polling</span>
             </div>
           </div>
         </div>
 
-        <!-- Feature 3: Tally ERP Integration -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <!-- Feature 3: Side Card (col-lg-4) -->
+        <div class="col-12 col-lg-4">
           <div class="feature-card h-100">
-            <div class="feature-icon bg-warning-subtle text-warning">
-              <i class="bi bi-journal-bookmark-fill"></i>
+            <div class="feature-icon">
+              <i class="bi bi-journal-text"></i>
             </div>
-            <h3 class="feature-title">Interactive Tally ERP Ledger Bot</h3>
+            <h3 class="feature-title">Tally ERP account statements</h3>
             <p class="feature-desc">
-              Allow clients to WhatsApp you keywords like <code>ledger</code> or <code>hisab</code>. Cortex connects directly to local Tally (Port 9000), generates their PDF statement, and delivers it automatically.
+              When a verified customer texts "ledger" or "hisab", Cortex queries your local Tally (Port 9000), packages their voucher statement as a clean PDF, and delivers it within seconds.
             </p>
             <div class="feature-tags">
-              <span class="tag">Self-Hosted</span>
-              <span class="tag">Live Vouchers</span>
-              <span class="tag">Unregistered Protection</span>
+              <span class="tag">Local port 9000</span>
+              <span class="tag">Number verification</span>
+              <span class="tag">Voucher PDF</span>
             </div>
           </div>
         </div>
 
-        <!-- Feature 4: Meta / WATI Template Messages -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <!-- Feature 4: Side Card (col-lg-4) -->
+        <div class="col-12 col-lg-4">
           <div class="feature-card h-100">
-            <div class="feature-icon bg-info-subtle text-info">
-              <i class="bi bi-chat-square-quote-fill"></i>
+            <div class="feature-icon">
+              <i class="bi bi-layout-text-window-reverse"></i>
             </div>
-            <h3 class="feature-title">WATI-Format Template Messages</h3>
+            <h3 class="feature-title">Interactive message templates</h3>
             <p class="feature-desc">
-              Full dual-pane template builder with real-time phone simulator. Craft interactive CTA buttons, quick replies, sample content variables, and broadcast campaigns seamlessly.
+              Draft messages with quick-reply buttons and clickable link actions. A live phone preview shows you exactly how the text and buttons look on customer screens before dispatching.
             </p>
             <div class="feature-tags">
-              <span class="tag">Interactive Buttons</span>
-              <span class="tag">Phone Simulator</span>
-              <span class="tag">WATI Compatible</span>
+              <span class="tag">Action buttons</span>
+              <span class="tag">Phone preview</span>
+              <span class="tag">Variable placeholders</span>
             </div>
           </div>
         </div>
 
-        <!-- Feature 5: Multi-Tenant Session Isolation -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <!-- Feature 5: Side Card (col-lg-4) -->
+        <div class="col-12 col-lg-4">
           <div class="feature-card h-100">
-            <div class="feature-icon bg-purple-subtle text-purple">
-              <i class="bi bi-people-fill"></i>
+            <div class="feature-icon">
+              <i class="bi bi-shield-lock"></i>
             </div>
-            <h3 class="feature-title">Multi-User Tenant Isolation</h3>
+            <h3 class="feature-title">Tenant isolation</h3>
             <p class="feature-desc">
-              Each user account operates inside an isolated Baileys session sandbox with independent authentication credentials, custom API endpoints, and dedicated rate limit buckets.
+              Each user runs inside their own session container. Your QR pairing keys, logs, and contact history are encrypted under a unique identifier and never touch other accounts.
             </p>
             <div class="feature-tags">
-              <span class="tag">TiDB Cloud</span>
-              <span class="tag">Dedicated UID</span>
-              <span class="tag">Zero Interference</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Feature 6: Developer REST API & Webhooks -->
-        <div class="col-12 col-md-6 col-lg-4">
-          <div class="feature-card h-100">
-            <div class="feature-icon bg-danger-subtle text-danger">
-              <i class="bi bi-code-slash"></i>
-            </div>
-            <h3 class="feature-title">Developer API &amp; Webhooks</h3>
-            <p class="feature-desc">
-              Send messages from Python, Node.js, cURL, or Zapier with 50-character Bearer token authentication. Includes self-hosted ConvertAPI PDF rendering and instant status webhooks.
-            </p>
-            <div class="feature-tags">
-              <span class="tag">Bearer Token</span>
-              <span class="tag">REST Endpoints</span>
-              <span class="tag">Webhooks</span>
+              <span class="tag">Encrypted store</span>
+              <span class="tag">Isolated daemon</span>
+              <span class="tag">Private logs</span>
             </div>
           </div>
         </div>
@@ -322,36 +313,61 @@
   </section>
 
   <!-- =============================================================== -->
-  <!-- 5. ARCHITECTURE / HOW IT WORKS -->
+  <!-- 5. HOW IT WORKS (ASYMMETRICAL STEP ROWS, NOT GENERIC 3-BOX GRID) -->
   <!-- =============================================================== -->
   <section class="section-padding bg-surface-alt" id="architecture">
     <div class="container-xl">
-      <div class="text-center section-header mb-5">
-        <span class="eyebrow-pill mb-2"><i class="bi bi-diagram-3-fill"></i> ARCHITECTURE</span>
-        <h2 class="section-heading">How Cortex WA AutoBot Works</h2>
-        <p class="section-subheading">Enterprise grade architecture built for sub-second execution, rock-solid uptime, and total data privacy.</p>
+      <div class="row mb-5">
+        <div class="col-12 col-lg-6">
+          <span class="eyebrow-pill mb-2">Process</span>
+          <h2 class="section-heading">Up and running in three straightforward steps.</h2>
+        </div>
+        <div class="col-12 col-lg-6 d-flex align-items-end">
+          <p class="section-subheading mb-0">No complicated Meta developer portals or business manager verifications. Just pair your device and set your rules.</p>
+        </div>
       </div>
 
-      <div class="row g-4 align-items-center">
-        <div class="col-12 col-md-4">
-          <div class="step-card text-center p-4">
-            <div class="step-badge mb-3">1</div>
-            <h4 class="step-title h5 fw-bold mb-2">Scan &amp; Pair WhatsApp</h4>
-            <p class="text-muted small mb-0">Connect via QR code in 5 seconds. Sessions are encrypted in your database so you never need to scan again.</p>
+      <!-- Linear Step List -->
+      <div class="step-rows-container">
+        <div class="step-row-item">
+          <div class="row align-items-center">
+            <div class="col-12 col-md-2 mb-2 mb-md-0">
+              <span class="step-number">01 / PAIR</span>
+            </div>
+            <div class="col-12 col-md-4 mb-2 mb-md-0">
+              <h3 class="step-title mb-0">Scan your QR code once</h3>
+            </div>
+            <div class="col-12 col-md-6">
+              <p class="text-muted mb-0 small">Link your existing WhatsApp or WhatsApp Business phone just like WhatsApp Web. Session credentials are encrypted into your database so the daemon reconnects automatically across restarts.</p>
+            </div>
           </div>
         </div>
-        <div class="col-12 col-md-4">
-          <div class="step-card text-center p-4">
-            <div class="step-badge mb-3">2</div>
-            <h4 class="step-title h5 fw-bold mb-2">Configure Rules &amp; Triggers</h4>
-            <p class="text-muted small mb-0">Pick forwarding rules, link Google Sheets, or point to local Tally. Set instant delays or time-based schedules.</p>
+
+        <div class="step-row-item">
+          <div class="row align-items-center">
+            <div class="col-12 col-md-2 mb-2 mb-md-0">
+              <span class="step-number">02 / MAP</span>
+            </div>
+            <div class="col-12 col-md-4 mb-2 mb-md-0">
+              <h3 class="step-title mb-0">Select your triggers</h3>
+            </div>
+            <div class="col-12 col-md-6">
+              <p class="text-muted mb-0 small">Choose where your messages come from: inbound document chats, a shared Google Sheet spreadsheet, or keyword requests like "ledger" from clients for Tally ERP.</p>
+            </div>
           </div>
         </div>
-        <div class="col-12 col-md-4">
-          <div class="step-card text-center p-4">
-            <div class="step-badge mb-3">3</div>
-            <h4 class="step-title h5 fw-bold mb-2">Autonomous 24/7 Execution</h4>
-            <p class="text-muted small mb-0">The daemon runs continuously in the background, listening for triggers, generating PDFs, and sending dispatches.</p>
+
+        <div class="step-row-item">
+          <div class="row align-items-center">
+            <div class="col-12 col-md-2 mb-2 mb-md-0">
+              <span class="step-number">03 / RUN</span>
+            </div>
+            <div class="col-12 col-md-4 mb-2 mb-md-0">
+              <h3 class="step-title mb-0">Let the daemon dispatch</h3>
+            </div>
+            <div class="col-12 col-md-6">
+              <p class="text-muted mb-0 small">The background process listens continuously, renders document previews, queries ERP data when requested, and dispatches messages at natural pacing without manual intervention.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -359,88 +375,92 @@
   </section>
 
   <!-- =============================================================== -->
-  <!-- 6. PRICING & SUBSCRIPTION TIERS -->
+  <!-- 6. PRICING & TIERS (CALM, EDITORIAL, BALANCED) -->
   <!-- =============================================================== -->
-  <section class="section-padding" id="pricing">
+  <section class="section-padding-spacious" id="pricing">
     <div class="container-xl">
-      <div class="text-center section-header mb-5">
-        <span class="eyebrow-pill mb-2"><i class="bi bi-tag-fill"></i> TRANSPARENT PRICING</span>
-        <h2 class="section-heading">Simple Plans for Teams of Any Size</h2>
-        <p class="section-subheading">Start free with our 7-day trial. Upgrade or cancel anytime with zero lock-in.</p>
+      <div class="row mb-5">
+        <div class="col-12 col-lg-6">
+          <span class="eyebrow-pill mb-2">Pricing</span>
+          <h2 class="section-heading">Straightforward pricing. No surprise conversation fees.</h2>
+        </div>
+        <div class="col-12 col-lg-6 d-flex align-items-end">
+          <p class="section-subheading mb-0">All plans include the full daemon engine, Google Sheets integration, and API access. Upgrade or cancel anytime.</p>
+        </div>
       </div>
 
-      <div class="row g-4 justify-content-center">
+      <div class="row g-4">
         <!-- 1. Free Trial Plan -->
         <div class="col-12 col-md-6 col-lg-3">
           <div class="pricing-card h-100">
-            <div class="pricing-header">
-              <span class="plan-name">Free Trial</span>
+            <div>
+              <span class="plan-name">Trial</span>
               <div class="plan-price">&#8377;0 <span class="period">/ 7 days</span></div>
-              <p class="plan-summary">Perfect for testing all automation features before buying.</p>
+              <p class="plan-summary">Evaluate all features with full daemon and automation access.</p>
+              <ul class="plan-features">
+                <li><i class="bi bi-check2"></i> 15 messages / day</li>
+                <li><i class="bi bi-check2"></i> 1 automation rule</li>
+                <li><i class="bi bi-check2"></i> Standard QR pairing</li>
+                <li><i class="bi bi-check2"></i> REST API access</li>
+              </ul>
             </div>
-            <ul class="plan-features">
-              <li><i class="bi bi-check-circle-fill text-success"></i> 15 Messages per Day</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> 1 Active Automation Rule</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Standard QR Pairing</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Webhook / API Access</li>
-            </ul>
-            <a href="login.html?tab=signup" class="btn btn-outline-secondary w-100 py-2 rounded-pill fw-bold">Get Started Free</a>
+            <a href="login.html?tab=signup" class="btn btn-outline-clean w-100 text-center">Start 7-day trial</a>
           </div>
         </div>
 
         <!-- 2. Starter Plan -->
         <div class="col-12 col-md-6 col-lg-3">
           <div class="pricing-card h-100">
-            <div class="pricing-header">
-              <span class="plan-name">Starter Plan</span>
+            <div>
+              <span class="plan-name">Starter</span>
               <div class="plan-price">&#8377;499 <span class="period">/ month</span></div>
-              <p class="plan-summary">For solo professionals, retail stores, and small businesses.</p>
+              <p class="plan-summary">For solo operators and retail stores managing order alerts.</p>
+              <ul class="plan-features">
+                <li><i class="bi bi-check2"></i> 500 messages / month</li>
+                <li><i class="bi bi-check2"></i> 3 active automation rules</li>
+                <li><i class="bi bi-check2"></i> Google Sheets live sync</li>
+                <li><i class="bi bi-check2"></i> Email support</li>
+              </ul>
             </div>
-            <ul class="plan-features">
-              <li><i class="bi bi-check-circle-fill text-success"></i> 500 Messages per Month</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> 3 Automation Rules</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Google Sheets Live Sync</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Standard Support</li>
-            </ul>
-            <a href="login.html?tab=signup" class="btn btn-primary w-100 py-2 rounded-pill fw-bold">Upgrade to Starter</a>
+            <a href="login.html?tab=signup" class="btn btn-outline-clean w-100 text-center">Select Starter</a>
           </div>
         </div>
 
         <!-- 3. Professional Plan (POPULAR) -->
         <div class="col-12 col-md-6 col-lg-3">
           <div class="pricing-card popular h-100">
-            <div class="popular-ribbon">MOST POPULAR</div>
-            <div class="pricing-header">
+            <div class="popular-ribbon">RECOMMENDED</div>
+            <div>
               <span class="plan-name">Professional</span>
               <div class="plan-price">&#8377;1,499 <span class="period">/ month</span></div>
-              <p class="plan-summary">High volume automation for growing agencies &amp; businesses.</p>
+              <p class="plan-summary">For accounting firms and growing teams handling client ledgers.</p>
+              <ul class="plan-features">
+                <li><i class="bi bi-check2"></i> 2,500 messages / month</li>
+                <li><i class="bi bi-check2"></i> 10 automation rules</li>
+                <li><i class="bi bi-check2"></i> Tally ERP ledger bot</li>
+                <li><i class="bi bi-check2"></i> Priority dispatch queue</li>
+                <li><i class="bi bi-check2"></i> UPI QR payment support</li>
+              </ul>
             </div>
-            <ul class="plan-features">
-              <li><i class="bi bi-check-circle-fill text-success"></i> 2,500 Messages per Month</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> 10 Automation Rules</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Tally ERP Statement Bot</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Priority Dispatch Queue</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Instant UPI QR Activation</li>
-            </ul>
-            <a href="login.html?tab=signup" class="btn btn-success w-100 py-2 rounded-pill fw-bold shadow-sm">Choose Professional</a>
+            <a href="login.html?tab=signup" class="btn btn-cta-primary w-100 text-center">Select Professional</a>
           </div>
         </div>
 
         <!-- 4. Enterprise Plan -->
         <div class="col-12 col-md-6 col-lg-3">
           <div class="pricing-card h-100">
-            <div class="pricing-header">
-              <span class="plan-name">Enterprise VIP</span>
+            <div>
+              <span class="plan-name">High-Volume</span>
               <div class="plan-price">&#8377;3,999 <span class="period">/ month</span></div>
-              <p class="plan-summary">Unlimited scale, dedicated multi-tenant resources, and SLA.</p>
+              <p class="plan-summary">For high-throughput businesses needing dedicated resources.</p>
+              <ul class="plan-features">
+                <li><i class="bi bi-check2"></i> Unlimited messages</li>
+                <li><i class="bi bi-check2"></i> Unlimited rules</li>
+                <li><i class="bi bi-check2"></i> Dedicated process instance</li>
+                <li><i class="bi bi-check2"></i> Direct priority support</li>
+              </ul>
             </div>
-            <ul class="plan-features">
-              <li><i class="bi bi-check-circle-fill text-success"></i> Unlimited Messages</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Unlimited Automation Rules</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> Dedicated Port &amp; Process</li>
-              <li><i class="bi bi-check-circle-fill text-success"></i> 24/7 Dedicated WhatsApp Rep</li>
-            </ul>
-            <a href="login.html?tab=signup" class="btn btn-outline-clean w-100 py-2 rounded-pill fw-bold">Contact Enterprise</a>
+            <a href="login.html?tab=signup" class="btn btn-outline-clean w-100 text-center">Contact team</a>
           </div>
         </div>
       </div>
@@ -521,19 +541,19 @@
   <!-- =============================================================== -->
   <!-- 8. FINAL CALL TO ACTION -->
   <!-- =============================================================== -->
-  <section class="final-cta-section text-center py-5">
+  <section class="final-cta-section text-center">
     <div class="container-xl">
       <div class="cta-inner-card p-5">
-        <h2 class="h1 fw-bold text-white mb-3">Ready to Supercharge Your WhatsApp?</h2>
-        <p class="text-white-50 mx-auto mb-4" style="max-width: 600px;">
-          Join hundreds of companies automating their client notifications, invoices, and campaigns with Cortex AutoBot today.
+        <h2 class="h2 fw-bold mb-3">Set up your first automation today.</h2>
+        <p class="mx-auto mb-4" style="max-width: 520px; font-size: 0.98rem;">
+          Pair your phone in 5 seconds. Connect your invoice folder or order spreadsheet, and watch dispatches run reliably in the background.
         </p>
         <div class="d-flex flex-wrap justify-content-center gap-3">
-          <a href="login.html?tab=signup" class="btn btn-light btn-lg px-4 py-3 fw-bold rounded-pill text-primary shadow">
-            <i class="bi bi-gift-fill text-warning me-2"></i> Start 7-Day Free Trial
+          <a href="login.html?tab=signup" class="btn btn-light px-4 py-2">
+            Start 7-day free trial
           </a>
-          <a href="login.html" class="btn btn-outline-light btn-lg px-4 py-3 fw-bold rounded-pill">
-            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Dashboard
+          <a href="login.html" class="btn btn-outline-light px-4 py-2">
+            Sign in to existing account
           </a>
         </div>
       </div>
@@ -543,17 +563,17 @@
   <!-- =============================================================== -->
   <!-- 9. FOOTER -->
   <!-- =============================================================== -->
-  <footer class="landing-footer py-4 border-top">
+  <footer class="landing-footer py-4">
     <div class="container-xl d-flex flex-wrap align-items-center justify-content-between gap-3 text-muted small">
       <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-whatsapp text-success fs-5"></i>
-        <span>&copy; 2026 Cortex WA AutoBot. Multi-Tenant WhatsApp Automation Engine.</span>
+        <i class="bi bi-whatsapp"></i>
+        <span>&copy; 2026 Cortex AutoBot. Independent WhatsApp socket engine.</span>
       </div>
       <div class="d-flex align-items-center gap-3">
-        <a href="#features" class="text-muted text-decoration-none">Features</a>
+        <a href="#features" class="text-muted text-decoration-none">Capabilities</a>
         <a href="#pricing" class="text-muted text-decoration-none">Pricing</a>
+        <a href="#faq" class="text-muted text-decoration-none">FAQ</a>
         <a href="login.html" class="text-muted text-decoration-none">Sign In</a>
-        <a href="login.html?tab=signup" class="text-muted text-decoration-none">Sign Up</a>
       </div>
     </div>
   </footer>
@@ -561,7 +581,7 @@
   <!-- Scripts -->
   <script src="assets/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Interactive Particles and Terminal Simulator Script -->
+  <!-- Interactive Terminal Simulator Script -->
   <script>
     // Theme Toggle
     const themeToggleBtn = document.getElementById('landingThemeToggle');
@@ -576,7 +596,7 @@
 
     function updateThemeIcon(theme) {
       if (themeIcon) {
-        themeIcon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars';
+        themeIcon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
       }
     }
 
@@ -592,76 +612,25 @@
     initTheme();
 
     // Canvas Particle Animation
+    // Subtle, calm architectural grid background (minimal, non-distracting)
     const canvas = document.getElementById('hero-particles');
     if (canvas) {
       const ctx = canvas.getContext('2d');
-      let particles = [];
-      let width, height;
-
-      function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-      }
-      window.addEventListener('resize', resize);
-      resize();
-
-      class Particle {
-        constructor() {
-          this.reset();
-        }
-        reset() {
-          this.x = Math.random() * width;
-          this.y = Math.random() * height;
-          this.radius = Math.random() * 2 + 0.8;
-          this.vx = (Math.random() - 0.5) * 0.4;
-          this.vy = (Math.random() - 0.5) * 0.4;
-          this.alpha = Math.random() * 0.5 + 0.15;
-        }
-        update() {
-          this.x += this.vx;
-          this.y += this.vy;
-          if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
-            this.reset();
-          }
-        }
-        draw() {
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(37, 211, 102, ${this.alpha})`;
-          ctx.fill();
-        }
-      }
-
-      const count = Math.min(width < 768 ? 25 : 55, 60);
-      for (let i = 0; i < count; i++) {
-        particles.push(new Particle());
-      }
-
-      function animate() {
+      function drawCalmGrid() {
+        const width = canvas.width = window.innerWidth;
+        const height = canvas.height = window.innerHeight;
         ctx.clearRect(0, 0, width, height);
 
-        // Draw connections
-        for (let i = 0; i < particles.length; i++) {
-          particles[i].update();
-          particles[i].draw();
-
-          for (let j = i + 1; j < particles.length; j++) {
-            const dx = particles[i].x - particles[j].x;
-            const dy = particles[i].y - particles[j].y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 100) {
-              ctx.beginPath();
-              ctx.moveTo(particles[i].x, particles[i].y);
-              ctx.lineTo(particles[j].x, particles[j].y);
-              ctx.strokeStyle = `rgba(37, 99, 235, ${0.12 * (1 - dist / 100)})`;
-              ctx.lineWidth = 0.7;
-              ctx.stroke();
-            }
+        const spacing = 36;
+        ctx.fillStyle = 'rgba(120, 113, 108, 0.12)';
+        for (let x = 18; x < width; x += spacing) {
+          for (let y = 18; y < height; y += spacing) {
+            ctx.fillRect(x, y, 1, 1);
           }
         }
-        requestAnimationFrame(animate);
       }
-      animate();
+      window.addEventListener('resize', drawCalmGrid);
+      drawCalmGrid();
     }
 
     // Terminal Auto-Type Live Messages Simulator
@@ -846,18 +815,18 @@
               <div class="overlay-brand mb-2">
                 <span class="brand-icon-wa"><i class="bi bi-whatsapp"></i></span>
               </div>
-              <h1 class="text-white fw-bold">Welcome Back!</h1>
-              <p class="text-white text-opacity-90">To stay synced with your WhatsApp automation bot, please sign in with your credentials.</p>
-              <button class="ghost-btn" id="signIn">Sign In</button>
+              <h2 class="h4 fw-bold mb-1">Already registered?</h2>
+              <p class="mb-3">Sign back into your dashboard to manage your phone pairing, dispatches, and spreadsheets.</p>
+              <button class="ghost-btn" id="signIn">Sign in</button>
             </div>
 
             <div class="overlay-panel overlay-right">
               <div class="overlay-brand mb-2">
                 <span class="brand-icon-wa"><i class="bi bi-whatsapp"></i></span>
               </div>
-              <h1 class="text-white fw-bold">Hello, Friend!</h1>
-              <p class="text-white text-opacity-90">Enter your personal details, start your 7-day free trial, and automate WhatsApp today.</p>
-              <button class="ghost-btn" id="signUp">Sign Up</button>
+              <h2 class="h4 fw-bold mb-1">New here?</h2>
+              <p class="mb-3">Start your 7-day trial in 30 seconds. Connect your phone number and run automated message rules.</p>
+              <button class="ghost-btn" id="signUp">Create account</button>
             </div>
           </div>
         </div>
