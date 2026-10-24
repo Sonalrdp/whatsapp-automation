@@ -3845,5 +3845,115 @@ html[data-theme="dark"] .input-field-wrap input:focus {
   }
 }
 
+/* ==========================================================================
+   Collapsed / Mini Sidebar Styles (body.sidebar-mini)
+   ========================================================================== */
+@media (min-width: 992px) {
+  body.sidebar-mini .admin-sidebar {
+    width: 80px !important;
+    overflow-x: hidden !important;
+  }
+
+  body.sidebar-mini .admin-main {
+    margin-left: 80px !important;
+  }
+
+  /* Center the brand icon and hide title/subtitle */
+  body.sidebar-mini .sidebar-header {
+    padding: 1.15rem 0.5rem !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  body.sidebar-mini .brand-mark {
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 0 !important;
+  }
+
+  body.sidebar-mini .brand-copy {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide section group headers and chevron in mini mode */
+  body.sidebar-mini .nav-group-header {
+    display: none !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide navigation item labels */
+  body.sidebar-mini .sidebar-nav .nav-link .nav-text {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Center icon and tighten links */
+  body.sidebar-mini .sidebar-nav {
+    padding: 0.75rem 0.45rem !important;
+    gap: 0.35rem !important;
+    align-items: center !important;
+  }
+
+  body.sidebar-mini .sidebar-nav .nav-link {
+    width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 0 !important;
+    margin: 0 auto 0.25rem auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    border-left: none !important;
+    position: relative !important;
+  }
+
+  body.sidebar-mini .sidebar-nav .nav-link .nav-icon {
+    margin: 0 !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.15rem !important;
+  }
+
+  body.sidebar-mini .sidebar-nav .nav-link.active {
+    border-left: none !important;
+    border-radius: 12px !important;
+    background: rgba(37, 99, 235, 0.18) !important;
+  }
+
+  /* Footer mini representation */
+  body.sidebar-mini .sidebar-footer {
+    padding: 1rem 0 !important;
+    margin: auto 0 0 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  body.sidebar-mini .sidebar-footer .sidebar-footer-text {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body.sidebar-mini .sidebar-footer .status-dot {
+    margin: 0 !important;
+  }
+}
+
+
 
 
