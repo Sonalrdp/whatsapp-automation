@@ -1873,15 +1873,16 @@ html[data-theme="dark"] .nav-group-header {
 }
 
 .sidebar-nav .nav-link .nav-icon {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   background: rgba(255, 255, 255, 0.06) !important;
-  font-size: 0.9rem !important;
+  font-size: 0.95rem !important;
+  flex-shrink: 0 !important;
 }
 
 .sidebar-nav .nav-link.active {
@@ -3858,24 +3859,38 @@ html[data-theme="dark"] .input-field-wrap input:focus {
     margin-left: 80px !important;
   }
 
-  /* Center the brand icon and hide title/subtitle */
+  /* Center the brand icon perfectly in mini mode */
   body.sidebar-mini .sidebar-header {
-    padding: 1.15rem 0.5rem !important;
+    padding: 1.15rem 0 !important;
+    margin: 0 !important;
     display: flex !important;
     justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
   }
 
   body.sidebar-mini .brand-mark {
+    display: flex !important;
     justify-content: center !important;
+    align-items: center !important;
     width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
     gap: 0 !important;
+  }
+
+  body.sidebar-mini .brand-icon-wa {
+    margin: 0 auto !important;
   }
 
   body.sidebar-mini .brand-copy {
     display: none !important;
     opacity: 0 !important;
     width: 0 !important;
+    height: 0 !important;
     overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   /* Hide section group headers and chevron in mini mode */
@@ -3892,54 +3907,78 @@ html[data-theme="dark"] .input-field-wrap input:focus {
     display: none !important;
     opacity: 0 !important;
     width: 0 !important;
+    height: 0 !important;
     overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* Center icon and tighten links */
+  /* Center icon and tighten links in mini mode */
   body.sidebar-mini .sidebar-nav {
-    padding: 0.75rem 0.45rem !important;
-    gap: 0.35rem !important;
+    padding: 0.75rem 0 !important;
+    gap: 0.4rem !important;
+    display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
+    justify-content: flex-start !important;
   }
 
   body.sidebar-mini .sidebar-nav .nav-link {
     width: 48px !important;
     height: 48px !important;
     min-height: 48px !important;
+    max-width: 48px !important;
     padding: 0 !important;
-    margin: 0 auto 0.25rem auto !important;
+    margin: 0 auto !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     border-radius: 12px !important;
     border-left: none !important;
     position: relative !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
   }
 
   body.sidebar-mini .sidebar-nav .nav-link .nav-icon {
-    margin: 0 !important;
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
+    margin: 0 auto !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-size: 1.15rem !important;
+    font-size: 1.2rem !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+  }
+
+  body.sidebar-mini .sidebar-nav .nav-link:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    transform: none !important;
   }
 
   body.sidebar-mini .sidebar-nav .nav-link.active {
     border-left: none !important;
     border-radius: 12px !important;
     background: rgba(37, 99, 235, 0.18) !important;
+    color: #3b82f6 !important;
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3) !important;
   }
 
-  /* Footer mini representation */
+  body.sidebar-mini .sidebar-nav .nav-link.active .nav-icon {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+  }
+
+  /* Centered footer indicator in mini mode */
   body.sidebar-mini .sidebar-footer {
     padding: 1rem 0 !important;
     margin: auto 0 0 0 !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
+    width: 100% !important;
   }
 
   body.sidebar-mini .sidebar-footer .sidebar-footer-text {
@@ -3950,7 +3989,7 @@ html[data-theme="dark"] .input-field-wrap input:focus {
   }
 
   body.sidebar-mini .sidebar-footer .status-dot {
-    margin: 0 !important;
+    margin: 0 auto !important;
   }
 }
 
