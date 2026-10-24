@@ -70,41 +70,142 @@
       </div>
 
       <nav class="sidebar-nav" id="sidebar-nav">
+        <!-- MAIN -->
         <a class="nav-link active" href="#dashboard" data-sheet="dashboard">
           <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
-          <span class="nav-text">My Dashboard</span>
+          <span class="nav-text">Dashboard</span>
         </a>
         <a class="nav-link" href="#whatsapp-link" data-sheet="whatsapp-link">
           <span class="nav-icon"><i class="bi bi-qr-code-scan" aria-hidden="true"></i></span>
-          <span class="nav-text">My WhatsApp Link</span>
+          <span class="nav-text">Sessions / QR</span>
         </a>
+
+        <!-- MESSAGING -->
+        <div class="nav-group-header">
+          <span>Messaging</span>
+          <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+        </div>
+        <a class="nav-link" href="#chat-manager" data-sheet="chat-manager">
+          <span class="nav-icon"><i class="bi bi-chat-dots" aria-hidden="true"></i></span>
+          <span class="nav-text">Chat</span>
+        </a>
+        <a class="nav-link" href="#broadcast-manager" data-sheet="broadcast-manager">
+          <span class="nav-icon"><i class="bi bi-lightning-charge-fill text-warning" aria-hidden="true"></i></span>
+          <span class="nav-text">Broadcast</span>
+        </a>
+        <a class="nav-link" href="#sticker-maker" data-sheet="sticker-maker">
+          <span class="nav-icon"><i class="bi bi-stars text-info" aria-hidden="true"></i></span>
+          <span class="nav-text">Sticker Maker</span>
+        </a>
+
+        <!-- CONTACTS -->
+        <div class="nav-group-header">
+          <span>Contacts</span>
+          <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+        </div>
+        <a class="nav-link" href="#contacts-list" data-sheet="contacts-list">
+          <span class="nav-icon"><i class="bi bi-person-lines-fill" aria-hidden="true"></i></span>
+          <span class="nav-text">Contacts</span>
+        </a>
+        <a class="nav-link" href="#groups-manager" data-sheet="groups-manager">
+          <span class="nav-icon"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></span>
+          <span class="nav-text">Groups</span>
+        </a>
+        <a class="nav-link" href="#labels-manager" data-sheet="labels-manager">
+          <span class="nav-icon"><i class="bi bi-bookmark-fill" aria-hidden="true"></i></span>
+          <span class="nav-text">Labels</span>
+        </a>
+
+        <!-- AUTOMATION -->
+        <div class="nav-group-header">
+          <span>Automation</span>
+          <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+        </div>
         <a class="nav-link" href="#bot-configurations" data-sheet="bot-configurations">
-          <span class="nav-icon"><i class="bi bi-sliders" aria-hidden="true"></i></span>
-          <span class="nav-text">Bot Configurations</span>
-        </a>
-        <a class="nav-link" href="#subscription-plans" data-sheet="subscription-plans">
-          <span class="nav-icon"><i class="bi bi-credit-card-2-front-fill text-warning" aria-hidden="true"></i></span>
-          <span class="nav-text">Plans &amp; Subscription</span>
-        </a>
-        <a class="nav-link" href="#api-endpoints" data-sheet="api-endpoints">
-          <span class="nav-icon"><i class="bi bi-code-slash text-info" aria-hidden="true"></i></span>
-          <span class="nav-text">API &amp; Access Token</span>
+          <span class="nav-icon"><i class="bi bi-cpu" aria-hidden="true"></i></span>
+          <span class="nav-text">Bot Settings</span>
         </a>
         <a class="nav-link" href="#trigger-chats" data-sheet="trigger-chats">
-          <span class="nav-icon"><i class="bi bi-chat-left-dots-fill text-success" aria-hidden="true"></i></span>
-          <span class="nav-text">Trigger Chats</span>
+          <span class="nav-icon"><i class="bi bi-chat-left-text-fill text-success" aria-hidden="true"></i></span>
+          <span class="nav-text">Auto Reply</span>
+        </a>
+        <a class="nav-link" href="#bot-profile" data-sheet="bot-profile">
+          <span class="nav-icon"><i class="bi bi-patch-check-fill text-primary" aria-hidden="true"></i></span>
+          <span class="nav-text">Bot Profile</span>
+        </a>
+        <a class="nav-link" href="#scheduler-tasks" data-sheet="scheduler-tasks">
+          <span class="nav-icon"><i class="bi bi-stopwatch-fill" aria-hidden="true"></i></span>
+          <span class="nav-text">Scheduler</span>
+        </a>
+        <a class="nav-link" href="#auto-broadcast" data-sheet="auto-broadcast">
+          <span class="nav-icon"><i class="bi bi-broadcast-pin" aria-hidden="true"></i></span>
+          <span class="nav-text">Auto Broadcast</span>
+        </a>
+        <a class="nav-link" href="#jpm-swgc" data-sheet="jpm-swgc">
+          <span class="nav-icon"><i class="bi bi-bezier2" aria-hidden="true"></i></span>
+          <span class="nav-text">JPM SWGC</span>
+        </a>
+        <a class="nav-link" href="#webhooks-manager" data-sheet="webhooks-manager">
+          <span class="nav-icon"><i class="bi bi-plugin" aria-hidden="true"></i></span>
+          <span class="nav-text">Webhooks &amp; API</span>
+        </a>
+
+        <!-- DEVELOPER -->
+        <div class="nav-group-header">
+          <span>Developer</span>
+          <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+        </div>
+        <a class="nav-link" href="#mcp-claude" data-sheet="mcp-claude">
+          <span class="nav-icon"><i class="bi bi-robot text-purple" aria-hidden="true"></i></span>
+          <span class="nav-text">MCP &amp; Claude AI</span>
+        </a>
+        <a class="nav-link" href="#api-endpoints" data-sheet="api-endpoints">
+          <span class="nav-icon"><i class="bi bi-book-half text-info" aria-hidden="true"></i></span>
+          <span class="nav-text">API Docs</span>
+        </a>
+        <a class="nav-link" href="/docs" target="_blank" rel="noopener">
+          <span class="nav-icon"><i class="bi bi-code-square" aria-hidden="true"></i></span>
+          <span class="nav-text">Swagger UI <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.68rem;"></i></span>
+        </a>
+
+        <!-- ACCOUNT -->
+        <div class="nav-group-header">
+          <span>Account</span>
+          <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+        </div>
+        <a class="nav-link" href="#subscription-plans" data-sheet="subscription-plans">
+          <span class="nav-icon"><i class="bi bi-credit-card-2-front-fill text-warning" aria-hidden="true"></i></span>
+          <span class="nav-text">Billing &amp; Plan</span>
+        </a>
+
+        <!-- ADMINISTRATION -->
+        <div class="nav-group-header">
+          <span>Administration</span>
+          <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+        </div>
+        <a class="nav-link" href="#media-manager" data-sheet="media-manager">
+          <span class="nav-icon"><i class="bi bi-folder-fill" aria-hidden="true"></i></span>
+          <span class="nav-text">Media Manager</span>
         </a>
         <a class="nav-link" href="#live-logs" data-sheet="live-logs">
-          <span class="nav-icon"><i class="bi bi-terminal" aria-hidden="true"></i></span>
-          <span class="nav-text">My Live Logs</span>
+          <span class="nav-icon"><i class="bi bi-key-fill text-warning" aria-hidden="true"></i></span>
+          <span class="nav-text">Session Access &amp; Logs</span>
         </a>
         <a class="nav-link d-none" id="admin-users-nav" href="#user-management" data-sheet="user-management">
           <span class="nav-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
-          <span class="nav-text">User Management</span>
+          <span class="nav-text">Users</span>
         </a>
         <a class="nav-link d-none" id="admin-database-nav" href="#database-overview" data-sheet="database-overview">
           <span class="nav-icon"><i class="bi bi-database-fill-gear" aria-hidden="true"></i></span>
-          <span class="nav-text">Database Center</span>
+          <span class="nav-text">Settings</span>
+        </a>
+        <a class="nav-link" href="#system-monitor" data-sheet="system-monitor">
+          <span class="nav-icon"><i class="bi bi-activity text-teal" aria-hidden="true"></i></span>
+          <span class="nav-text">System Monitor</span>
+        </a>
+        <a class="nav-link" href="#notifications-center" data-sheet="notifications-center">
+          <span class="nav-icon"><i class="bi bi-bell-fill" aria-hidden="true"></i></span>
+          <span class="nav-text">Notifications</span>
         </a>
       </nav>
 
@@ -2504,6 +2605,568 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
             </div>
           </section>
 
+          <!-- =============================================================== -->
+          <!-- SHEET: CHAT MANAGER (Full WhatsApp Web Interface) -->
+          <!-- =============================================================== -->
+          <section id="sheet-chat-manager" class="dashboard-sheet d-none">
+            <div class="sheet-header mb-3">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(37, 99, 235, 0.12); color: #2563eb;"><i class="bi bi-chat-dots-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">MESSAGING • LIVE INBOX</p>
+                  <h1 class="h3 mb-1">WhatsApp Live Chat</h1>
+                  <p class="text-muted mb-0">Direct interactive live chat stream through your connected WhatsApp session.</p>
+                </div>
+              </div>
+            </div>
+            <div class="card border-0 shadow-sm mb-4" style="height: 720px; max-height: calc(100vh - 220px); border-radius: 12px; overflow: hidden; background: #fff;">
+              <div class="row g-0 h-100">
+                <!-- Left Sidebar: Chat List -->
+                <div class="col-12 col-md-4 col-xl-3 border-end d-flex flex-column h-100" style="background: #fafbfc;">
+                  <!-- Top Header -->
+                  <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white">
+                    <h5 class="fw-bold mb-0 text-dark">Chats</h5>
+                    <div class="d-flex align-items-center gap-2">
+                      <button class="btn btn-sm btn-light border rounded-circle" id="btn-refresh-chat-list" title="Refresh Chats">
+                        <i class="bi bi-arrow-clockwise"></i>
+                      </button>
+                      <button class="btn btn-sm btn-light border rounded-circle" id="btn-start-new-chat" title="New Chat">
+                        <i class="bi bi-chat-dots"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Search Bar -->
+                  <div class="p-2 border-bottom bg-white">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-light border-0 text-muted"><i class="bi bi-search"></i></span>
+                      <input type="text" class="form-control bg-light border-0" id="chat-search-filter" placeholder="Search chats...">
+                    </div>
+                  </div>
+
+                  <!-- Category Filters -->
+                  <div class="px-3 py-2 border-bottom bg-white d-flex align-items-center gap-2 overflow-auto" style="white-space: nowrap; min-height: 48px;">
+                    <button type="button" class="chat-filter-btn active" data-filter="all">All</button>
+                    <button type="button" class="chat-filter-btn" data-filter="personal"><i class="bi bi-person"></i>Personal</button>
+                    <button type="button" class="chat-filter-btn" data-filter="groups"><i class="bi bi-people"></i>Groups</button>
+                    <button type="button" class="chat-filter-btn" data-filter="channels"><i class="bi bi-broadcast"></i>Channels</button>
+                  </div>
+
+                  <!-- Chat Items Scrollable List -->
+                  <div class="flex-grow-1 overflow-auto p-0" id="chat-conversation-list" style="background: #ffffff;">
+                    <div class="text-center text-muted py-5">
+                      <span class="spinner-border spinner-border-sm me-2"></span>Loading chats from WhatsApp...
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Area: Modern Chat Window (Matching wa new) -->
+                <div class="col-12 col-md-8 col-xl-9 chat-window-wrapper">
+                  <!-- Active Chat Header (Hidden if no chat selected) -->
+                  <div id="chat-window-header" class="chat-active-header d-none align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold shadow-xs flex-shrink-0" id="chat-active-avatar" style="width: 38px; height: 38px; font-size: 0.95rem; background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                        WA
+                      </div>
+                      <div class="overflow-hidden">
+                        <h6 class="mb-0 fw-bold text-dark text-truncate" id="chat-active-name" style="font-size: 0.92rem;">Contact Name</h6>
+                        <small class="text-muted text-truncate d-block" id="chat-active-jid" style="font-size: 0.72rem;">919135779897@s.whatsapp.net</small>
+                      </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <button class="btn btn-sm btn-light border rounded-circle d-flex align-items-center justify-content-center" id="btn-close-active-chat" style="width: 32px; height: 32px;" title="Close chat"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                  </div>
+
+                  <!-- Message Bubbles Scroll Container -->
+                  <div id="chat-window-messages" class="chat-messages-container d-none">
+                    <!-- Message bubbles injected here -->
+                  </div>
+
+                  <!-- Message Input Bar (Hidden if no chat selected) -->
+                  <div id="chat-window-input-bar" class="chat-input-bar-modern d-none">
+                    <input type="text" class="form-control" id="chat-msg-input" placeholder="Type a message..." autocomplete="off">
+                    <button class="btn btn-primary chat-send-btn-modern" id="btn-chat-send-message">
+                      <i class="bi bi-send-fill"></i> Send
+                    </button>
+                  </div>
+
+                  <!-- Empty Placeholder (Shown when no chat selected) -->
+                  <div id="chat-empty-state" class="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-muted p-4">
+                    <div class="rounded-circle p-4 mb-3 d-flex align-items-center justify-content-center shadow-xs" style="width: 72px; height: 72px; background: rgba(37, 99, 235, 0.08); color: #2563eb;">
+                      <i class="bi bi-chat-quote-fill fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1" style="font-size: 1.05rem;">Select a chat to start messaging</h5>
+                    <p class="small text-muted mb-0">Choose from existing contacts or groups on the left to start live messaging.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: BROADCAST MANAGER -->
+          <!-- =============================================================== -->
+          <section id="sheet-broadcast-manager" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(234, 179, 8, 0.15); color: #eab308;"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">MESSAGING • BULK ENGINE</p>
+                  <h1 class="h3 mb-1">Broadcast / Blast</h1>
+                  <p class="text-muted mb-0">Send bulk WhatsApp messages to multiple recipients simultaneously with throttle delay control.</p>
+                </div>
+              </div>
+            </div>
+            <div class="row g-4 mt-1">
+              <div class="col-12 col-lg-6">
+                <div class="panel p-4 h-100">
+                  <h2 class="h6 fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-people-fill text-primary"></i> Target Phone Numbers (Recipients)
+                  </h2>
+                  <p class="small text-muted mb-2">Enter phone numbers separated by commas or each on a new line (with country code):</p>
+                  <textarea id="broadcast-recipients" class="form-control font-monospace" rows="8" placeholder="919876543210&#10;919123456789&#10;919988776655"></textarea>
+                  <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="small text-muted" id="broadcast-recipient-count">0 numbers identified</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-broadcast-clear">Clear</button>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="panel p-4 h-100">
+                  <h2 class="h6 fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-chat-text-fill text-success"></i> Message Content &amp; Safety Delay
+                  </h2>
+                  <div class="mb-3">
+                    <label class="form-label small fw-bold">Message</label>
+                    <textarea id="broadcast-message-text" class="form-control" rows="5" placeholder="Type your broadcast promotional or transactional update..."></textarea>
+                  </div>
+                  <div class="mb-4">
+                    <label class="form-label small fw-bold d-flex justify-content-between">
+                      <span>Anti-Ban Interval Delay (seconds)</span>
+                      <span class="badge text-bg-primary" id="broadcast-delay-val">2s</span>
+                    </label>
+                    <input type="range" class="form-range" id="broadcast-delay-range" min="1" max="10" step="1" value="2">
+                    <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                      <span>1s (Fast)</span>
+                      <span>5s (Recommended)</span>
+                      <span>10s (High Safety)</span>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-warning w-100 fw-bold py-2 shadow-sm d-inline-flex justify-content-center align-items-center gap-2" id="btn-start-broadcast">
+                    <i class="bi bi-lightning-charge-fill"></i> Start Broadcast Blast
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: STICKER MAKER -->
+          <!-- =============================================================== -->
+          <section id="sheet-sticker-maker" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">MESSAGING • CREATIVE MEDIA</p>
+                  <h1 class="h3 mb-1">Sticker Maker</h1>
+                  <p class="text-muted mb-0">Convert image files (PNG, JPG, WebP) directly into WhatsApp stickers and send to any contact.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3" style="max-width: 680px;">
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Target Contact Number</label>
+                <input type="text" class="form-control" id="sticker-target-phone" placeholder="e.g. 919135779897">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Choose Image File (JPG / PNG)</label>
+                <input type="file" class="form-control" id="sticker-file-input" accept="image/*">
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-6">
+                  <label class="form-label small fw-bold">Sticker Pack Name</label>
+                  <input type="text" class="form-control" id="sticker-pack-name" value="Cortex Sticker">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-bold">Sticker Author</label>
+                  <input type="text" class="form-control" id="sticker-author-name" value="AutoBot">
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center gap-2" id="btn-send-sticker">
+                <i class="bi bi-file-earmark-image"></i> Convert &amp; Send Sticker
+              </button>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: CONTACTS LIST -->
+          <!-- =============================================================== -->
+          <section id="sheet-contacts-list" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9;"><i class="bi bi-person-lines-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">CONTACTS • ADDRESS BOOK</p>
+                  <h1 class="h3 mb-1">WhatsApp Contacts</h1>
+                  <p class="text-muted mb-0">Browse contacts synced with your active WhatsApp session and automation records.</p>
+                </div>
+              </div>
+              <div>
+                <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" id="btn-refresh-contacts">
+                  <i class="bi bi-arrow-clockwise"></i> Refresh Contacts
+                </button>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <input type="text" class="form-control" id="contacts-search-input" placeholder="Search contacts by name or phone..." style="max-width: 320px;">
+                <span class="badge text-bg-light border" id="contacts-total-count">0 Contacts</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Name / Label</th>
+                      <th>Phone Number</th>
+                      <th>JID Identifier</th>
+                      <th class="text-end">Quick Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contacts-table-body">
+                    <tr>
+                      <td colspan="4" class="text-center text-muted py-4">Click "Refresh Contacts" to fetch contact directory from your active instance.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: GROUPS MANAGER -->
+          <!-- =============================================================== -->
+          <section id="sheet-groups-manager" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(16, 185, 129, 0.15); color: #10b981;"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">CONTACTS • GROUP MANAGEMENT</p>
+                  <h1 class="h3 mb-1">WhatsApp Groups</h1>
+                  <p class="text-muted mb-0">Manage groups participating in your WhatsApp session and trigger targeted group alerts.</p>
+                </div>
+              </div>
+              <div>
+                <button type="button" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" id="btn-refresh-groups">
+                  <i class="bi bi-arrow-clockwise"></i> Refresh Groups
+                </button>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Group Subject / Name</th>
+                      <th>Group JID</th>
+                      <th>Participants</th>
+                      <th class="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="groups-table-body">
+                    <tr>
+                      <td colspan="4" class="text-center text-muted py-4">Click "Refresh Groups" to list WhatsApp groups where your number is a participant.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: LABELS MANAGER -->
+          <!-- =============================================================== -->
+          <section id="sheet-labels-manager" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;"><i class="bi bi-bookmark-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">CONTACTS • SEGMENTATION</p>
+                  <h1 class="h3 mb-1">Contact Labels &amp; Tags</h1>
+                  <p class="text-muted mb-0">Segment contacts into VIP, Leads, Debtors, and Suppliers for tailored automation campaigns.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <div class="row g-3">
+                <div class="col-12 col-md-3">
+                  <div class="p-3 border rounded-3 bg-light text-center">
+                    <span class="badge text-bg-primary fs-6 mb-2">Customers</span>
+                    <p class="small text-muted mb-0">Direct customer queries &amp; orders</p>
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <div class="p-3 border rounded-3 bg-light text-center">
+                    <span class="badge text-bg-success fs-6 mb-2">Paid Clients</span>
+                    <p class="small text-muted mb-0">Active subscription holders</p>
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <div class="p-3 border rounded-3 bg-light text-center">
+                    <span class="badge text-bg-warning fs-6 mb-2">Tally Debtors</span>
+                    <p class="small text-muted mb-0">Overdue ledger accounts</p>
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <div class="p-3 border rounded-3 bg-light text-center">
+                    <span class="badge text-bg-info fs-6 mb-2">Leads</span>
+                    <p class="small text-muted mb-0">Inbound website inquiries</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: BOT PROFILE -->
+          <!-- =============================================================== -->
+          <section id="sheet-bot-profile" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(37, 99, 235, 0.15); color: #2563eb;"><i class="bi bi-patch-check-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">AUTOMATION • BOT IDENTITY</p>
+                  <h1 class="h3 mb-1">Bot Profile &amp; Bio</h1>
+                  <p class="text-muted mb-0">Configure your public WhatsApp Business presence, About Bio, and automated status signature.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3" style="max-width: 650px;">
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Bot Display Name</label>
+                <input type="text" class="form-control" id="bot-profile-name" value="Cortex AutoBot Service">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-bold">WhatsApp About / Bio Status</label>
+                <textarea class="form-control" id="bot-profile-bio" rows="3">🤖 24/7 Automated Assistant powered by Cortex AutoBot Engine.</textarea>
+              </div>
+              <button type="button" class="btn btn-primary" id="btn-save-bot-profile">Save Profile Settings</button>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: SCHEDULER TASKS -->
+          <!-- =============================================================== -->
+          <section id="sheet-scheduler-tasks" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;"><i class="bi bi-stopwatch-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">AUTOMATION • CRON DAEMON</p>
+                  <h1 class="h3 mb-1">Automated Scheduler</h1>
+                  <p class="text-muted mb-0">Scheduled daily reminders, Google Sheet automated row dispatchers, and Tally morning alerts.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <div class="alert alert-info d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle-fill fs-5"></i>
+                <div>Your scheduled cron tasks are executed seamlessly in the background according to your configured timetable in <strong>Bot Configurations</strong>.</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: AUTO BROADCAST -->
+          <!-- =============================================================== -->
+          <section id="sheet-auto-broadcast" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(99, 102, 241, 0.15); color: #6366f1;"><i class="bi bi-broadcast-pin" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">AUTOMATION • CAMPAIGN ENGINE</p>
+                  <h1 class="h3 mb-1">Auto Broadcast Campaigns</h1>
+                  <p class="text-muted mb-0">Set recurring automated promotional triggers that run at specified hours across customer cohorts.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <p class="text-muted">Campaign orchestrator configured. You can pair Google Spreadsheet templates or Tally customer ledgers directly.</p>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: JPM SWGC -->
+          <!-- =============================================================== -->
+          <section id="sheet-jpm-swgc" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(20, 184, 166, 0.15); color: #14b8a6;"><i class="bi bi-bezier2" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">AUTOMATION • WORKFLOW ENGINE</p>
+                  <h1 class="h3 mb-1">JPM SWGC Workflow Connector</h1>
+                  <p class="text-muted mb-0">Custom pipeline connectors for enterprise gateways and external ERP systems.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <p class="text-muted mb-0">Connect your custom endpoint webhooks and synchronized payment verification gateways.</p>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: WEBHOOKS & API -->
+          <!-- =============================================================== -->
+          <section id="sheet-webhooks-manager" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;"><i class="bi bi-plugin" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">DEVELOPER • WEBHOOKS</p>
+                  <h1 class="h3 mb-1">Webhooks &amp; Inbound Callbacks</h1>
+                  <p class="text-muted mb-0">Receive instant HTTP POST alerts on your own server when customers send messages or change state.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3" style="max-width: 680px;">
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Target Webhook URL</label>
+                <input type="url" class="form-control" id="webhook-target-url" placeholder="https://yourdomain.com/api/wa-webhook">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Events to Forward</label>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" checked id="ev-msg-received">
+                  <label class="form-check-label small" for="ev-msg-received">Incoming Messages (text, media, location)</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" checked id="ev-msg-status">
+                  <label class="form-check-label small" for="ev-msg-status">Message Delivery Receipts (sent, delivered, read)</label>
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary" id="btn-save-webhook">Save Webhook Configuration</button>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: MCP & CLAUDE AI -->
+          <!-- =============================================================== -->
+          <section id="sheet-mcp-claude" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(147, 51, 234, 0.15); color: #9333ea;"><i class="bi bi-robot" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">DEVELOPER • AI INTELLIGENCE</p>
+                  <h1 class="h3 mb-1">Model Context Protocol (MCP) &amp; Claude AI</h1>
+                  <p class="text-muted mb-0">Connect Claude and AI LLM agents to orchestrate and query your WhatsApp instance autonomously.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <div class="alert alert-light border">
+                <h6 class="fw-bold"><i class="bi bi-code-slash text-purple me-1"></i> Claude Desktop / Antigravity MCP Config</h6>
+                <p class="small text-muted mb-2">Add the following server configuration to your MCP config:</p>
+                <pre class="bg-dark text-white p-3 rounded-3 small"><code>{
+  "mcpServers": {
+    "whatsapp-bot": {
+      "command": "node",
+      "args": ["d:/Localhost/whatsapp/index.js"],
+      "env": {
+        "PORT": "3000"
+      }
+    }
+  }
+}</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: MEDIA MANAGER -->
+          <!-- =============================================================== -->
+          <section id="sheet-media-manager" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(79, 70, 229, 0.15); color: #4f46e5;"><i class="bi bi-folder-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">ADMINISTRATION • ASSET VAULT</p>
+                  <h1 class="h3 mb-1">Media Manager</h1>
+                  <p class="text-muted mb-0">Central repository of documents, PDFs, stickers, and images sent or received by your bot.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <p class="text-muted">Stored media attachments and PDF invoices generated for Tally customers are preserved with multi-tenant isolation.</p>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: SYSTEM MONITOR -->
+          <!-- =============================================================== -->
+          <section id="sheet-system-monitor" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(13, 148, 136, 0.15); color: #0d9488;"><i class="bi bi-activity" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">ADMINISTRATION • SERVER METRICS</p>
+                  <h1 class="h3 mb-1">System Monitor</h1>
+                  <p class="text-muted mb-0">Live hardware telemetry, Node.js process memory consumption, and active daemon sockets.</p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm" id="btn-refresh-sysmon">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Metrics
+              </button>
+            </div>
+            <div class="row g-3 mt-1">
+              <div class="col-12 col-sm-6 col-xl-3">
+                <div class="panel p-3 h-100">
+                  <div class="text-muted small fw-bold">UPTIME</div>
+                  <div class="fs-4 fw-bold mt-1" id="sys-uptime-val">-</div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-xl-3">
+                <div class="panel p-3 h-100">
+                  <div class="text-muted small fw-bold">HEAP MEMORY USED</div>
+                  <div class="fs-4 fw-bold mt-1 text-primary" id="sys-heap-val">-</div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-xl-3">
+                <div class="panel p-3 h-100">
+                  <div class="text-muted small fw-bold">RSS ALLOCATED</div>
+                  <div class="fs-4 fw-bold mt-1" id="sys-rss-val">-</div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-xl-3">
+                <div class="panel p-3 h-100">
+                  <div class="text-muted small fw-bold">ACTIVE DAEMON SESSIONS</div>
+                  <div class="fs-4 fw-bold mt-1 text-success" id="sys-sessions-val">-</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: NOTIFICATIONS CENTER -->
+          <!-- =============================================================== -->
+          <section id="sheet-notifications-center" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(225, 29, 72, 0.15); color: #e11d48;"><i class="bi bi-bell-fill" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">ADMINISTRATION • NOTIFICATION FEED</p>
+                  <h1 class="h3 mb-1">Notifications &amp; Activity Log</h1>
+                  <p class="text-muted mb-0">Real-time alerts, error notifications, delivery confirmations, and connection state changes.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-4 mt-3">
+              <div id="notifications-feed-list" class="list-group list-group-flush">
+                <div class="text-muted text-center py-4">Loading notifications...</div>
+              </div>
+            </div>
+          </section>
+
         </div>
       </main>
 
@@ -2855,9 +3518,9 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                 <span class="input-group-text font-monospace bg-light fw-bold text-success">
                   <i class="bi bi-whatsapp me-1"></i> +
                 </span>
-                <input type="text" class="form-control font-monospace fs-5" id="modal-input-target-number" placeholder="919135779897" value="">
+                <input type="text" class="form-control font-monospace fs-5" id="modal-input-target-number" placeholder="919876543210" value="">
               </div>
-              <small class="text-muted" style="font-size: 0.72rem;">Enter country code + mobile number (e.g. 919135779897, without the + sign)</small>
+              <small class="text-muted" style="font-size: 0.72rem;">Enter country code + mobile number (e.g. 919876543210, without the + sign)</small>
             </div>
 
             <!-- Real-Time Alert Preview Card (Image 3 exact replica) -->
@@ -3292,7 +3955,32 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
     // -----------------------------------------------------------------------
     // Multi-Sheet Switching Navigation Controller
     // -----------------------------------------------------------------------
-    const validSheets = ['dashboard', 'whatsapp-link', 'bot-configurations', 'subscription-plans', 'api-endpoints', 'trigger-chats', 'live-logs', 'user-management', 'database-overview'];
+    const validSheets = [
+      'dashboard', 
+      'whatsapp-link', 
+      'bot-configurations', 
+      'subscription-plans', 
+      'api-endpoints', 
+      'trigger-chats', 
+      'live-logs', 
+      'user-management', 
+      'database-overview',
+      'chat-manager',
+      'broadcast-manager',
+      'sticker-maker',
+      'contacts-list',
+      'groups-manager',
+      'labels-manager',
+      'bot-profile',
+      'scheduler-tasks',
+      'auto-broadcast',
+      'jpm-swgc',
+      'webhooks-manager',
+      'mcp-claude',
+      'media-manager',
+      'system-monitor',
+      'notifications-center'
+    ];
 
     function switchSheet(targetSheet) {
       if (!validSheets.includes(targetSheet)) {
@@ -7592,6 +8280,744 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         }
       });
     }
+
+    // -----------------------------------------------------------------------
+    // MODULE EVENT HANDLERS & API CONNECTORS (Broadcast, Contacts, Chat, SysMon)
+    // -----------------------------------------------------------------------
+
+    // 1. Broadcast / Blast
+    const broadcastRecipients = document.getElementById('broadcast-recipients');
+    const broadcastCountEl = document.getElementById('broadcast-recipient-count');
+    const broadcastDelayRange = document.getElementById('broadcast-delay-range');
+    const broadcastDelayVal = document.getElementById('broadcast-delay-val');
+    const btnStartBroadcast = document.getElementById('btn-start-broadcast');
+    const btnBroadcastClear = document.getElementById('btn-broadcast-clear');
+
+    if (broadcastRecipients && broadcastCountEl) {
+      broadcastRecipients.addEventListener('input', () => {
+        const lines = broadcastRecipients.value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+        broadcastCountEl.innerText = `${lines.length} numbers identified`;
+      });
+    }
+
+    if (broadcastDelayRange && broadcastDelayVal) {
+      broadcastDelayRange.addEventListener('input', (e) => {
+        broadcastDelayVal.innerText = `${e.target.value}s`;
+      });
+    }
+
+    if (btnBroadcastClear && broadcastRecipients) {
+      btnBroadcastClear.addEventListener('click', () => {
+        broadcastRecipients.value = '';
+        if (broadcastCountEl) broadcastCountEl.innerText = '0 numbers identified';
+      });
+    }
+
+    if (btnStartBroadcast) {
+      btnStartBroadcast.addEventListener('click', async () => {
+        const numbers = (broadcastRecipients?.value || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+        const message = document.getElementById('broadcast-message-text')?.value || '';
+        const delay = parseInt(broadcastDelayRange?.value || '2', 10) * 1000;
+
+        if (numbers.length === 0) {
+          showToast('Please enter at least one recipient number.', 'error');
+          return;
+        }
+        if (!message.trim()) {
+          showToast('Please enter the broadcast message text.', 'error');
+          return;
+        }
+
+        btnStartBroadcast.disabled = true;
+        btnStartBroadcast.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting blast...';
+
+        try {
+          const res = await fetch('/api/broadcast/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ recipients: numbers, message, delay })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(data.message, 'success');
+            switchSheet('live-logs');
+          } else {
+            showToast(data.error || 'Failed to start broadcast.', 'error');
+          }
+        } catch (e) {
+          showToast('Network error triggering broadcast.', 'error');
+        } finally {
+          btnStartBroadcast.disabled = false;
+          btnStartBroadcast.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Start Broadcast Blast';
+        }
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. FULL WHATSAPP INTERACTIVE CHAT ENGINE
+    // -----------------------------------------------------------------------
+    let activeChatJid = null;
+    let allChatItems = [];
+
+    // Instant initial load from cache if available
+    try {
+      const cachedChats = localStorage.getItem('cortex_cached_chats');
+      if (cachedChats) {
+        allChatItems = JSON.parse(cachedChats);
+      }
+    } catch (e) {}
+
+    async function loadFullChatList(silent = false) {
+      const listEl = document.getElementById('chat-conversation-list');
+      if (!listEl) return;
+
+      // If we already have items (e.g. from cache or previous fetch), render immediately
+      if (allChatItems && allChatItems.length > 0) {
+        renderChatList();
+      } else if (!silent) {
+        listEl.innerHTML = `
+          <div class="p-3">
+            <div class="d-flex align-items-center gap-3 mb-3 placeholder-glow">
+              <span class="placeholder rounded-circle" style="width: 44px; height: 44px;"></span>
+              <div class="flex-grow-1">
+                <span class="placeholder col-7 mb-2 d-block"></span>
+                <span class="placeholder col-4 d-block"></span>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-3 mb-3 placeholder-glow">
+              <span class="placeholder rounded-circle" style="width: 44px; height: 44px;"></span>
+              <div class="flex-grow-1">
+                <span class="placeholder col-6 mb-2 d-block"></span>
+                <span class="placeholder col-5 d-block"></span>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-3 placeholder-glow">
+              <span class="placeholder rounded-circle" style="width: 44px; height: 44px;"></span>
+              <div class="flex-grow-1">
+                <span class="placeholder col-8 mb-2 d-block"></span>
+                <span class="placeholder col-3 d-block"></span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      try {
+        const res = await fetch('/api/chats', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.success && data.chats) {
+          allChatItems = data.chats;
+          try {
+            localStorage.setItem('cortex_cached_chats', JSON.stringify(allChatItems));
+          } catch (e) {}
+          renderChatList();
+        } else if (!allChatItems || allChatItems.length === 0) {
+          listEl.innerHTML = '<div class="text-center text-muted py-5 small">No chats available yet. Connect WhatsApp first.</div>';
+        }
+      } catch (err) {
+        if (!allChatItems || allChatItems.length === 0) {
+          listEl.innerHTML = '<div class="text-center text-danger py-5 small">Failed to load chats.</div>';
+        }
+      }
+    }
+
+    let currentChatFilter = 'all';
+
+    function getFilteredChats() {
+      if (!allChatItems || !Array.isArray(allChatItems)) return [];
+
+      return allChatItems.filter(c => {
+        const jid = (c.jid || '').toLowerCase();
+        const isGrp = Boolean(c.isGroup || jid.endsWith('@g.us') || jid.includes('-') && jid.endsWith('@g.us'));
+        const isChan = Boolean(c.isChannel || jid.endsWith('@newsletter'));
+
+        if (currentChatFilter === 'groups') {
+          return isGrp;
+        } else if (currentChatFilter === 'channels') {
+          return isChan;
+        } else if (currentChatFilter === 'personal') {
+          return !isGrp && !isChan;
+        }
+        return true;
+      });
+    }
+
+    function renderChatList(chats) {
+      const listEl = document.getElementById('chat-conversation-list');
+      if (!listEl) return;
+
+      const itemsToRender = chats || getFilteredChats();
+
+      if (!itemsToRender || itemsToRender.length === 0) {
+        listEl.innerHTML = '<div class="text-center text-muted py-5 small"><i class="bi bi-inbox d-block fs-3 mb-2 opacity-50"></i>No chats match criteria.</div>';
+        return;
+      }
+
+      const formatChatListTime = (ts) => {
+        if (!ts) return '';
+        const date = new Date(ts);
+        if (isNaN(date.getTime())) return '';
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) {
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+        } else if (diffDays === 1) {
+          return 'Yesterday';
+        } else if (diffDays < 7) {
+          return date.toLocaleDateString([], { weekday: 'short' });
+        }
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      };
+
+      listEl.innerHTML = itemsToRender.map(c => {
+        const initials = (c.name || 'WA').substring(0, 2).toUpperCase();
+        const colors = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+        const hash = (c.jid || '').split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        const bg = colors[hash % colors.length];
+        const isActive = activeChatJid === c.jid ? 'background: #eef2f6;' : '';
+        const timeStr = c.lastMessage?.timestamp ? formatChatListTime(c.lastMessage.timestamp) : '';
+        const isGrp = Boolean(c.isGroup || (c.jid && c.jid.endsWith('@g.us')));
+        const isChan = Boolean(c.isChannel || (c.jid && c.jid.endsWith('@newsletter')));
+        const typeBadge = isGrp ? '<span class="badge bg-secondary-subtle text-secondary border px-1" style="font-size: 0.65rem;">Group</span>' : (isChan ? '<span class="badge bg-info-subtle text-info border px-1" style="font-size: 0.65rem;">Channel</span>' : '');
+
+        return `
+          <div class="chat-item d-flex align-items-center gap-3 p-3 border-bottom cursor-pointer" data-jid="${c.jid}" data-name="${c.name || c.jid}" style="cursor: pointer; transition: background 0.15s; ${isActive}">
+            <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 44px; height: 44px; background: ${bg}; font-size: 0.95rem;">
+              ${isGrp ? '<i class="bi bi-people-fill"></i>' : (isChan ? '<i class="bi bi-broadcast"></i>' : initials)}
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="d-flex justify-content-between align-items-baseline mb-1">
+                <span class="fw-bold text-dark text-truncate d-flex align-items-center gap-1" style="font-size: 0.9rem; max-width: 170px;">
+                  <span class="text-truncate">${c.name}</span>
+                  ${typeBadge}
+                </span>
+                <span class="text-muted" style="font-size: 0.7rem;">${timeStr}</span>
+              </div>
+              <p class="text-muted small mb-0 text-truncate" style="font-size: 0.8rem;">
+                ${c.lastMessage?.content || 'No messages yet'}
+              </p>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      listEl.querySelectorAll('.chat-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const jid = el.getAttribute('data-jid');
+          const name = el.getAttribute('data-name');
+          openConversation(jid, name);
+        });
+      });
+    }
+
+    async function openConversation(jid, name) {
+      activeChatJid = jid;
+      document.getElementById('chat-empty-state')?.classList.add('d-none');
+      document.getElementById('chat-window-header')?.classList.remove('d-none');
+      document.getElementById('chat-window-header')?.classList.add('d-flex');
+      document.getElementById('chat-window-messages')?.classList.remove('d-none');
+      document.getElementById('chat-window-messages')?.classList.add('d-flex');
+      document.getElementById('chat-window-input-bar')?.classList.remove('d-none');
+      document.getElementById('chat-window-input-bar')?.classList.add('d-flex');
+
+      document.getElementById('chat-active-name').innerText = name || jid;
+      document.getElementById('chat-active-jid').innerText = jid;
+      document.getElementById('chat-active-avatar').innerText = (name || 'WA').substring(0, 2).toUpperCase();
+
+      // Highlight active in list while respecting active tab filter
+      renderChatList();
+
+      // Load conversation messages
+      const msgBox = document.getElementById('chat-window-messages');
+      msgBox.innerHTML = '<div class="text-center text-muted py-4 small"><span class="spinner-border spinner-border-sm me-2"></span>Loading conversation...</div>';
+
+      try {
+        const res = await fetch(`/api/chats/${encodeURIComponent(jid)}/messages`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.success && data.messages && data.messages.length > 0) {
+          // Date formatting helper matching wa new
+          const getDateLabel = (ts) => {
+            const date = new Date(ts);
+            const now = new Date();
+            const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays === 0) return "Today";
+            if (diffDays === 1) return "Yesterday";
+            return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+          };
+
+          let lastDate = null;
+          let html = '';
+
+          data.messages.forEach(m => {
+            const dateLabel = getDateLabel(m.timestamp);
+            if (dateLabel !== lastDate) {
+              lastDate = dateLabel;
+              html += `
+                <div class="chat-date-divider">
+                  <span class="chat-date-pill">${dateLabel}</span>
+                </div>
+              `;
+            }
+
+            const isOut = Boolean(m.fromMe);
+            const rowClass = isOut ? 'chat-msg-row out' : 'chat-msg-row in';
+            const bubbleClass = isOut ? 'chat-bubble chat-bubble-out' : 'chat-bubble chat-bubble-in';
+            const time = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+            const senderHeader = (!isOut && jid.endsWith('@g.us') && m.pushName) ? `<span class="chat-msg-sender">${m.pushName}</span>` : '';
+
+            // Download icon SVG matching user's reference image
+            const downloadIconSvg = `
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            `;
+
+            // Rich media rendering block matching wa new chat-window.tsx with download button
+            let mediaBlock = '';
+            if (m.type === 'IMAGE' && m.thumbnail) {
+              const dlFilename = `image_${m.keyId || 'wa'}.jpg`;
+              mediaBlock = `
+                <div class="chat-media-card position-relative">
+                  <button type="button" class="chat-media-download-btn" title="Download Image" onclick="downloadChatMessageMedia('${jid}', '${m.keyId || ''}', '${m.thumbnail}', '${dlFilename}'); event.stopPropagation();">
+                    ${downloadIconSvg}
+                  </button>
+                  <img src="${m.thumbnail}" alt="Image" class="chat-media-img" onclick="window.open('${m.thumbnail}', '_blank')" />
+                </div>
+              `;
+            } else if (m.type === 'VIDEO' && m.thumbnail) {
+              const dlFilename = `video_${m.keyId || 'wa'}.mp4`;
+              mediaBlock = `
+                <div class="chat-media-card position-relative">
+                  <button type="button" class="chat-media-download-btn" title="Download Video" onclick="downloadChatMessageMedia('${jid}', '${m.keyId || ''}', '${m.thumbnail}', '${dlFilename}'); event.stopPropagation();">
+                    ${downloadIconSvg}
+                  </button>
+                  <img src="${m.thumbnail}" alt="Video" class="chat-media-img" />
+                  <div class="position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-75 rounded-circle p-2 text-white">
+                    <i class="bi bi-play-fill fs-4"></i>
+                  </div>
+                </div>
+              `;
+            } else if (m.type === 'STICKER' && m.thumbnail) {
+              const dlFilename = `sticker_${m.keyId || 'wa'}.webp`;
+              mediaBlock = `
+                <div class="chat-media-card bg-transparent position-relative">
+                  <button type="button" class="chat-media-download-btn" title="Download Sticker" onclick="downloadChatMessageMedia('${jid}', '${m.keyId || ''}', '${m.thumbnail}', '${dlFilename}'); event.stopPropagation();">
+                    ${downloadIconSvg}
+                  </button>
+                  <img src="${m.thumbnail}" alt="Sticker" class="chat-sticker-img" />
+                </div>
+              `;
+            } else if (m.type === 'DOCUMENT') {
+              const dlFilename = m.fileName || 'Document.pdf';
+              mediaBlock = `
+                <div class="chat-doc-card">
+                  <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                  <span class="chat-doc-name" title="${dlFilename}">${dlFilename}</span>
+                  <button type="button" class="chat-doc-download-btn" title="Download Document" onclick="downloadChatMessageMedia('${jid}', '${m.keyId || ''}', '${m.thumbnail || ''}', '${dlFilename}'); event.stopPropagation();">
+                    ${downloadIconSvg}
+                  </button>
+                </div>
+              `;
+            } else if (m.type === 'AUDIO') {
+              const dlFilename = `audio_${m.keyId || 'wa'}.mp3`;
+              mediaBlock = `
+                <div class="chat-doc-card">
+                  <i class="bi bi-mic-fill text-primary"></i>
+                  <span class="chat-doc-name">Voice note</span>
+                  <button type="button" class="chat-doc-download-btn" title="Download Audio" onclick="downloadChatMessageMedia('${jid}', '${m.keyId || ''}', '${m.thumbnail || ''}', '${dlFilename}'); event.stopPropagation();">
+                    ${downloadIconSvg}
+                  </button>
+                </div>
+              `;
+            }
+
+            const textBlock = m.content ? `<span class="chat-bubble-text">${m.content}</span>` : '<span class="flex-grow-1"></span>';
+
+            html += `
+              <div class="${rowClass}">
+                <div class="${bubbleClass}">
+                  ${senderHeader}
+                  ${mediaBlock}
+                  <div class="chat-bubble-inner">
+                    ${textBlock}
+                    <span class="chat-msg-time">${time}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+
+          msgBox.innerHTML = html;
+        } else {
+          msgBox.innerHTML = '<div class="text-center text-muted py-5 small"><i class="bi bi-chat-left-dots fs-3 d-block mb-2 opacity-50"></i>No message history yet. Type below to send a message.</div>';
+        }
+        msgBox.scrollTop = msgBox.scrollHeight;
+      } catch (err) {
+        msgBox.innerHTML = '<div class="text-center text-danger py-4 small">Failed to load message thread.</div>';
+      }
+    }
+
+    // Media downloader helper with seamless fallback
+    async function downloadChatMessageMedia(jid, keyId, base64Thumb, defaultFilename) {
+      if (!defaultFilename) defaultFilename = 'whatsapp_media.jpg';
+      
+      const triggerDownloadBlob = (blob, filename) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      };
+
+      const triggerDownloadDataUrl = (dataUrl, filename) => {
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      };
+
+      // Try server stream first if keyId is present
+      if (keyId && jid) {
+        try {
+          const res = await fetch(`/api/chats/${encodeURIComponent(jid)}/media/${encodeURIComponent(keyId)}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          if (res.ok) {
+            const blob = await res.blob();
+            // Infer filename from header if available
+            let filename = defaultFilename;
+            const disposition = res.headers.get('Content-Disposition');
+            if (disposition && disposition.includes('filename=')) {
+              const match = disposition.match(/filename="?([^"]+)"?/);
+              if (match && match[1]) filename = match[1];
+            }
+            triggerDownloadBlob(blob, filename);
+            return;
+          }
+        } catch (e) {
+          console.warn('[Download] Server media stream failed, falling back to cached thumbnail', e);
+        }
+      }
+
+      // Fallback: download the thumbnail data URL
+      if (base64Thumb && base64Thumb.startsWith('data:')) {
+        triggerDownloadDataUrl(base64Thumb, defaultFilename);
+      } else {
+        showToast('Unable to download media attachment.', 'warning');
+      }
+    }
+    window.downloadChatMessageMedia = downloadChatMessageMedia;
+
+    // Send chat message inside active conversation
+    const btnSendMsg = document.getElementById('btn-chat-send-message');
+    const inputMsg = document.getElementById('chat-msg-input');
+    async function sendActiveChatMessage() {
+      if (!activeChatJid || !inputMsg?.value?.trim()) return;
+      const text = inputMsg.value.trim();
+      inputMsg.value = '';
+
+      const msgBox = document.getElementById('chat-window-messages');
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+      const tempRow = document.createElement('div');
+      tempRow.className = 'chat-msg-row out';
+      tempRow.innerHTML = `
+        <div class="chat-bubble chat-bubble-out">
+          <div class="chat-bubble-inner">
+            <span class="chat-bubble-text">${text}</span>
+            <span class="chat-msg-time">${time} <span class="opacity-75">✓</span></span>
+          </div>
+        </div>
+      `;
+      msgBox.appendChild(tempRow);
+      msgBox.scrollTop = msgBox.scrollHeight;
+
+      try {
+        const res = await fetch('/api/broadcast/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ recipients: [activeChatJid], message: text, delay: 0 })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          loadFullChatList();
+        } else {
+          tempBubble.querySelector('.text-muted').innerHTML = `<span class="text-danger">Failed to send</span>`;
+          showToast(data.error || 'Failed to deliver message.', 'error');
+        }
+      } catch (err) {
+        tempBubble.querySelector('.text-muted').innerHTML = `<span class="text-danger">Network error</span>`;
+      }
+    }
+
+    if (btnSendMsg && inputMsg) {
+      btnSendMsg.addEventListener('click', sendActiveChatMessage);
+      inputMsg.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendActiveChatMessage();
+      });
+    }
+
+    document.getElementById('btn-close-active-chat')?.addEventListener('click', () => {
+      activeChatJid = null;
+      document.getElementById('chat-empty-state')?.classList.remove('d-none');
+      document.getElementById('chat-window-header')?.classList.add('d-none');
+      document.getElementById('chat-window-messages')?.classList.add('d-none');
+      document.getElementById('chat-window-input-bar')?.classList.add('d-none');
+      renderChatList();
+    });
+
+    document.getElementById('btn-refresh-chat-list')?.addEventListener('click', loadFullChatList);
+
+    // Search filter
+    document.getElementById('chat-search-filter')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const currentList = getFilteredChats();
+      const filtered = currentList.filter(c => (c.name || '').toLowerCase().includes(q) || (c.jid || '').toLowerCase().includes(q));
+      renderChatList(filtered);
+    });
+
+    // Category filter tabs
+    document.querySelectorAll('.chat-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.chat-filter-btn').forEach(b => {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+
+        currentChatFilter = btn.getAttribute('data-filter') || 'all';
+        renderChatList();
+      });
+    });
+
+    // 2.1 Sticker Maker Handler
+    const btnSendSticker = document.getElementById('btn-send-sticker');
+    if (btnSendSticker) {
+      btnSendSticker.addEventListener('click', async () => {
+        const target = document.getElementById('sticker-target-phone')?.value || '';
+        const fileInput = document.getElementById('sticker-file-input');
+        const file = fileInput?.files?.[0];
+
+        if (!target.trim()) {
+          showToast('Please enter target phone number with country code.', 'error');
+          return;
+        }
+        if (!file) {
+          showToast('Please choose an image file (PNG/JPG) to make a sticker.', 'error');
+          return;
+        }
+
+        btnSendSticker.disabled = true;
+        btnSendSticker.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Converting & Sending...';
+
+        try {
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64 = reader.result;
+            try {
+              const res = await fetch('/api/sticker/send', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ targetPhone: target, imageBase64: base64 })
+              });
+              const data = await res.json().catch(() => ({}));
+              if (res.ok && data.success) {
+                showToast(data.message || 'Sticker sent successfully!', 'success');
+                if (fileInput) fileInput.value = '';
+              } else {
+                showToast(data.error || 'Failed to send sticker.', 'error');
+              }
+            } catch (err) {
+              showToast('Network error delivering sticker: ' + err.message, 'error');
+            } finally {
+              btnSendSticker.disabled = false;
+              btnSendSticker.innerHTML = '<i class="bi bi-file-earmark-image"></i> Convert & Send Sticker';
+            }
+          };
+          reader.readAsDataURL(file);
+        } catch (err) {
+          btnSendSticker.disabled = false;
+          btnSendSticker.innerHTML = '<i class="bi bi-file-earmark-image"></i> Convert & Send Sticker';
+          showToast('File read error: ' + err.message, 'error');
+        }
+      });
+    }
+
+    // 3. Contacts Fetch
+    async function loadContactsList() {
+      const tbody = document.getElementById('contacts-table-body');
+      const countEl = document.getElementById('contacts-total-count');
+      if (!tbody) return;
+
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading contacts...</td></tr>';
+      try {
+        const res = await fetch('/api/contacts', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (data.success && data.contacts && data.contacts.length > 0) {
+          if (countEl) countEl.innerText = `${data.contacts.length} Contacts`;
+          tbody.innerHTML = data.contacts.map(c => `
+            <tr>
+              <td><strong>${c.name}</strong></td>
+              <td><code>+${c.phone}</code></td>
+              <td class="text-muted small">${c.jid}</td>
+              <td class="text-end">
+                <button class="btn btn-outline-primary btn-sm btn-contact-quick-chat" data-phone="${c.phone}">
+                  <i class="bi bi-chat-dots"></i> Chat
+                </button>
+              </td>
+            </tr>
+          `).join('');
+
+          document.querySelectorAll('.btn-contact-quick-chat').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const phone = btn.getAttribute('data-phone');
+              const targetInput = document.getElementById('chat-quick-target');
+              if (targetInput) targetInput.value = phone;
+              switchSheet('chat-manager');
+            });
+          });
+        } else {
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No contacts found in current session memory.</td></tr>';
+          if (countEl) countEl.innerText = '0 Contacts';
+        }
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Failed to fetch contacts.</td></tr>';
+      }
+    }
+
+    const btnRefreshContacts = document.getElementById('btn-refresh-contacts');
+    if (btnRefreshContacts) {
+      btnRefreshContacts.addEventListener('click', loadContactsList);
+    }
+
+    // 4. Groups Fetch
+    async function loadGroupsList() {
+      const tbody = document.getElementById('groups-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading groups...</td></tr>';
+      try {
+        const res = await fetch('/api/groups', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (data.success && data.groups && data.groups.length > 0) {
+          tbody.innerHTML = data.groups.map(g => `
+            <tr>
+              <td><strong>${g.subject}</strong></td>
+              <td><code>${g.id}</code></td>
+              <td><span class="badge text-bg-light border">${g.participantsCount} Members</span></td>
+              <td class="text-end">
+                <button class="btn btn-outline-success btn-sm btn-group-quick-msg" data-jid="${g.id}">
+                  <i class="bi bi-send"></i> Send
+                </button>
+              </td>
+            </tr>
+          `).join('');
+          document.querySelectorAll('.btn-group-quick-msg').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const jid = btn.getAttribute('data-jid');
+              const targetInput = document.getElementById('chat-quick-target');
+              if (targetInput) targetInput.value = jid;
+              switchSheet('chat-manager');
+            });
+          });
+        } else {
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No groups currently participating.</td></tr>';
+        }
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Failed to fetch groups.</td></tr>';
+      }
+    }
+
+    const btnRefreshGroups = document.getElementById('btn-refresh-groups');
+    if (btnRefreshGroups) {
+      btnRefreshGroups.addEventListener('click', loadGroupsList);
+    }
+
+    // 5. System Monitor Fetch
+    async function loadSysMon() {
+      try {
+        const res = await fetch('/api/system-monitor', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (data.success && data.system) {
+          const sys = data.system;
+          const upHours = (sys.uptime / 3600).toFixed(1);
+          document.getElementById('sys-uptime-val').innerText = `${upHours} hrs`;
+          document.getElementById('sys-heap-val').innerText = `${sys.memory.heapUsedMB} MB`;
+          document.getElementById('sys-rss-val').innerText = `${sys.memory.rssMB} MB`;
+          document.getElementById('sys-sessions-val').innerText = `${sys.activeSessions} Instance(s)`;
+        }
+      } catch (e) {}
+    }
+
+    const btnRefreshSysmon = document.getElementById('btn-refresh-sysmon');
+    if (btnRefreshSysmon) {
+      btnRefreshSysmon.addEventListener('click', loadSysMon);
+    }
+
+    // 6. Notifications Feed
+    async function loadNotifications() {
+      const list = document.getElementById('notifications-feed-list');
+      if (!list) return;
+      try {
+        const res = await fetch('/api/notifications', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (data.success && data.notifications && data.notifications.length > 0) {
+          list.innerHTML = data.notifications.map(n => `
+            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+              <div>
+                <span class="badge ${n.type === 'error' ? 'text-bg-danger' : (n.type === 'success' ? 'text-bg-success' : 'text-bg-primary')} me-2">
+                  ${n.type.toUpperCase()}
+                </span>
+                <span class="text-dark">${n.text}</span>
+              </div>
+              <small class="text-muted">${n.time}</small>
+            </div>
+          `).join('');
+        } else {
+          list.innerHTML = '<div class="text-muted text-center py-4">No recent notifications logged.</div>';
+        }
+      } catch (e) {
+        list.innerHTML = '<div class="text-danger text-center py-4">Could not load notifications.</div>';
+      }
+    }
+
+    // Hook sheet switches to load respective data
+    const origSwitchSheet = switchSheet;
+    switchSheet = function(sheet) {
+      origSwitchSheet(sheet);
+      if (sheet === 'chat-manager') loadFullChatList();
+      if (sheet === 'contacts-list') loadContactsList();
+      if (sheet === 'groups-manager') loadGroupsList();
+      if (sheet === 'system-monitor') loadSysMon();
+      if (sheet === 'notifications-center') loadNotifications();
+    };
 
     // Initialize polling & templates
     fetchStatus();

@@ -8,6 +8,9 @@ import { fileURLToPath } from 'url';
 import makeWASocket, { DisconnectReason, downloadMediaMessage, downloadContentFromMessage, Browsers, proto, BufferJSON } from '@whiskeysockets/baileys';
 import QRCode from 'qrcode';
 import NodeCache from 'node-cache';
+import { antiBan } from './core/antiban.js';
+import { antiSpam } from './core/antispam.js';
+import { webhookDispatcher } from './core/webhook.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -620,13 +623,18 @@ export async function connectUserWhatsApp(userId) {
             }
         });
 
-        // Automatically store all sent messages into messageStore so retry decryptions succeed instantly
         const rawSendMessage = sock.sendMessage.bind(sock);
         sock.sendMessage = async (jid, content, options) => {
             const result = await rawSendMessage(jid, content, options);
             if (result?.key?.id && result?.message) {
                 storeMessage(result.key.id, {
+                    key: {
+                        id: result.key.id,
+                        remoteJid: result.key.remoteJid || jid,
+                        fromMe: true
+                    },
                     message: result.message,
+                    messageTimestamp: result.messageTimestamp || Math.floor(Date.now() / 1000),
                     remoteJid: result.key.remoteJid || jid
                 });
             }
@@ -771,7 +779,10 @@ export async function connectUserWhatsApp(userId) {
                         try {
                             if (msg.key?.id && msg.message) {
                                 storeMessage(msg.key.id, {
+                                    key: msg.key,
                                     message: msg.message,
+                                    messageTimestamp: msg.messageTimestamp || Math.floor(Date.now() / 1000),
+                                    pushName: msg.pushName,
                                     remoteJid: msg.key.remoteJid
                                 });
                             }
@@ -2322,6 +2333,693 @@ app.post('/api/test-message', authenticateUser, async (req, res) => {
         res.json({ success: true, message: 'Test message sent successfully.' });
     } catch (err) {
         if (session) session.addLog(`Error sending test message: ${err.message}`);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// =========================================================================
+// INTEGRATED MODULES (From wa new features, adapted for isolated user session)
+// =========================================================================
+
+// 1. Broadcast / Blast Bulk Sender
+app.post('/api/broadcast/send', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+
+    if (!session || session.connectionStatus !== 'connected' || !session.sock) {
+        return res.status(400).json({ success: false, error: 'Your WhatsApp is not connected yet! Please scan the QR code first.' });
+    }
+
+    const { recipients, message, delay = 2000 } = req.body;
+    if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+        return res.status(400).json({ success: false, error: 'Please specify at least one recipient phone number.' });
+    }
+    if (!message || !message.trim()) {
+        return res.status(400).json({ success: false, error: 'Message cannot be empty.' });
+    }
+
+    // Check user quota
+    const quotaCheck = await checkUserCanSendMessage(userId);
+    if (!quotaCheck.allowed) {
+        return res.status(403).json({ success: false, error: quotaCheck.reason });
+    }
+
+    session.addLog(`[Broadcast] Starting broadcast blast to ${recipients.length} recipients with delay ${delay}ms...`);
+
+    // Run asynchronously in background
+    (async () => {
+        let sent = 0;
+        let failed = 0;
+        for (const recipient of recipients) {
+            try {
+                const jid = formatJid(recipient);
+                await session.sock.sendMessage(jid, { text: message });
+                sent++;
+                await recordUserMessageSent(userId);
+                session.addLog(`[Broadcast] (${sent}/${recipients.length}) Sent message to ${jid}`);
+            } catch (err) {
+                failed++;
+                session.addLog(`[Broadcast] Failed to send to ${recipient}: ${err.message}`);
+            }
+            if (delay > 0) {
+                await new Promise(r => setTimeout(r, Math.max(500, delay)));
+            }
+        }
+        session.addLog(`[Broadcast] Completed! Total: ${recipients.length}, Success: ${sent}, Failed: ${failed}`);
+    })();
+
+    res.json({ success: true, message: `Broadcast started for ${recipients.length} recipient(s). Check Live Logs for real-time progress!` });
+});
+
+// Sticker Send Endpoint (converts image buffer directly to webp WhatsApp sticker)
+app.post('/api/sticker/send', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+
+    if (!session || session.connectionStatus !== 'connected' || !session.sock) {
+        return res.status(400).json({ success: false, error: 'Your WhatsApp is not connected yet! Please scan the QR code first.' });
+    }
+
+    const { targetPhone, imageBase64 } = req.body;
+    if (!targetPhone) {
+        return res.status(400).json({ success: false, error: 'Target phone number is required.' });
+    }
+    if (!imageBase64) {
+        return res.status(400).json({ success: false, error: 'Image data is required.' });
+    }
+
+    // Check quota
+    const quotaCheck = await checkUserCanSendMessage(userId);
+    if (!quotaCheck.allowed) {
+        return res.status(403).json({ success: false, error: quotaCheck.reason });
+    }
+
+    try {
+        const jid = formatJid(targetPhone);
+        const buffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+        
+        // Convert to WebP format for WhatsApp sticker support
+        const sharp = (await import('sharp')).default;
+        const webpBuffer = await sharp(buffer)
+            .resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+            .webp()
+            .toBuffer();
+
+        await session.sock.sendMessage(jid, { sticker: webpBuffer });
+        await recordUserMessageSent(userId);
+        session.addLog(`[Sticker] Sent sticker successfully to ${jid}`);
+
+        res.json({ success: true, message: `Sticker successfully sent to ${targetPhone}!` });
+    } catch (err) {
+        session.addLog(`[Sticker] Error sending sticker: ${err.message}`);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Timestamp extraction & formatting helper for Baileys and stored WhatsApp messages
+function extractMessageTimestamp(msgObj) {
+    if (!msgObj) return null;
+    if (msgObj.messageTimestamp) return msgObj.messageTimestamp;
+    // Check media payloads (image, video, document, audio, sticker)
+    const m = msgObj.message || {};
+    for (const key of ['imageMessage', 'videoMessage', 'documentMessage', 'audioMessage', 'stickerMessage']) {
+        if (m[key]?.mediaKeyTimestamp) return m[key].mediaKeyTimestamp;
+    }
+    if (m.messageContextInfo?.deviceListMetadata?.recipientTimestamp) {
+        return m.messageContextInfo.deviceListMetadata.recipientTimestamp;
+    }
+    return null;
+}
+
+function safeIsoTimestamp(rawTs, fallbackDate = null) {
+    let num = NaN;
+    if (typeof rawTs === 'number') num = rawTs;
+    else if (typeof rawTs === 'string') num = Number(rawTs);
+    else if (typeof rawTs === 'object' && rawTs !== null && 'low' in rawTs) num = Number(rawTs.low);
+    if (!isNaN(num) && num > 0) {
+        const ms = num > 1e11 ? num : num * 1000;
+        const d = new Date(ms);
+        if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    if (fallbackDate instanceof Date && !isNaN(fallbackDate.getTime())) {
+        return fallbackDate.toISOString();
+    }
+    return null;
+}
+
+// Full Chat List Endpoint (reads participating groups, stored contacts & message threads)
+app.get('/api/chats', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+
+    if (!session || session.connectionStatus !== 'connected' || !session.sock) {
+        return res.json({ success: true, chats: [], count: 0, connected: false });
+    }
+
+    try {
+        const chatMap = new Map();
+
+        // Helper to resolve any JID (including LID) to phone or canonical JID
+        const resolvePhone = (jid) => {
+            if (!jid) return null;
+            if (jid.endsWith('@s.whatsapp.net')) return jid.split('@')[0].split(':')[0];
+            const clean = jid.split('@')[0].split(':')[0];
+            const mapped = lidToPhoneMap.get(clean) || lidToPhoneMap.get(jid);
+            if (mapped) return mapped.replace(/[^\d]/g, '');
+            return null;
+        };
+
+        // 1. Fetch participating groups (use memory cache for sub-second instant response)
+        try {
+            const now = Date.now();
+            let groupsData = session._cachedGroupsData;
+            const cacheAge = session._cachedGroupsDataTime ? (now - session._cachedGroupsDataTime) : Infinity;
+
+            if (!groupsData || cacheAge > 60000) {
+                // If cache is stale or missing, query WhatsApp socket and update cache
+                session.sock.groupFetchAllParticipating().then(freshData => {
+                    session._cachedGroupsData = freshData;
+                    session._cachedGroupsDataTime = Date.now();
+                    session.groupsList = Object.entries(freshData).map(([jid, meta]) => ({
+                        jid,
+                        name: meta.subject || 'Unnamed Group'
+                    }));
+                }).catch(() => {});
+
+                if (!groupsData && session.groupsList && session.groupsList.length > 0) {
+                    // Fallback to groupsList if already initialized during connection
+                    groupsData = {};
+                    session.groupsList.forEach(g => {
+                        groupsData[g.jid] = { subject: g.name, creation: Math.floor(Date.now() / 1000) };
+                    });
+                } else if (!groupsData) {
+                    // First time wait for socket fetch
+                    groupsData = await session.sock.groupFetchAllParticipating();
+                    session._cachedGroupsData = groupsData;
+                    session._cachedGroupsDataTime = Date.now();
+                }
+            }
+
+            if (groupsData) {
+                for (const [id, g] of Object.entries(groupsData)) {
+                    const groupTs = (g.creation && g.creation > 0) ? safeIsoTimestamp(g.creation) : null;
+                    chatMap.set(id, {
+                        jid: id,
+                        name: g.subject || 'WhatsApp Group',
+                        isGroup: true,
+                        isChannel: false,
+                        lastMessage: { content: 'Group active', timestamp: groupTs, type: 'text' }
+                    });
+                }
+            }
+        } catch (e) {}
+
+        // 2. Fetch contacts from store
+        if (session.sock.store && session.sock.store.contacts) {
+            for (const [jid, contact] of Object.entries(session.sock.store.contacts)) {
+                if (jid.endsWith('@s.whatsapp.net')) {
+                    const phone = jid.split('@')[0].split(':')[0];
+                    const savedName = contact.name || contact.notify || contact.verifiedName;
+                    const displayName = savedName ? savedName : `Unknown (+${phone})`;
+                    chatMap.set(jid, {
+                        jid,
+                        name: displayName,
+                        isSaved: !!savedName,
+                        isGroup: false,
+                        isChannel: false,
+                        lastMessage: { content: 'No messages yet', timestamp: null, type: 'text' }
+                    });
+                }
+            }
+        }
+
+
+        // 3. Enrich with persistent message store conversations (and map LIDs to real phone numbers)
+        for (const [key, msg] of messageStore.entries()) {
+            const rJid = msg.key?.remoteJid || msg.remoteJid;
+            if (!rJid || rJid === 'status@broadcast') continue;
+
+            const isGroup = rJid.endsWith('@g.us');
+            const isChannel = rJid.endsWith('@newsletter');
+            const isLid = rJid.endsWith('@lid');
+            
+            // Resolve canonical JID
+            let canonicalJid = rJid;
+            let phone = null;
+            if (isLid) {
+                const resolved = resolvePhone(rJid);
+                if (resolved) {
+                    canonicalJid = `${resolved}@s.whatsapp.net`;
+                    phone = resolved;
+                }
+            } else if (!isGroup && !isChannel) {
+                phone = rJid.split('@')[0].split(':')[0];
+            }
+
+            // Extract message snippet
+            let text = 'Message';
+            if (msg.message?.conversation) text = msg.message.conversation;
+            else if (msg.message?.extendedTextMessage?.text) text = msg.message.extendedTextMessage.text;
+            else if (msg.message?.documentMessage?.fileName) text = `📄 ${msg.message.documentMessage.fileName}`;
+            else if (msg.message?.documentMessage?.caption) text = `📄 ${msg.message.documentMessage.caption}`;
+            else if (msg.message?.imageMessage?.caption) text = `📷 ${msg.message.imageMessage.caption}`;
+            else if (msg.message?.imageMessage) text = '📷 Photo';
+            else if (msg.message?.videoMessage) text = '🎥 Video';
+            else if (msg.message?.audioMessage) text = '🎵 Voice message';
+            else if (msg.message?.stickerMessage) text = '🎨 Sticker';
+
+            const rawTs = extractMessageTimestamp(msg);
+            const ts = safeIsoTimestamp(rawTs);
+
+            if (chatMap.has(canonicalJid)) {
+                const existing = chatMap.get(canonicalJid);
+                if (ts && (!existing.lastMessage?.timestamp || new Date(ts) >= new Date(existing.lastMessage.timestamp))) {
+                    existing.lastMessage = { content: text, timestamp: ts, type: 'text' };
+                }
+            } else {
+                const pushName = msg.pushName;
+                let displayName = pushName;
+                if (!displayName) {
+                    if (isGroup) displayName = 'WhatsApp Group';
+                    else if (isChannel) displayName = 'WhatsApp Channel';
+                    else if (phone) displayName = `Unknown (+${phone})`;
+                    else if (isLid) {
+                        const cleanDigits = rJid.split('@')[0].slice(-4);
+                        displayName = `Contact (${cleanDigits})`;
+                    } else displayName = canonicalJid;
+                }
+
+                chatMap.set(canonicalJid, {
+                    jid: canonicalJid,
+                    name: displayName,
+                    isSaved: !!pushName,
+                    isGroup: isGroup,
+                    isChannel: isChannel,
+                    lastMessage: { content: text, timestamp: ts, type: 'text' }
+                });
+            }
+        }
+
+        // Sort chats by most recent message timestamp descending
+        const chats = Array.from(chatMap.values()).sort((a, b) => {
+            const timeA = a.lastMessage?.timestamp ? new Date(a.lastMessage.timestamp).getTime() : 0;
+            const timeB = b.lastMessage?.timestamp ? new Date(b.lastMessage.timestamp).getTime() : 0;
+            return timeB - timeA;
+        });
+
+        res.json({ success: true, chats, count: chats.length, connected: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Messages for Specific JID
+app.get('/api/chats/:jid/messages', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+    const targetJid = decodeURIComponent(req.params.jid);
+
+    if (!session || session.connectionStatus !== 'connected' || !session.sock) {
+        return res.json({ success: true, messages: [], count: 0 });
+    }
+
+    try {
+        const msgs = [];
+        const isGroup = targetJid.endsWith('@g.us');
+        const isChannel = targetJid.endsWith('@newsletter');
+        const cleanTarget = targetJid.split('@')[0].split(':')[0];
+
+        // Gather all possible matching JIDs (LID, phone JID, raw JID)
+        const matchJids = new Set([targetJid, cleanTarget]);
+        if (!isGroup && !isChannel) {
+            for (const [lid, phone] of lidToPhoneMap.entries()) {
+                const cleanPhone = phone.replace(/[^\d]/g, '');
+                if (cleanPhone === cleanTarget || phone === targetJid) {
+                    matchJids.add(lid);
+                    matchJids.add(`${lid}@lid`);
+                    matchJids.add(lid.split('@')[0]);
+                }
+            }
+        }
+
+
+
+        const formatThumbnail = (raw) => {
+            if (!raw) return null;
+            if (typeof raw === 'string') {
+                if (raw.startsWith('data:image')) return raw;
+                return `data:image/jpeg;base64,${raw}`;
+            }
+            if (Buffer.isBuffer(raw)) {
+                return `data:image/jpeg;base64,${raw.toString('base64')}`;
+            }
+            if (typeof raw === 'object' && raw.data) {
+                return `data:image/jpeg;base64,${Buffer.from(raw.data).toString('base64')}`;
+            }
+            return null;
+        };
+
+        // Scan persistent message store for this conversation
+        for (const [key, msg] of messageStore.entries()) {
+            const rJid = msg.key?.remoteJid || msg.remoteJid;
+            if (!rJid) continue;
+            const cleanR = rJid.split('@')[0].split(':')[0];
+
+            let matches = false;
+            if (isGroup || isChannel) {
+                matches = (rJid === targetJid || cleanR === cleanTarget);
+            } else {
+                matches = matchJids.has(rJid) || matchJids.has(cleanR);
+            }
+
+            if (matches) {
+                // Ignore raw protocol / internal sync messages (REVOKE, HISTORY_SYNC, APP_STATE, etc.)
+                if (msg.message?.protocolMessage || !msg.message || Object.keys(msg.message).length === 0) {
+                    continue;
+                }
+
+                let content = '';
+                let type = 'TEXT';
+                let thumbnail = null;
+                let fileName = null;
+
+                if (msg.message?.conversation) {
+                    content = msg.message.conversation;
+                    type = 'TEXT';
+                } else if (msg.message?.extendedTextMessage?.text) {
+                    content = msg.message.extendedTextMessage.text;
+                    type = 'TEXT';
+                } else if (msg.message?.imageMessage) {
+                    type = 'IMAGE';
+                    content = msg.message.imageMessage.caption || '';
+                    thumbnail = formatThumbnail(msg.message.imageMessage.jpegThumbnail);
+                } else if (msg.message?.videoMessage) {
+                    type = 'VIDEO';
+                    content = msg.message.videoMessage.caption || '';
+                    thumbnail = formatThumbnail(msg.message.videoMessage.jpegThumbnail);
+                } else if (msg.message?.documentMessage) {
+                    type = 'DOCUMENT';
+                    fileName = msg.message.documentMessage.fileName || 'Document.pdf';
+                    content = msg.message.documentMessage.caption || '';
+                    thumbnail = formatThumbnail(msg.message.documentMessage.jpegThumbnail);
+                } else if (msg.message?.audioMessage) {
+                    type = 'AUDIO';
+                    content = '';
+                } else if (msg.message?.stickerMessage) {
+                    type = 'STICKER';
+                    content = '';
+                } else if (msg.message?.buttonsResponseMessage?.selectedDisplayText) {
+                    content = msg.message.buttonsResponseMessage.selectedDisplayText;
+                    type = 'TEXT';
+                } else if (msg.message?.templateButtonReplyMessage?.selectedDisplayText) {
+                    content = msg.message.templateButtonReplyMessage.selectedDisplayText;
+                    type = 'TEXT';
+                }
+
+                // If content is completely empty and no media thumbnail/type, skip phantom bubble
+                if (!content && type === 'TEXT') {
+                    continue;
+                }
+
+                const msgKeyId = msg.key?.id || key;
+                // Baileys outgoing message keys begin with 3EB0
+                const isFromMe = Boolean(msg.key?.fromMe || (typeof msgKeyId === 'string' && msgKeyId.startsWith('3EB0')));
+                
+                // Accurately extract timestamp for sent/received message
+                const rawTs = extractMessageTimestamp(msg);
+                const timestamp = safeIsoTimestamp(rawTs, new Date());
+
+                msgs.push({
+                    keyId: msgKeyId,
+                    content,
+                    fromMe: isFromMe,
+                    pushName: msg.pushName || null,
+                    timestamp,
+                    type,
+                    thumbnail,
+                    fileName,
+                    status: 'sent'
+                });
+            }
+        }
+
+        // Sort chronologically
+        msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+        res.json({ success: true, messages: msgs, count: msgs.length });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Endpoint to download media attachments (image, document, video, audio)
+app.get('/api/chats/:jid/media/:keyId', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+    const keyId = req.params.keyId;
+
+    if (!session || !session.sock) {
+        return res.status(503).json({ success: false, error: 'Session not active' });
+    }
+
+    try {
+        let matchedMsg = null;
+        for (const [k, m] of messageStore.entries()) {
+            if (k === keyId || m.key?.id === keyId) {
+                matchedMsg = m;
+                break;
+            }
+        }
+
+        if (!matchedMsg || !matchedMsg.message) {
+            return res.status(404).json({ success: false, error: 'Media not found' });
+        }
+
+        const m = matchedMsg.message;
+        const msgType = m.imageMessage ? 'image' : (m.videoMessage ? 'video' : (m.documentMessage ? 'document' : (m.audioMessage ? 'audio' : null)));
+        const mediaPayload = m.imageMessage || m.videoMessage || m.documentMessage || m.audioMessage;
+
+        if (!mediaPayload) {
+            return res.status(400).json({ success: false, error: 'Message has no media' });
+        }
+
+        // Try downloading through Baileys downloadMediaMessage
+        try {
+            const stream = await downloadMediaMessage(
+                matchedMsg,
+                'buffer',
+                {},
+                {
+                    logger: pino({ level: 'silent' }),
+                    reuploadRequest: session.sock.updateMediaMessage
+                }
+            );
+
+            if (stream && Buffer.isBuffer(stream)) {
+                const mime = mediaPayload.mimetype || (msgType === 'image' ? 'image/jpeg' : (msgType === 'document' ? 'application/pdf' : 'application/octet-stream'));
+                const filename = mediaPayload.fileName || `download_${keyId}.${mime.split('/')[1]?.split(';')[0] || 'bin'}`;
+                res.setHeader('Content-Type', mime);
+                res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                return res.send(stream);
+            }
+        } catch (streamErr) {
+            // If download stream fails (e.g. media expired on WhatsApp servers), fallback to embedded thumbnail
+            if (mediaPayload.jpegThumbnail) {
+                const thumbBuf = Buffer.isBuffer(mediaPayload.jpegThumbnail) ? mediaPayload.jpegThumbnail : (mediaPayload.jpegThumbnail.data ? Buffer.from(mediaPayload.jpegThumbnail.data) : null);
+                if (thumbBuf) {
+                    res.setHeader('Content-Type', 'image/jpeg');
+                    res.setHeader('Content-Disposition', `attachment; filename="thumbnail_${keyId}.jpg"`);
+                    return res.send(thumbBuf);
+                }
+            }
+            throw streamErr;
+        }
+
+        res.status(404).json({ success: false, error: 'Unable to stream media' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 2. Contacts List from Active Baileys Store / Memory
+app.get('/api/contacts', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+
+    if (!session || session.connectionStatus !== 'connected' || !session.sock) {
+        return res.json({ success: true, contacts: [], count: 0, connected: false });
+    }
+
+    try {
+        const contactsList = [];
+        // Check lidToPhoneMap and candidate contacts
+        if (session.sock.store && session.sock.store.contacts) {
+            for (const [jid, contact] of Object.entries(session.sock.store.contacts)) {
+                if (jid.endsWith('@s.whatsapp.net')) {
+                    contactsList.push({
+                        jid,
+                        phone: jid.split('@')[0],
+                        name: contact.name || contact.notify || contact.verifiedName || jid.split('@')[0]
+                    });
+                }
+            }
+        }
+        // Also add from templates configured by the user
+        const config = session.config || await getUserBotConfig(userId);
+        if (config?.templates) {
+            for (const tpl of config.templates) {
+                if (tpl.targetNumber) {
+                    const phone = tpl.targetNumber.replace(/[^\d]/g, '');
+                    if (!contactsList.some(c => c.phone === phone)) {
+                        contactsList.push({
+                            jid: `${phone}@s.whatsapp.net`,
+                            phone,
+                            name: tpl.name || `Target: ${phone}`
+                        });
+                    }
+                }
+            }
+        }
+
+        res.json({ success: true, contacts: contactsList, count: contactsList.length, connected: true });
+    } catch (e) {
+        res.json({ success: true, contacts: [], count: 0, error: e.message });
+    }
+});
+
+// 3. WhatsApp Groups List
+app.get('/api/groups', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+
+    if (!session || session.connectionStatus !== 'connected' || !session.sock) {
+        return res.json({ success: true, groups: [], count: 0, connected: false });
+    }
+
+    try {
+        const groupsData = await session.sock.groupFetchAllParticipating();
+        const groups = Object.values(groupsData).map(g => ({
+            id: g.id,
+            subject: g.subject,
+            creation: g.creation,
+            owner: g.owner,
+            participantsCount: g.participants?.length || 0,
+            desc: g.desc?.toString() || ''
+        }));
+        res.json({ success: true, groups, count: groups.length, connected: true });
+    } catch (err) {
+        session.addLog(`Failed to fetch groups: ${err.message}`);
+        res.json({ success: true, groups: [], count: 0, error: err.message });
+    }
+});
+
+// 4. Create Group
+app.post('/api/groups/create', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+
+    if (!session || session.connectionStatus !== 'connected' || !session.sock) {
+        return res.status(400).json({ success: false, error: 'Your WhatsApp is not connected!' });
+    }
+
+    const { subject, participants = [] } = req.body;
+    if (!subject || !subject.trim()) {
+        return res.status(400).json({ success: false, error: 'Group title is required' });
+    }
+
+    try {
+        const validParticipants = participants.map(p => formatJid(p)).filter(Boolean);
+        const group = await session.sock.groupCreate(subject.trim(), validParticipants);
+        session.addLog(`Group created successfully: "${subject}" (${group.id})`);
+        res.json({ success: true, group });
+    } catch (err) {
+        session.addLog(`Error creating group: ${err.message}`);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 5. System Monitor Info
+app.get('/api/system-monitor', authenticateUser, async (req, res) => {
+    try {
+        const mem = process.memoryUsage();
+        const uptimeSeconds = process.uptime();
+        res.json({
+            success: true,
+            system: {
+                uptime: uptimeSeconds,
+                nodeVersion: process.version,
+                platform: process.platform,
+                memory: {
+                    rssMB: (mem.rss / (1024 * 1024)).toFixed(2),
+                    heapUsedMB: (mem.heapUsed / (1024 * 1024)).toFixed(2),
+                    heapTotalMB: (mem.heapTotal / (1024 * 1024)).toFixed(2)
+                },
+                activeSessions: userSessions.size,
+                environment: process.env.NODE_ENV || 'production'
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 6. User Notifications Center
+app.get('/api/notifications', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+
+    const logs = session ? session.logs.slice(-15) : [];
+    const notifications = logs.map((log, index) => ({
+        id: `notif_${Date.now()}_${index}`,
+        text: log,
+        type: log.toLowerCase().includes('error') ? 'error' : (log.toLowerCase().includes('success') ? 'success' : 'info'),
+        time: new Date().toLocaleTimeString()
+    })).reverse();
+
+    res.json({ success: true, notifications });
+});
+
+// 7. Webhooks Config & Test Dispatcher
+app.get('/api/webhooks', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const session = userSessions.get(userId);
+    const config = session?.config || await getUserBotConfig(userId);
+    res.json({
+        success: true,
+        webhookUrl: config?.webhookUrl || '',
+        webhookSecret: config?.webhookSecret || '',
+        events: config?.webhookEvents || ['message.received', 'message.status']
+    });
+});
+
+app.post('/api/webhooks', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const { webhookUrl, webhookSecret, events } = req.body;
+    try {
+        const session = userSessions.get(userId);
+        if (session && session.config) {
+            session.config.webhookUrl = webhookUrl;
+            session.config.webhookSecret = webhookSecret;
+            session.config.webhookEvents = events;
+        }
+        res.json({ success: true, message: 'Webhook configuration saved successfully.' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/webhooks/test', authenticateUser, async (req, res) => {
+    const userId = req.user.id;
+    const { webhookUrl, webhookSecret } = req.body;
+    if (!webhookUrl) return res.status(400).json({ success: false, error: 'Please specify a Webhook URL' });
+
+    try {
+        await webhookDispatcher.dispatch(webhookUrl, webhookSecret, 'ping', {
+            message: 'Webhook test ping from Cortex AutoBot',
+            userId
+        }, userId);
+        res.json({ success: true, message: 'Test webhook ping delivered to endpoint.' });
+    } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
