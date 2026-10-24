@@ -320,18 +320,25 @@ html[data-theme="dark"] .gst-notice-banner {
 .brand-icon-wa {
   width: 42px;
   height: 42px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  border-radius: 12px;
+  background: #000000;
   color: #ffffff;
   display: inline-grid;
   place-items: center;
-  font-size: 1.35rem;
-  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.35);
+  font-size: 1.45rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.brand-icon-wa i {
+  color: #ffffff !important;
 }
 
 .brand-title-wa span {
   color: #25d366;
 }
+
 
 .page-icon-wa {
   width: 48px;
@@ -3782,16 +3789,21 @@ html[data-theme="dark"] .input-field-wrap input:focus {
 .overlay-brand .brand-icon-wa {
   width: 52px;
   height: 52px;
-  border-radius: 14px;
-  font-size: 1.8rem;
+  border-radius: 16px;
+  font-size: 1.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  background: #000000;
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
+
+.overlay-brand .brand-icon-wa i {
+  color: #ffffff !important;
+}
+
 
 /* Mobile Responsiveness */
 @media (max-width: 767px) {
