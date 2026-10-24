@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark" data-bs-theme="dark">
 <head>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Cortex WA AutoBot - Multi-User WhatsApp Automation Dashboard">
@@ -18,9 +19,458 @@
 
   <!-- WhatsApp Custom Theme Extensions -->
   <link rel="stylesheet" href="style.css">
+
+  <!-- =============================================================== -->
+  <!-- BESPOKE REFINED HIGH-END DARK THEME (ARCHITECTURAL & CALM)       -->
+  <!-- Enforcing custom dark palette: #0D0F12 / #12141A with soft glow -->
+  <!-- =============================================================== -->
+  <style id="cortex-refined-dark-theme">
+    :root,
+    html,
+    html[data-theme="dark"],
+    html[data-theme="light"],
+    body {
+      --dark-canvas: #0d0f12;
+      --dark-surface: #12141a;
+      --dark-surface-elevated: #171a22;
+      --dark-surface-hover: #1c202a;
+      --dark-surface-active: #222733;
+
+      /* Semi-transparent faint white divider lines for clean depth separation */
+      --dark-border-subtle: rgba(255, 255, 255, 0.05);
+      --dark-border: rgba(255, 255, 255, 0.08);
+      --dark-border-strong: rgba(255, 255, 255, 0.14);
+      --dark-border-focus: rgba(16, 185, 129, 0.45);
+
+      /* High-end comfortable typography (warm soft off-white & light grays) */
+      --dark-text-heading: #f3f4f6;
+      --dark-text-body: #d1d5db;
+      --dark-text-muted: #9ca3af;
+      --dark-text-faint: #6b7280;
+
+      /* Muted refined accents (forest emerald, slate cobalt, gentle amber) */
+      --dark-accent-emerald: #10b981;
+      --dark-accent-emerald-subtle: rgba(16, 185, 129, 0.12);
+      --dark-accent-blue: #3b82f6;
+      --dark-accent-blue-subtle: rgba(59, 130, 246, 0.12);
+
+      /* Overriding admin theme CSS tokens */
+      --admin-bg: #0d0f12 !important;
+      --admin-surface: #12141a !important;
+      --admin-surface-soft: #171a22 !important;
+      --admin-surface-hover: #1c202a !important;
+      --admin-border: rgba(255, 255, 255, 0.08) !important;
+      --admin-border-subtle: rgba(255, 255, 255, 0.05) !important;
+      --admin-border-strong: rgba(255, 255, 255, 0.14) !important;
+      --admin-text: #d1d5db !important;
+      --admin-text-strong: #f3f4f6 !important;
+      --admin-muted: #9ca3af !important;
+      --admin-muted-foreground: #9ca3af !important;
+      --admin-sidebar: #0f1117 !important;
+      --admin-sidebar-soft: #151821 !important;
+      --admin-ring: 0 0 0 2px rgba(16, 185, 129, 0.3) !important;
+
+      /* Bootstrap & component variables overrides */
+      --bs-body-bg: #0d0f12 !important;
+      --bs-body-color: #d1d5db !important;
+      --bs-tertiary-bg: #171a22 !important;
+      --bs-secondary-bg: #141720 !important;
+      --bs-border-color: rgba(255, 255, 255, 0.08) !important;
+      --bs-border-color-translucent: rgba(255, 255, 255, 0.08) !important;
+
+      color-scheme: dark;
+    }
+
+    /* Overall Body & Main Canvas */
+    body {
+      background-color: var(--dark-canvas) !important;
+      background: radial-gradient(circle at 50% 0%, #151821 0%, #0d0f12 70%) no-repeat fixed !important;
+      color: var(--dark-text-body) !important;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* App Shell & Content Background */
+    .admin-shell,
+    .admin-main,
+    .main-content,
+    .content-area,
+    .tab-content,
+    .dashboard-sheet {
+      background: transparent !important;
+      color: var(--dark-text-body) !important;
+    }
+
+    /* Top Navbar */
+    .admin-header,
+    .top-navbar,
+    header.header {
+      background: rgba(18, 20, 26, 0.85) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+      border-bottom: 1px solid var(--dark-border) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    /* Sidebar Navigation */
+    .admin-sidebar {
+      background: var(--admin-sidebar) !important;
+      border-right: 1px solid var(--dark-border) !important;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .sidebar-brand {
+      border-bottom: 1px solid var(--dark-border-subtle) !important;
+      background: transparent !important;
+    }
+
+    .sidebar-nav .nav-link {
+      color: var(--dark-text-muted) !important;
+      border-radius: 8px !important;
+      transition: all 0.18s ease !important;
+      font-weight: 500 !important;
+    }
+
+    .sidebar-nav .nav-link:hover {
+      background: var(--dark-surface-hover) !important;
+      color: var(--dark-text-heading) !important;
+      border: 1px solid var(--dark-border-subtle) !important;
+    }
+
+    .sidebar-nav .nav-link.active,
+    .sidebar-nav .nav-item.active > .nav-link {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(16, 185, 129, 0.05) 100%) !important;
+      color: #34d399 !important;
+      border: 1px solid rgba(16, 185, 129, 0.28) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .sidebar-section-title,
+    .sidebar-heading {
+      color: var(--dark-text-faint) !important;
+      letter-spacing: 0.06em !important;
+      font-weight: 600 !important;
+    }
+
+    /* Cards, Panels, and Surfaces */
+    .card,
+    .panel,
+    .metric-card,
+    .pricing-card,
+    .plan-card,
+    .stat-card,
+    .glass-card,
+    .modal-content,
+    .dropdown-menu,
+    .offcanvas {
+      background: var(--dark-surface) !important;
+      border: 1px solid var(--dark-border) !important;
+      color: var(--dark-text-body) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    .card:hover,
+    .metric-card:hover {
+      border-color: var(--dark-border-strong) !important;
+    }
+
+    .card-header,
+    .modal-header,
+    .modal-footer {
+      background: var(--dark-surface-elevated) !important;
+      border-color: var(--dark-border-subtle) !important;
+      color: var(--dark-text-heading) !important;
+    }
+
+    /* Headers, Titles and Text Contrast */
+    h1, h2, h3, h4, h5, h6,
+    .h1, .h2, .h3, .h4, .h5, .h6,
+    .card-title,
+    .modal-title,
+    .page-title,
+    .metric-value,
+    .fw-bold {
+      color: var(--dark-text-heading) !important;
+      font-weight: 600 !important;
+      letter-spacing: -0.015em !important;
+    }
+
+    p, span, label, small,
+    .text-body,
+    .card-text {
+      color: var(--dark-text-body);
+    }
+
+    .text-muted {
+      color: var(--dark-text-muted) !important;
+    }
+
+    /* Strip light mode forced utility classes */
+    .bg-light,
+    .bg-white,
+    .bg-body,
+    .bg-light-subtle {
+      background-color: var(--dark-surface-elevated) !important;
+      color: var(--dark-text-body) !important;
+    }
+
+    .text-dark {
+      color: var(--dark-text-heading) !important;
+    }
+
+    /* Tables */
+    .table {
+      --bs-table-bg: transparent !important;
+      --bs-table-color: var(--dark-text-body) !important;
+      --bs-table-hover-bg: var(--dark-surface-hover) !important;
+      --bs-table-hover-color: var(--dark-text-heading) !important;
+      --bs-table-border-color: var(--dark-border-subtle) !important;
+      border-color: var(--dark-border-subtle) !important;
+      color: var(--dark-text-body) !important;
+    }
+
+    .table thead th {
+      background-color: var(--dark-surface-elevated) !important;
+      color: var(--dark-text-muted) !important;
+      border-bottom: 1px solid var(--dark-border) !important;
+      font-size: 0.8rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.04em !important;
+    }
+
+    .table tbody tr {
+      border-bottom: 1px solid var(--dark-border-subtle) !important;
+      transition: background-color 0.15s ease !important;
+    }
+
+    .table tbody td {
+      border-color: var(--dark-border-subtle) !important;
+      color: var(--dark-text-body) !important;
+    }
+
+    /* Form Inputs, Selects, and Controls */
+    .form-control,
+    .form-select,
+    .input-group-text,
+    textarea {
+      background-color: var(--dark-surface-elevated) !important;
+      border: 1px solid var(--dark-border) !important;
+      color: var(--dark-text-heading) !important;
+      border-radius: 8px !important;
+      font-size: 0.92rem !important;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    }
+
+    .form-control:focus,
+    .form-select:focus,
+    textarea:focus {
+      background-color: var(--dark-surface-active) !important;
+      border-color: var(--dark-accent-emerald) !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16) !important;
+      color: #ffffff !important;
+      outline: none !important;
+    }
+
+    .form-control::placeholder,
+    textarea::placeholder {
+      color: var(--dark-text-faint) !important;
+      opacity: 0.75;
+    }
+
+    .input-group-text {
+      background-color: var(--dark-surface-hover) !important;
+      border-color: var(--dark-border) !important;
+      color: var(--dark-text-muted) !important;
+    }
+
+    /* Buttons */
+    .btn {
+      border-radius: 8px !important;
+      font-weight: 500 !important;
+      font-size: 0.9rem !important;
+      transition: all 0.18s ease !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      border: 1px solid #10b981 !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.22) !important;
+    }
+
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+      border-color: #047857 !important;
+      color: #ffffff !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+    }
+
+    .btn-outline-primary {
+      border-color: rgba(16, 185, 129, 0.35) !important;
+      color: #34d399 !important;
+      background: transparent !important;
+    }
+
+    .btn-outline-primary:hover,
+    .btn-outline-primary:focus {
+      background: rgba(16, 185, 129, 0.12) !important;
+      border-color: #10b981 !important;
+      color: #ffffff !important;
+    }
+
+    .btn-outline-secondary,
+    .btn-outline-clean {
+      border-color: var(--dark-border) !important;
+      color: var(--dark-text-muted) !important;
+      background: transparent !important;
+    }
+
+    .btn-outline-secondary:hover,
+    .btn-outline-clean:hover {
+      background: var(--dark-surface-hover) !important;
+      border-color: var(--dark-border-strong) !important;
+      color: var(--dark-text-heading) !important;
+    }
+
+    .btn-secondary {
+      background: var(--dark-surface-hover) !important;
+      border: 1px solid var(--dark-border) !important;
+      color: var(--dark-text-body) !important;
+    }
+
+    .btn-secondary:hover {
+      background: var(--dark-surface-active) !important;
+      color: var(--dark-text-heading) !important;
+    }
+
+    /* Badges & Pills */
+    .badge {
+      font-weight: 500 !important;
+      border-radius: 6px !important;
+      padding: 0.35em 0.65em !important;
+    }
+
+    .badge.text-bg-light {
+      background-color: var(--dark-surface-elevated) !important;
+      color: var(--dark-text-muted) !important;
+      border: 1px solid var(--dark-border-subtle) !important;
+    }
+
+    .badge.text-bg-dark {
+      background-color: var(--dark-surface-hover) !important;
+      color: var(--dark-text-heading) !important;
+      border: 1px solid var(--dark-border) !important;
+    }
+
+    .badge.text-bg-success {
+      background-color: rgba(16, 185, 129, 0.18) !important;
+      color: #34d399 !important;
+      border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    }
+
+    .badge.text-bg-warning {
+      background-color: rgba(245, 158, 11, 0.18) !important;
+      color: #fbbf24 !important;
+      border: 1px solid rgba(245, 158, 11, 0.3) !important;
+    }
+
+    .badge.text-bg-danger {
+      background-color: rgba(239, 68, 68, 0.18) !important;
+      color: #f87171 !important;
+      border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    }
+
+    /* Modals & Dialogs */
+    .modal-backdrop.show {
+      opacity: 0.75 !important;
+      background-color: #050608 !important;
+      backdrop-filter: blur(8px) !important;
+    }
+
+    .modal-content {
+      background: #12141a !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    /* Dropdowns */
+    .dropdown-menu {
+      background-color: #151821 !important;
+      border: 1px solid var(--dark-border-strong) !important;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
+    }
+
+    .dropdown-item {
+      color: var(--dark-text-body) !important;
+      transition: all 0.12s ease !important;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:focus {
+      background-color: var(--dark-surface-hover) !important;
+      color: var(--dark-text-heading) !important;
+    }
+
+    .dropdown-divider {
+      border-color: var(--dark-border-subtle) !important;
+    }
+
+    /* Terminal & Console Cards */
+    .terminal-window,
+    .live-log-container,
+    .log-box,
+    .code-editor,
+    .pre-scrollable {
+      background-color: #0a0b0e !important;
+      border: 1px solid var(--dark-border) !important;
+      color: #cbd5e1 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+
+    /* Mobile Bottom Navigation */
+    .mobile-bottom-nav {
+      background: rgba(18, 20, 26, 0.94) !important;
+      border-top: 1px solid var(--dark-border) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+    }
+
+    .mobile-nav-item {
+      color: var(--dark-text-muted) !important;
+    }
+
+    .mobile-nav-item.active {
+      color: #34d399 !important;
+    }
+
+    /* Hide the theme toggle button since dark theme is exclusively enforced */
+    [data-theme-toggle] {
+      display: none !important;
+    }
+
+    /* Smooth Scrollbars */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d0f12;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.24);
+    }
+  </style>
 </head>
 
 <body>
+
   <!-- =============================================================== -->
   <!-- NATIVE MOBILE APP NAVIGATION BAR & FLOATING ACTION BUTTON (FAB) -->
   <!-- Placed directly on <body> to ensure absolute viewport anchoring -->
@@ -226,11 +676,6 @@
 
           <!-- Navbar Actions -->
           <div class="navbar-actions ms-auto">
-            <!-- Theme Toggle -->
-            <button class="icon-button theme-toggle" type="button" data-theme-toggle aria-label="Switch color theme" title="Switch color theme">
-              <i class="bi bi-moon-stars" data-theme-icon aria-hidden="true"></i>
-            </button>
-
             <!-- Test Message Header Action -->
             <button id="btn-test-msg-nav" class="btn btn-outline-success btn-sm d-none d-sm-inline-flex align-items-center gap-2" disabled>
               <i class="bi bi-send-fill"></i> Test Message
@@ -9342,18 +9787,18 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
 
       const avatarHtml = role === 'user' 
         ? `<div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #2563eb; font-size: 1rem;"><i class="bi bi-person-fill"></i></div>`
-        : `<div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #9333ea; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.25);"><i class="bi bi-robot"></i></div>`;
+        : `<div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #1e293b; border: 1px solid rgba(255,255,255,0.12); font-size: 1.1rem; color: #10b981;"><i class="bi bi-robot"></i></div>`;
 
       // Formatted text with basic markdown formatting
       let formattedText = escapeHtml(text)
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`([^`]+)`/g, '<code class="bg-light px-1 py-0.5 rounded text-dark">$1</code>')
+        .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded" style="background: rgba(255,255,255,0.08); color: #34d399;">$1</code>')
         .replace(/\n/g, '<br>');
 
       const bubbleHtml = role === 'user'
-        ? `<div class="p-3 rounded-4 shadow-sm text-white" style="max-width: 80%; background: #2563eb; border-top-right-radius: 4px !important;"><div class="small">${formattedText}</div></div>`
-        : `<div class="p-3 rounded-4 bg-white shadow-sm border text-dark" style="max-width: 80%; border-top-left-radius: 4px !important;"><div class="small">${formattedText}</div></div>`;
+        ? `<div class="p-3 rounded-4 text-white" style="max-width: 80%; background: #1d4ed8; border: 1px solid rgba(59,130,246,0.3); border-top-right-radius: 4px !important;"><div class="small">${formattedText}</div></div>`
+        : `<div class="p-3 rounded-4" style="max-width: 80%; background: #171a22; border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb; border-top-left-radius: 4px !important;"><div class="small">${formattedText}</div></div>`;
 
       if (role === 'user') {
         row.innerHTML = bubbleHtml + avatarHtml;
@@ -9386,9 +9831,9 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       typingIndicator.id = 'ai-typing-indicator';
       typingIndicator.className = 'd-flex gap-3 mb-4';
       typingIndicator.innerHTML = `
-        <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #9333ea; font-size: 1.1rem;"><i class="bi bi-robot"></i></div>
-        <div class="p-3 rounded-4 bg-white shadow-sm border text-muted small d-flex align-items-center gap-2">
-          <span class="spinner-grow spinner-grow-sm text-purple" role="status"></span>
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #1e293b; border: 1px solid rgba(255,255,255,0.12); font-size: 1.1rem; color: #10b981;"><i class="bi bi-robot"></i></div>
+        <div class="p-3 rounded-4 text-muted small d-flex align-items-center gap-2" style="background: #171a22; border: 1px solid rgba(255,255,255,0.08); color: #9ca3af;">
+          <span class="spinner-grow spinner-grow-sm text-emerald" role="status" style="color: #10b981;"></span>
           <span>Cortex AI is thinking...</span>
         </div>
       `;
@@ -9451,11 +9896,11 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       if (container) {
         container.innerHTML = `
           <div class="d-flex gap-3 mb-4 ai-msg-row ai-msg-bot">
-            <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #9333ea; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.25);">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #1e293b; border: 1px solid rgba(255,255,255,0.12); font-size: 1.1rem; color: #10b981;">
               <i class="bi bi-robot"></i>
             </div>
-            <div class="p-3 rounded-4 bg-white shadow-sm border" style="max-width: 80%; border-top-left-radius: 4px !important;">
-              <p class="mb-2 fw-semibold text-dark">Chat cleared! How can I assist you with Cortex WhatsApp templates today?</p>
+            <div class="p-3 rounded-4" style="max-width: 80%; background: #171a22; border: 1px solid rgba(255,255,255,0.08); border-top-left-radius: 4px !important;">
+              <p class="mb-2 fw-semibold" style="color: #f3f4f6;">Chat cleared! How can I assist you with Cortex WhatsApp templates today?</p>
               <p class="mb-0 text-muted small"><i class="bi bi-info-circle me-1"></i> Responses are focused strictly on templates, auto-sharing, and campaign automations.</p>
             </div>
           </div>
