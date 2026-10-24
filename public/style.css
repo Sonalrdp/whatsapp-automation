@@ -321,13 +321,13 @@ html[data-theme="dark"] .gst-notice-banner {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: #000000;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
   color: #ffffff;
   display: inline-grid;
   place-items: center;
   font-size: 1.45rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
 }
 
@@ -3794,10 +3794,10 @@ html[data-theme="dark"] .input-field-wrap input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000000;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
 }
 
 .overlay-brand .brand-icon-wa i {
