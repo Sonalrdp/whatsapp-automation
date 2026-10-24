@@ -1239,7 +1239,9 @@ export async function findOrCreateGoogleUser({ email, name, avatar }) {
     const adminEmail = (process.env.ADMIN_EMAIL || 'admin.demo@gmail.com').toLowerCase();
     
     let user = await getUserByEmail(normalizedEmail);
+    let isNewUser = false;
     if (!user) {
+        isNewUser = true;
         const role = (normalizedEmail === adminEmail) ? 'admin' : 'user';
         user = await createUser({
             id: generate12DigitId(),
@@ -1271,6 +1273,7 @@ export async function findOrCreateGoogleUser({ email, name, avatar }) {
         }
     }
 
+    user.isNewUser = isNewUser;
     return user;
 }
 

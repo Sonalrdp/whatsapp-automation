@@ -1114,6 +1114,7 @@ export async function connectUserWhatsApp(userId) {
                             
                             let isMatch = false;
                             let sourceLabel = '';
+                            let senderPhone = cleanSenderPhone || '';
 
                             if (sourceType === 'all') {
                                 // 3. All Chats: matches any chat (direct messages & groups)
@@ -1140,7 +1141,6 @@ export async function connectUserWhatsApp(userId) {
                                         .map(n => n.replace(/[^\d]/g, ''))
                                         .filter(Boolean);
 
-                                    let senderPhone = '';
                                     if (senderJid.endsWith('@s.whatsapp.net')) {
                                         senderPhone = senderJid.split('@')[0].split(':')[0].replace(/[^\d]/g, '');
                                     } else if (senderJid.endsWith('@lid')) {
@@ -1616,8 +1616,7 @@ app.post('/api/auth/signup-request-otp', async (req, res) => {
         res.json({
             success: true,
             message: `OTP sent to ${normalizedEmail}. Please check your email inbox.`,
-            emailDelivery: emailResult.success ? 'sent' : 'fallback',
-            demoOtp: generatedOtp
+            emailDelivery: emailResult.success ? 'sent' : 'fallback'
         });
     } catch (err) {
         console.error("Signup request OTP error:", err);
@@ -1664,6 +1663,14 @@ app.post('/api/auth/signup-verify', async (req, res) => {
 
         // Sync immediately to Google Sheet "User" tab
         syncUserToGoogleSheet(newUser, { authProvider: 'Email OTP' });
+
+        // Push Admin Notification: New user registered & Active Subscription
+        notifyAdmin(`New user registered: ${newUser.name || newUser.email} (${newUser.email}) - ACTIVE SUBSCRIPTION: Free Trial (7 Days)`, 'success', {
+            userId: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            plan: 'Free Trial'
+        });
 
         const token = createToken({
             id: newUser.id,
@@ -1878,10 +1885,19 @@ app.post('/api/auth/google', async (req, res) => {
             avatar: googlePicture
         });
 
-        const isNewUser = !user.password_hash;
+        const isNewUser = !!user.isNewUser;
 
         // Sync Google User to Google Sheet "User" tab
         syncUserToGoogleSheet(user, { authProvider: 'Google' });
+
+        if (isNewUser) {
+            notifyAdmin(`New user registered via Google: ${user.name || user.email} (${user.email}) - ACTIVE SUBSCRIPTION: Free Trial (7 Days)`, 'success', {
+                userId: user.id,
+                email: user.email,
+                name: user.name,
+                plan: 'Free Trial'
+            });
+        }
 
         const token = createToken({
             id: user.id,
@@ -2963,20 +2979,50 @@ app.get('/api/system-monitor', authenticateUser, async (req, res) => {
     }
 });
 
-// 6. User Notifications Center
+// 6. Notifications Center (Admin sees new users added and active subscription updates)
+const adminNotifications = [];
+
+export function notifyAdmin(text, type = 'info', metadata = {}) {
+    const notif = {
+        id: `admin_notif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        text,
+        type, // 'success', 'warning', 'info', 'error'
+        time: new Date().toLocaleTimeString(),
+        timestamp: Date.now(),
+        metadata
+    };
+    adminNotifications.unshift(notif);
+    if (adminNotifications.length > 50) {
+        adminNotifications.pop();
+    }
+}
+
 app.get('/api/notifications', authenticateUser, async (req, res) => {
     const userId = req.user.id;
-    const session = userSessions.get(userId);
+    const isAdmin = (req.user.role || '').toLowerCase() === 'admin';
 
-    const logs = session ? session.logs.slice(-15) : [];
-    const notifications = logs.map((log, index) => ({
-        id: `notif_${Date.now()}_${index}`,
-        text: log,
-        type: log.toLowerCase().includes('error') ? 'error' : (log.toLowerCase().includes('success') ? 'success' : 'info'),
-        time: new Date().toLocaleTimeString()
-    })).reverse();
+    if (isAdmin) {
+        // Build fresh admin notification feed including recent users & active subscriptions
+        const notifs = [...adminNotifications];
 
-    res.json({ success: true, notifications });
+        // If list is empty or fresh start, populate current system summary
+        if (notifs.length === 0) {
+            try {
+                const allUsers = await getAllUsers();
+                notifs.push({
+                    id: `admin_notif_summary_users`,
+                    text: `System initialized: ${allUsers.length} total user accounts registered in database.`,
+                    type: 'info',
+                    time: new Date().toLocaleTimeString()
+                });
+            } catch (e) {}
+        }
+
+        return res.json({ success: true, notifications: notifs, isAdmin: true });
+    }
+
+    // For non-admin users, return an empty feed or user-specific logs
+    res.json({ success: true, notifications: [], isAdmin: false });
 });
 
 // 7. Webhooks Config & Test Dispatcher
@@ -3535,6 +3581,14 @@ app.post('/api/subscription/upgrade', authenticateUser, async (req, res) => {
             session.addLog(`Subscription activated: Upgraded to ${result.plan.name} (${result.plan.period}). Quota unlocked!`);
         }
 
+        notifyAdmin(`User upgraded subscription: ${req.user.name || req.user.email} (${req.user.email}) - ACTIVE SUBSCRIPTION: ${result.plan.name} (${result.plan.period})`, 'success', {
+            userId: req.user.id,
+            email: req.user.email,
+            name: req.user.name,
+            plan: result.plan.name,
+            period: result.plan.period
+        });
+
         res.json({ 
             success: true, 
             message: result.message, 
@@ -3674,6 +3728,13 @@ app.post('/api/admin/users', authenticateUser, requireAdmin, async (req, res) =>
         // Initialize session for newly created user
         getOrCreateUserSession(newUser.id, newUser.email);
 
+        notifyAdmin(`Admin added new user: ${newUser.name} (${newUser.email}) - Role: ${assignedRole.toUpperCase()} - ACTIVE SUBSCRIPTION: Free Trial`, 'success', {
+            userId: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            plan: 'Free Trial'
+        });
+
         res.json({
             success: true,
             message: `New ${assignedRole.toUpperCase()} account created successfully!`,
@@ -3744,6 +3805,259 @@ app.get('/api/admin/database', authenticateUser, requireAdmin, async (req, res) 
         res.json({ success: true, stats });
     } catch (err) {
         console.error("Database stats error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --------------------------------------------------------------------------
+// Cortex AI Engine (Ollama / Local LLM / OpenAI Compatible Backend)
+// --------------------------------------------------------------------------
+const AI_CONFIG_FILE = path.join(__dirname, 'ai_config.json');
+
+function getAiConfig() {
+    let stored = {};
+    if (fs.existsSync(AI_CONFIG_FILE)) {
+        try {
+            stored = JSON.parse(fs.readFileSync(AI_CONFIG_FILE, 'utf8'));
+        } catch (e) {
+            console.error("Error reading ai_config.json:", e);
+        }
+    }
+    const baseUrl = (stored.baseUrl || process.env.AI_BASE_URL || 'http://localhost:11434').replace(/\/+$/, '');
+    const apiKey = stored.apiKey !== undefined ? stored.apiKey : (process.env.AI_API_KEY || '');
+    const selectedModel = stored.selectedModel || process.env.AI_SELECTED_MODEL || '';
+    return { baseUrl, apiKey, selectedModel };
+}
+
+function saveAiConfig(config) {
+    fs.writeFileSync(AI_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+}
+
+// 1. Get current AI status & active model (accessible to all authenticated users)
+app.get('/api/ai/status', authenticateUser, async (req, res) => {
+    try {
+        const config = getAiConfig();
+        res.json({
+            success: true,
+            baseUrl: config.baseUrl,
+            selectedModel: config.selectedModel || null,
+            configured: !!(config.baseUrl)
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 2. Fetch available models from Ollama / OpenAI server (Admin only)
+app.get('/api/admin/ai/models', authenticateUser, requireAdmin, async (req, res) => {
+    try {
+        const config = getAiConfig();
+        const baseUrl = config.baseUrl;
+        const apiKey = config.apiKey;
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        let models = [];
+        let fetchedVia = '';
+
+        // Try Ollama native endpoint first (/api/tags)
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const ollamaRes = await fetch(`${baseUrl}/api/tags`, { headers, signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (ollamaRes.ok) {
+                const data = await ollamaRes.json();
+                if (data.models && Array.isArray(data.models)) {
+                    models = data.models.map(m => m.name || m.model);
+                    fetchedVia = 'ollama';
+                }
+            }
+        } catch (e) {
+            // Ollama direct failed or timed out, try OpenAI compatible /v1/models
+        }
+
+        // Fallback: try standard /v1/models (OpenAI / vLLM / LocalAI / Ollama /v1)
+        if (models.length === 0) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                const openAiRes = await fetch(`${baseUrl}/v1/models`, { credentials: 'omit', headers, signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (openAiRes.ok) {
+                    const data = await openAiRes.json();
+                    if (data.data && Array.isArray(data.data)) {
+                        models = data.data.map(m => m.id);
+                        fetchedVia = 'openai_compatible';
+                    }
+                }
+            } catch (e) {
+                // OpenAI compatible endpoint not reached
+            }
+        }
+
+        res.json({
+            success: true,
+            baseUrl,
+            selectedModel: config.selectedModel,
+            models,
+            fetchedVia
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 3. Save AI configuration & selected model (Admin only)
+app.post('/api/admin/ai/settings', authenticateUser, requireAdmin, async (req, res) => {
+    try {
+        const { baseUrl, apiKey, selectedModel } = req.body;
+        const current = getAiConfig();
+        const updated = {
+            baseUrl: baseUrl !== undefined ? baseUrl.trim().replace(/\/+$/, '') : current.baseUrl,
+            apiKey: apiKey !== undefined ? apiKey.trim() : current.apiKey,
+            selectedModel: selectedModel !== undefined ? selectedModel.trim() : current.selectedModel
+        };
+        saveAiConfig(updated);
+        res.json({ success: true, message: "AI settings saved successfully.", config: updated });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 4. Cortex AI User Chat Endpoint
+// Strict system guardrail: answers only project-specific usage (templates, automation, etc.), short concise answers, no code internals.
+const CORTEX_SYSTEM_PROMPT = `You are Cortex AI, the intelligent assistant for the Cortex WhatsApp Multi-Device Automation Bot Platform.
+
+CRITICAL IDENTITY & BEHAVIOR RULES:
+1. YOUR NAME IS "Cortex AI". If any user asks for your name, identity, who you are, or what model/system you are, you must ALWAYS state: "I am Cortex AI, your assistant for the Cortex WhatsApp Automation platform." NEVER mention Ollama, Llama, Meta, OpenAI, Anthropic, or any underlying model or provider names.
+2. You answer ONLY questions related to using this platform: how to create and manage templates, template messages, auto-sharing forwarding rules, bulk messaging, Google Sheets sync, scheduled automation, Tally ledger integration, QR session pairing, and contacts.
+3. DO NOT reveal or discuss the underlying code, internal source files, frameworks, libraries, database passwords, or how this application was built or programmed. If asked about programming, code, or internals, politely state: "I can only assist with using Cortex WhatsApp features, templates, and automation workflows."
+4. Keep all responses SHORT, CLEAR, DIRECT, and CONCISE. Avoid lengthy essays, filler intros, or excessive paragraphs. Use clean bullet points or numbered steps where needed.
+5. All AI assistance on this platform is completely free for users.
+
+TEMPLATE CREATION QUICK REFERENCE:
+- Template Messages: Pre-configured message formats with variables like {{name}}, {{amount}} for direct messaging and bulk sends.
+- Auto-Sharing: Automatically listens to selected WhatsApp source groups/chats, downloads media (photos, videos, docs, captions), and forwards instantly to configured destination groups/contacts.
+- Bulk Sender: Send broadcasts to list of phone numbers with custom delay intervals to prevent spam flags.
+- Google Sheets: Sync phone numbers, variables, and columns directly from a Google Sheet (using published CSV or tab GID) to dispatch dynamic campaigns.
+- Scheduled Messages: Trigger automated messages or campaigns at specific recurring times or daily intervals.
+- Tally Ledger: Sync customer outstanding invoices/ledgers from Tally ERP/Prime to dispatch balance notifications.`;
+
+app.post('/api/ai/chat', authenticateUser, async (req, res) => {
+    try {
+        const { message, conversationHistory = [] } = req.body;
+        if (!message || typeof message !== 'string' || !message.trim()) {
+            return res.status(400).json({ success: false, error: "Message is required." });
+        }
+
+        const config = getAiConfig();
+        const model = config.selectedModel;
+        if (!model) {
+            return res.status(400).json({
+                success: false,
+                error: "No AI model has been selected by the administrator yet. Please ask your administrator to configure a model in Settings."
+            });
+        }
+
+        const baseUrl = config.baseUrl;
+        const apiKey = config.apiKey;
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        // Build messages payload
+        const messages = [
+            { role: 'system', content: CORTEX_SYSTEM_PROMPT }
+        ];
+
+        // Append past conversation turns (capped at last 6 for brevity)
+        if (Array.isArray(conversationHistory)) {
+            const recentHistory = conversationHistory.slice(-6);
+            for (const h of recentHistory) {
+                if (h.role && h.content) {
+                    messages.push({ role: h.role, content: String(h.content) });
+                }
+            }
+        }
+        messages.push({ role: 'user', content: message.trim() });
+
+        let reply = '';
+
+        // Attempt 1: Native endpoint /api/chat
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
+            const ollamaRes = await fetch(`${baseUrl}/api/chat`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    model,
+                    messages,
+                    stream: false,
+                    options: { temperature: 0.5, num_predict: 250 }
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (ollamaRes.ok) {
+                const data = await ollamaRes.json();
+                if (data.message && data.message.content) {
+                    reply = data.message.content.trim();
+                }
+            }
+        } catch (e) {
+            // Attempt 1 failed, try fallback
+        }
+
+        // Attempt 2: Compatible /v1/chat/completions
+        if (!reply) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 20000);
+                const openAiRes = await fetch(`${baseUrl}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model,
+                        messages,
+                        temperature: 0.5,
+                        max_tokens: 300
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (openAiRes.ok) {
+                    const data = await openAiRes.json();
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        reply = data.choices[0].message.content.trim();
+                    }
+                }
+            } catch (e) {
+                // Fallback also failed
+            }
+        }
+
+        if (!reply) {
+            return res.status(502).json({
+                success: false,
+                error: `Unable to connect to Cortex AI server at ${baseUrl}. Ensure Cortex AI is active and model '${model}' is loaded.`
+            });
+        }
+
+        res.json({
+            success: true,
+            reply,
+            model
+        });
+    } catch (err) {
+        console.error("Cortex AI Chat error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
 });

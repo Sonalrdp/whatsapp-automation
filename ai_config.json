@@ -1,0 +1,5 @@
+{
+  "baseUrl": "http://localhost:11434",
+  "apiKey": "",
+  "selectedModel": "gpt-oss:120b-cloud"
+}

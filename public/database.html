@@ -111,10 +111,6 @@
           <span class="nav-icon"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></span>
           <span class="nav-text">Groups</span>
         </a>
-        <a class="nav-link" href="#labels-manager" data-sheet="labels-manager">
-          <span class="nav-icon"><i class="bi bi-bookmark-fill" aria-hidden="true"></i></span>
-          <span class="nav-text">Labels</span>
-        </a>
 
         <!-- AUTOMATION -->
         <div class="nav-group-header">
@@ -122,32 +118,20 @@
           <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
         </div>
         <a class="nav-link" href="#bot-configurations" data-sheet="bot-configurations">
-          <span class="nav-icon"><i class="bi bi-cpu" aria-hidden="true"></i></span>
-          <span class="nav-text">Bot Settings</span>
-        </a>
-        <a class="nav-link" href="#trigger-chats" data-sheet="trigger-chats">
-          <span class="nav-icon"><i class="bi bi-chat-left-text-fill text-success" aria-hidden="true"></i></span>
-          <span class="nav-text">Auto Reply</span>
-        </a>
-        <a class="nav-link" href="#bot-profile" data-sheet="bot-profile">
-          <span class="nav-icon"><i class="bi bi-patch-check-fill text-primary" aria-hidden="true"></i></span>
-          <span class="nav-text">Bot Profile</span>
-        </a>
-        <a class="nav-link" href="#scheduler-tasks" data-sheet="scheduler-tasks">
-          <span class="nav-icon"><i class="bi bi-stopwatch-fill" aria-hidden="true"></i></span>
-          <span class="nav-text">Scheduler</span>
-        </a>
-        <a class="nav-link" href="#auto-broadcast" data-sheet="auto-broadcast">
-          <span class="nav-icon"><i class="bi bi-broadcast-pin" aria-hidden="true"></i></span>
-          <span class="nav-text">Auto Broadcast</span>
+          <span class="nav-icon"><i class="bi bi-sliders text-primary" aria-hidden="true"></i></span>
+          <span class="nav-text">Templates</span>
         </a>
         <a class="nav-link" href="#jpm-swgc" data-sheet="jpm-swgc">
           <span class="nav-icon"><i class="bi bi-bezier2" aria-hidden="true"></i></span>
           <span class="nav-text">JPM SWGC</span>
         </a>
-        <a class="nav-link" href="#webhooks-manager" data-sheet="webhooks-manager">
-          <span class="nav-icon"><i class="bi bi-plugin" aria-hidden="true"></i></span>
-          <span class="nav-text">Webhooks &amp; API</span>
+        <a class="nav-link" href="#facebook-automation" data-sheet="facebook-automation">
+          <span class="nav-icon"><i class="bi bi-facebook" style="color: #1877F2;" aria-hidden="true"></i></span>
+          <span class="nav-text">Facebook</span>
+        </a>
+        <a class="nav-link" href="#instagram-automation" data-sheet="instagram-automation">
+          <span class="nav-icon"><i class="bi bi-instagram" style="color: #E4405F;" aria-hidden="true"></i></span>
+          <span class="nav-text">Instagram</span>
         </a>
 
         <!-- DEVELOPER -->
@@ -157,15 +141,11 @@
         </div>
         <a class="nav-link" href="#mcp-claude" data-sheet="mcp-claude">
           <span class="nav-icon"><i class="bi bi-robot text-purple" aria-hidden="true"></i></span>
-          <span class="nav-text">MCP &amp; Claude AI</span>
+          <span class="nav-text">Cortex AI</span>
         </a>
         <a class="nav-link" href="#api-endpoints" data-sheet="api-endpoints">
           <span class="nav-icon"><i class="bi bi-book-half text-info" aria-hidden="true"></i></span>
           <span class="nav-text">API Docs</span>
-        </a>
-        <a class="nav-link" href="/docs" target="_blank" rel="noopener">
-          <span class="nav-icon"><i class="bi bi-code-square" aria-hidden="true"></i></span>
-          <span class="nav-text">Swagger UI <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.68rem;"></i></span>
         </a>
 
         <!-- ACCOUNT -->
@@ -178,35 +158,33 @@
           <span class="nav-text">Billing &amp; Plan</span>
         </a>
 
-        <!-- ADMINISTRATION -->
-        <div class="nav-group-header">
-          <span>Administration</span>
-          <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+        <!-- ADMINISTRATION (ADMIN ONLY) -->
+        <div id="admin-section-group" class="d-none">
+          <div class="nav-group-header">
+            <span>Administration</span>
+            <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+          </div>
+          <a class="nav-link" id="admin-logs-nav" href="#live-logs" data-sheet="live-logs">
+            <span class="nav-icon"><i class="bi bi-key-fill text-warning" aria-hidden="true"></i></span>
+            <span class="nav-text">Session Access &amp; Logs</span>
+          </a>
+          <a class="nav-link" id="admin-users-nav" href="#user-management" data-sheet="user-management">
+            <span class="nav-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+            <span class="nav-text">Users</span>
+          </a>
+          <a class="nav-link" id="admin-database-nav" href="#database-overview" data-sheet="database-overview">
+            <span class="nav-icon"><i class="bi bi-database-fill-gear" aria-hidden="true"></i></span>
+            <span class="nav-text">Settings</span>
+          </a>
+          <a class="nav-link" id="admin-sysmon-nav" href="#system-monitor" data-sheet="system-monitor">
+            <span class="nav-icon"><i class="bi bi-activity text-teal" aria-hidden="true"></i></span>
+            <span class="nav-text">System Monitor</span>
+          </a>
+          <a class="nav-link" id="admin-notifications-nav" href="#notifications-center" data-sheet="notifications-center">
+            <span class="nav-icon"><i class="bi bi-bell-fill text-danger" aria-hidden="true"></i></span>
+            <span class="nav-text">Notifications</span>
+          </a>
         </div>
-        <a class="nav-link" href="#media-manager" data-sheet="media-manager">
-          <span class="nav-icon"><i class="bi bi-folder-fill" aria-hidden="true"></i></span>
-          <span class="nav-text">Media Manager</span>
-        </a>
-        <a class="nav-link" href="#live-logs" data-sheet="live-logs">
-          <span class="nav-icon"><i class="bi bi-key-fill text-warning" aria-hidden="true"></i></span>
-          <span class="nav-text">Session Access &amp; Logs</span>
-        </a>
-        <a class="nav-link d-none" id="admin-users-nav" href="#user-management" data-sheet="user-management">
-          <span class="nav-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
-          <span class="nav-text">Users</span>
-        </a>
-        <a class="nav-link d-none" id="admin-database-nav" href="#database-overview" data-sheet="database-overview">
-          <span class="nav-icon"><i class="bi bi-database-fill-gear" aria-hidden="true"></i></span>
-          <span class="nav-text">Settings</span>
-        </a>
-        <a class="nav-link" href="#system-monitor" data-sheet="system-monitor">
-          <span class="nav-icon"><i class="bi bi-activity text-teal" aria-hidden="true"></i></span>
-          <span class="nav-text">System Monitor</span>
-        </a>
-        <a class="nav-link" href="#notifications-center" data-sheet="notifications-center">
-          <span class="nav-icon"><i class="bi bi-bell-fill" aria-hidden="true"></i></span>
-          <span class="nav-text">Notifications</span>
-        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -644,10 +622,15 @@
 
             <!-- 3. View B: Template Editor View (Hidden by default, shown when creating/editing) -->
             <div id="template-editor-view" class="d-none">
-              <div class="d-flex align-items-center justify-content-between mb-3">
-                <button type="button" class="btn btn-outline-secondary btn-sm px-3 rounded-pill d-inline-flex align-items-center gap-1" id="btn-back-to-templates">
-                  <i class="bi bi-arrow-left"></i> Back to All Templates
-                </button>
+              <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-secondary btn-sm px-3 rounded-pill d-inline-flex align-items-center gap-1" id="btn-back-to-templates">
+                    <i class="bi bi-arrow-left"></i> Back to All Templates
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill d-inline-flex align-items-center gap-1 shadow-sm btn-trigger-create-template">
+                    <i class="bi bi-plus-circle-fill"></i> Create Template
+                  </button>
+                </div>
                 <span class="badge text-bg-primary px-3 py-2 rounded-pill" id="editor-mode-badge">Creating Auto-Sharing Template</span>
               </div>
 
@@ -2376,15 +2359,6 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                 </div>
               </div>
               <div class="d-flex align-items-center gap-2">
-                <!-- Log Filter Toggle -->
-                <div class="btn-group btn-group-sm" role="group" aria-label="Log Filter Toggle">
-                  <button type="button" class="btn btn-outline-success active" id="btn-filter-trigger-logs">
-                    <i class="bi bi-funnel-fill me-1"></i> Trigger Only
-                  </button>
-                  <button type="button" class="btn btn-outline-secondary" id="btn-filter-all-logs">
-                    All System Logs
-                  </button>
-                </div>
                 <button id="btn-clear-terminal" class="btn btn-sm btn-outline-secondary" title="Clear log output">
                   <i class="bi bi-trash3"></i> Clear Console
                 </button>
@@ -2395,14 +2369,14 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
               <div class="terminal-header">
                 <div class="d-flex align-items-center gap-2">
                   <span class="status-dot status-on pulsing"></span>
-                  <h2 class="h6 mb-0 fw-bold">Active WhatsApp Daemon Console</h2>
-                  <span class="badge text-bg-success ms-2" id="logs-counter">Trigger View</span>
+                  <h2 class="h6 mb-0 fw-bold text-white">Active WhatsApp Daemon Console</h2>
+                  <span class="badge text-bg-success ms-2" id="logs-counter">All System Logs</span>
                 </div>
                 <small class="text-muted font-monospace">Auto-Scroll Enabled</small>
               </div>
               <div class="log-console-wrapper" style="min-height: 520px;">
                 <div id="log-console" class="log-console" style="min-height: 500px;">
-                  <div class="log-line system-msg">[System] Instance initialized. Waiting for trigger-matched events...</div>
+                  <div class="log-line system-msg">[System] Instance initialized. Live log stream connected.</div>
                 </div>
               </div>
             </div>
@@ -2602,6 +2576,73 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
                   </tbody>
                 </table>
               </div>
+            <!-- Cortex AI Engine Configuration (Admin Only) -->
+            <div class="panel mt-4 p-4 shadow-sm rounded-4 border">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 44px; height: 44px; background: #9333ea; font-size: 1.3rem;">
+                    <i class="bi bi-robot"></i>
+                  </div>
+                  <div>
+                    <h2 class="h5 mb-0 fw-bold">Cortex AI Model Settings</h2>
+                    <p class="small text-muted mb-0">Configure your Cortex AI server endpoint and select the global AI model for all users.</p>
+                  </div>
+                </div>
+                <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-3 py-2 rounded-pill">
+                  <i class="bi bi-shield-lock-fill me-1"></i> Admin Only
+                </span>
+              </div>
+
+              <form id="form-admin-ai-settings" class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label small fw-bold">Cortex AI Base URL</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="bi bi-hdd-network"></i></span>
+                    <input type="url" class="form-control" id="input-ai-base-url" placeholder="http://localhost:11434" value="http://localhost:11434" required>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-ai-fetch-models" title="Scan available models on this server">
+                      <i class="bi bi-arrow-repeat me-1"></i> Scan Models
+                    </button>
+                  </div>
+                  <div class="form-text small">Default Cortex AI endpoint is <code>http://localhost:11434</code>.</div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label small fw-bold">API Key (Optional / if required)</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="bi bi-key"></i></span>
+                    <input type="password" class="form-control" id="input-ai-api-key" placeholder="Leave blank if not required">
+                  </div>
+                  <div class="form-text small">Leave blank if your local Cortex AI server runs without authentication.</div>
+                </div>
+
+                <div class="col-12 col-md-8">
+                  <label class="form-label small fw-bold">Active AI Model (Assigned to all users for free)</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="bi bi-cpu"></i></span>
+                    <select class="form-select" id="select-ai-model">
+                      <option value="">-- Click 'Scan Models' to load available models --</option>
+                    </select>
+                  </div>
+                  <div class="form-text small text-muted" id="ai-model-hint">
+                    Select the model that all users will interact with in the Cortex AI chat space.
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4 d-flex align-items-end">
+                  <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill shadow-sm d-inline-flex align-items-center justify-content-center gap-2" id="btn-save-ai-settings" style="background: #9333ea; border-color: #9333ea;">
+                    <i class="bi bi-check-circle-fill"></i> Save AI Model Settings
+                  </button>
+                </div>
+              </form>
+
+              <!-- Live Model Status Feedback -->
+              <div class="mt-3 p-3 rounded-3 bg-light border d-flex align-items-center justify-content-between flex-wrap gap-2" id="ai-settings-status-box">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="status-dot status-on" id="admin-ai-status-dot"></span>
+                  <span class="small fw-semibold" id="admin-ai-status-text">Checking AI connection...</span>
+                </div>
+                <div class="small text-muted" id="admin-ai-model-active-text">Active: None</div>
+              </div>
             </div>
           </section>
 
@@ -2778,7 +2819,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
             <div class="panel p-4 mt-3" style="max-width: 680px;">
               <div class="mb-3">
                 <label class="form-label small fw-bold">Target Contact Number</label>
-                <input type="text" class="form-control" id="sticker-target-phone" placeholder="e.g. 919135779897">
+                <input type="text" class="form-control" id="sticker-target-phone" placeholder="e.g. 919876543210">
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-bold">Choose Image File (JPG / PNG)</label>
@@ -3016,6 +3057,70 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
           </section>
 
           <!-- =============================================================== -->
+          <!-- SHEET: FACEBOOK AUTOMATION -->
+          <!-- =============================================================== -->
+          <section id="sheet-facebook-automation" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(24, 119, 242, 0.12); color: #1877F2;"><i class="bi bi-facebook" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">AUTOMATION • SOCIAL CHANNELS</p>
+                  <h1 class="h3 mb-1">Facebook Automation</h1>
+                  <p class="text-muted mb-0">Connect Meta Facebook pages, automate messenger conversations, and broadcast promotions.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-5 mt-4 d-flex flex-column align-items-center justify-content-center text-center shadow-sm rounded-4" style="min-height: 380px; background: linear-gradient(180deg, rgba(24, 119, 242, 0.03) 0%, rgba(255,255,255,0.95) 100%);">
+              <div class="mb-3 d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 84px; height: 84px; background: rgba(24, 119, 242, 0.12); color: #1877F2; font-size: 2.8rem; box-shadow: 0 8px 24px rgba(24, 119, 242, 0.15);">
+                <i class="bi bi-facebook"></i>
+              </div>
+              <h2 class="h3 fw-bold mb-2">Facebook Automation</h2>
+              <div class="badge bg-primary text-white fs-6 px-4 py-2 rounded-pill mb-3 shadow-sm text-uppercase fw-semibold" style="letter-spacing: 1px;">
+                Coming Soon
+              </div>
+              <p class="text-muted mb-4 mx-auto" style="max-width: 520px; font-size: 0.95rem;">
+                Automated lead sync, Facebook Page Messenger chatbots, auto-replies to post comments, and multi-channel campaign broadcasting are currently under development.
+              </p>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill"><i class="bi bi-shield-check me-1"></i> Official Meta API Integration</span>
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 rounded-pill"><i class="bi bi-clock-history me-1"></i> Phase 2 Release</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- SHEET: INSTAGRAM AUTOMATION -->
+          <!-- =============================================================== -->
+          <section id="sheet-instagram-automation" class="dashboard-sheet d-none">
+            <div class="sheet-header">
+              <div class="d-flex align-items-center gap-3">
+                <span class="page-icon-wa" style="background: rgba(228, 64, 95, 0.12); color: #E4405F;"><i class="bi bi-instagram" aria-hidden="true"></i></span>
+                <div>
+                  <p class="eyebrow mb-1">AUTOMATION • SOCIAL CHANNELS</p>
+                  <h1 class="h3 mb-1">Instagram Automation</h1>
+                  <p class="text-muted mb-0">Direct Message auto-responders, Story mention triggers, and Instagram DM sales funnels.</p>
+                </div>
+              </div>
+            </div>
+            <div class="panel p-5 mt-4 d-flex flex-column align-items-center justify-content-center text-center shadow-sm rounded-4" style="min-height: 380px; background: linear-gradient(180deg, rgba(228, 64, 95, 0.03) 0%, rgba(255,255,255,0.95) 100%);">
+              <div class="mb-3 d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 84px; height: 84px; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: #ffffff; font-size: 2.8rem; box-shadow: 0 8px 24px rgba(220, 39, 67, 0.25);">
+                <i class="bi bi-instagram"></i>
+              </div>
+              <h2 class="h3 fw-bold mb-2">Instagram Automation</h2>
+              <div class="badge text-white fs-6 px-4 py-2 rounded-pill mb-3 shadow-sm text-uppercase fw-semibold" style="background: linear-gradient(45deg, #e6683c, #dc2743, #bc1888); letter-spacing: 1px;">
+                Coming Soon
+              </div>
+              <p class="text-muted mb-4 mx-auto" style="max-width: 520px; font-size: 0.95rem;">
+                Instagram Direct chatbot flows, keyword-triggered DM replies, Story reply automation, and Reels engagement trackers are arriving soon.
+              </p>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill"><i class="bi bi-instagram me-1"></i> Instagram Graph API</span>
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 rounded-pill"><i class="bi bi-clock-history me-1"></i> Phase 2 Release</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
           <!-- SHEET: WEBHOOKS & API -->
           <!-- =============================================================== -->
           <section id="sheet-webhooks-manager" class="dashboard-sheet d-none">
@@ -3050,34 +3155,76 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
           </section>
 
           <!-- =============================================================== -->
-          <!-- SHEET: MCP & CLAUDE AI -->
+          <!-- SHEET: CORTEX AI -->
           <!-- =============================================================== -->
           <section id="sheet-mcp-claude" class="dashboard-sheet d-none">
             <div class="sheet-header">
-              <div class="d-flex align-items-center gap-3">
-                <span class="page-icon-wa" style="background: rgba(147, 51, 234, 0.15); color: #9333ea;"><i class="bi bi-robot" aria-hidden="true"></i></span>
-                <div>
-                  <p class="eyebrow mb-1">DEVELOPER • AI INTELLIGENCE</p>
-                  <h1 class="h3 mb-1">Model Context Protocol (MCP) &amp; Claude AI</h1>
-                  <p class="text-muted mb-0">Connect Claude and AI LLM agents to orchestrate and query your WhatsApp instance autonomously.</p>
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 w-100">
+                <div class="d-flex align-items-center gap-3">
+                  <span class="page-icon-wa" style="background: rgba(147, 51, 234, 0.15); color: #9333ea;"><i class="bi bi-robot" aria-hidden="true"></i></span>
+                  <div>
+                    <p class="eyebrow mb-1">AI ASSISTANT • CORTEX AI</p>
+                    <h1 class="h3 mb-1">Cortex AI Assistant</h1>
+                    <p class="text-muted mb-0">Ask anything about templates, auto-sharing, bulk sender, Google Sheets, or scheduling.</p>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="panel p-4 mt-3">
-              <div class="alert alert-light border">
-                <h6 class="fw-bold"><i class="bi bi-code-slash text-purple me-1"></i> Claude Desktop / Antigravity MCP Config</h6>
-                <p class="small text-muted mb-2">Add the following server configuration to your MCP config:</p>
-                <pre class="bg-dark text-white p-3 rounded-3 small"><code>{
-  "mcpServers": {
-    "whatsapp-bot": {
-      "command": "node",
-      "args": ["d:/Localhost/whatsapp/index.js"],
-      "env": {
-        "PORT": "3000"
-      }
-    }
-  }
-}</code></pre>
+
+            <!-- AI Chat Workspace Container -->
+            <div class="panel p-0 mt-3 shadow-sm rounded-4 overflow-hidden d-flex flex-column" style="height: calc(100vh - 250px); min-height: 520px; border: 1px solid rgba(226, 232, 240, 0.8);">
+              <!-- Chat Header Status Bar -->
+              <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="status-dot status-on" id="ai-connection-dot"></span>
+                  <span class="small fw-semibold text-dark" id="ai-connection-text">Connected to Cortex AI</span>
+                  <span class="text-muted small">• Specialized in templates &amp; automation workflows</span>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1" id="btn-clear-ai-chat" title="Clear conversation history">
+                  <i class="bi bi-trash3 me-1"></i> Clear Chat
+                </button>
+              </div>
+
+              <!-- Chat Messages Scroll Area -->
+              <div class="flex-grow-1 p-4 overflow-auto" id="ai-messages-container" style="background: #f8fafc;">
+                <!-- Welcome Bot Greeting -->
+                <div class="d-flex gap-3 mb-4 ai-msg-row ai-msg-bot">
+                  <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #9333ea; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.25);">
+                    <i class="bi bi-robot"></i>
+                  </div>
+                  <div class="p-3 rounded-4 bg-white shadow-sm border" style="max-width: 80%; border-top-left-radius: 4px !important;">
+                    <p class="mb-2 fw-semibold text-dark">Hello! I am Cortex AI, your WhatsApp Automation assistant.</p>
+                    <p class="mb-2 small text-secondary">I can guide you step-by-step with:</p>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                      <button type="button" class="btn btn-outline-primary btn-sm rounded-pill py-1 px-3 small ai-quick-prompt" data-prompt="How do I create an Auto-Sharing template to forward media between groups?">
+                        <i class="bi bi-arrow-repeat me-1"></i> Auto-Sharing Guide
+                      </button>
+                      <button type="button" class="btn btn-outline-success btn-sm rounded-pill py-1 px-3 small ai-quick-prompt" data-prompt="How do I create and use Template Messages with variables like {{name}}?">
+                        <i class="bi bi-chat-square-quote me-1"></i> Template Messages
+                      </button>
+                      <button type="button" class="btn btn-outline-info btn-sm rounded-pill py-1 px-3 small ai-quick-prompt" data-prompt="How do I connect a Google Sheet to dispatch bulk campaigns?">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Google Sheets Setup
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-1 px-3 small ai-quick-prompt" data-prompt="How does Bulk Sender protect against WhatsApp bans?">
+                        <i class="bi bi-shield-check me-1"></i> Anti-ban Best Practices
+                      </button>
+                    </div>
+                    <p class="mb-0 text-muted" style="font-size: 0.75rem;"><i class="bi bi-info-circle me-1"></i> Ask any question below to get quick, concise help.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chat Input Box -->
+              <div class="p-3 bg-white border-top">
+                <form id="ai-chat-form" class="d-flex align-items-center gap-2">
+                  <div class="position-relative flex-grow-1">
+                    <input type="text" class="form-control rounded-pill px-4 py-2 border shadow-none" id="ai-chat-input" placeholder="Ask Cortex AI about creating templates, bulk campaigns, or automation..." autocomplete="off">
+                  </div>
+                  <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm" id="btn-ai-send" style="background: #9333ea; border-color: #9333ea;">
+                    <span>Send</span>
+                    <i class="bi bi-send-fill"></i>
+                  </button>
+                </form>
               </div>
             </div>
           </section>
@@ -3482,7 +3629,7 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
           </div>
 
           <div class="modal-footer border-top px-4 py-3 bg-light d-flex justify-content-between">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Skip for Now</button>
+            <button type="button" class="btn btn-outline-secondary" id="btn-skip-plans-step" data-bs-dismiss="modal">Skip for Now</button>
             <button type="button" class="btn btn-primary px-4 fw-bold btn-choose-plan" data-plan="free_trial">
               Next: Setup Notification Target Number <i class="bi bi-arrow-right ms-1"></i>
             </button>
@@ -3975,6 +4122,8 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       'scheduler-tasks',
       'auto-broadcast',
       'jpm-swgc',
+      'facebook-automation',
+      'instagram-automation',
       'webhooks-manager',
       'mcp-claude',
       'media-manager',
@@ -4539,17 +4688,17 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         navbarRoleTag.innerText = role;
       }
 
+      const adminSectionGroup = document.getElementById('admin-section-group');
       if (isAdmin) {
-        if (adminUsersNav) adminUsersNav.classList.remove('d-none');
-        if (adminDatabaseNav) adminDatabaseNav.classList.remove('d-none');
+        if (adminSectionGroup) adminSectionGroup.classList.remove('d-none');
         if (adminDbQuickCard) adminDbQuickCard.classList.remove('d-none');
         if (activeSessionsBadge) activeSessionsBadge.classList.remove('d-none');
         if (dbStatusPill) dbStatusPill.classList.remove('d-none');
         loadAdminUsersTable();
         loadAdminDatabaseStats();
+        loadNotifications();
       } else {
-        if (adminUsersNav) adminUsersNav.classList.add('d-none');
-        if (adminDatabaseNav) adminDatabaseNav.classList.add('d-none');
+        if (adminSectionGroup) adminSectionGroup.classList.add('d-none');
         if (adminDbQuickCard) adminDbQuickCard.classList.add('d-none');
         if (activeSessionsBadge) activeSessionsBadge.classList.add('d-none');
         if (dbStatusPill) dbStatusPill.classList.add('d-none');
@@ -5161,16 +5310,35 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
             if (metricContactMeta) metricContactMeta.innerText = 'Click to Set Up';
           }
 
-          // Check if user has no target configured and needs onboarding prompt
-          const hasTargetConfigured = !!(data.config.notificationTargetNumber || data.config.targetNumber || data.config.targetGroup);
-          const onboardingDone = currentUser && localStorage.getItem('cortex_target_configured_' + currentUser.id) === 'true';
+          // Show onboarding wizard ONLY on brand-new user signup (never for old/existing users)
+          const hasExistingTarget = data.config && (
+            (data.config.notificationTargetNumber && data.config.notificationTargetNumber.length > 5) ||
+            (data.config.targetNumber && data.config.targetNumber.length > 5) ||
+            (data.config.targetGroup && data.config.targetGroup.length > 5)
+          );
+          const onboardingDone = hasExistingTarget || (currentUser && (
+            localStorage.getItem('cortex_onboarding_completed_' + currentUser.id) === 'true' ||
+            localStorage.getItem('cortex_target_configured_' + currentUser.id) === 'true' ||
+            localStorage.getItem('cortex_user_registered_' + currentUser.id) === 'true'
+          ));
           const isNewSignup = sessionStorage.getItem('cortex_new_user_onboarding') === 'true';
-          if ((!hasTargetConfigured || isNewSignup) && !onboardingDone && !window.targetModalShown) {
+
+          if (isNewSignup && !onboardingDone && !window.targetModalShown) {
             window.targetModalShown = true;
             sessionStorage.removeItem('cortex_new_user_onboarding');
+            if (currentUser) {
+              localStorage.setItem('cortex_user_registered_' + currentUser.id, 'true');
+            }
             setTimeout(() => { openTargetSetupModal(true); }, 500);
+          } else {
+            // If user is already an existing user or already configured, ensure session flag is cleared
+            sessionStorage.removeItem('cortex_new_user_onboarding');
+            if (currentUser) {
+              localStorage.setItem('cortex_onboarding_completed_' + currentUser.id, 'true');
+            }
           }
         }
+
 
         if (JSON.stringify(availableGroups) !== JSON.stringify(data.groups)) {
           availableGroups = data.groups || [];
@@ -5336,44 +5504,20 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       }
     }
 
-    let logFilterMode = 'trigger'; // 'trigger' or 'all'
+    let logFilterMode = 'all'; // Default to all system logs
     let cachedAllLogs = [];
     let cachedTriggeredLogs = [];
 
-    const btnFilterTriggerLogs = document.getElementById('btn-filter-trigger-logs');
-    const btnFilterAllLogs = document.getElementById('btn-filter-all-logs');
     const logsCounter = document.getElementById('logs-counter');
     const triggerChatsContainer = document.getElementById('trigger-chats-container');
     const triggerChatsCount = document.getElementById('trigger-chats-count');
 
-    if (btnFilterTriggerLogs && btnFilterAllLogs) {
-      btnFilterTriggerLogs.addEventListener('click', () => {
-        logFilterMode = 'trigger';
-        btnFilterTriggerLogs.classList.add('active', 'btn-outline-success');
-        btnFilterTriggerLogs.classList.remove('btn-outline-secondary');
-        btnFilterAllLogs.classList.remove('active', 'btn-outline-success');
-        btnFilterAllLogs.classList.add('btn-outline-secondary');
-        if (logsCounter) logsCounter.innerText = 'Trigger View';
-        renderCurrentLogs();
-      });
-
-      btnFilterAllLogs.addEventListener('click', () => {
-        logFilterMode = 'all';
-        btnFilterAllLogs.classList.add('active', 'btn-outline-success');
-        btnFilterAllLogs.classList.remove('btn-outline-secondary');
-        btnFilterTriggerLogs.classList.remove('active', 'btn-outline-success');
-        btnFilterTriggerLogs.classList.add('btn-outline-secondary');
-        if (logsCounter) logsCounter.innerText = 'All Logs';
-        renderCurrentLogs();
-      });
-    }
-
     function renderCurrentLogs() {
-      const activeList = logFilterMode === 'trigger' ? cachedTriggeredLogs : cachedAllLogs;
+      const activeList = logFilterMode === 'all' ? cachedAllLogs : cachedTriggeredLogs;
       if (!logConsole) return;
 
       if (!activeList || activeList.length === 0) {
-        logConsole.innerHTML = `<div class="log-line text-muted">${logFilterMode === 'trigger' ? '[Filter] No trigger-matched event logs yet. Unmatched messages are suppressed.' : '[System] No logs recorded.'}</div>`;
+        logConsole.innerHTML = `<div class="log-line text-muted">[System] No logs recorded.</div>`;
         return;
       }
 
@@ -7425,6 +7569,12 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       const modal = new bootstrap.Modal(modalTemplatePickerEl);
       modal.show();
     });
+    document.querySelectorAll('.btn-trigger-create-template').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const modal = new bootstrap.Modal(modalTemplatePickerEl);
+        modal.show();
+      });
+    });
 
     document.querySelectorAll('.template-picker-card').forEach(card => {
       card.addEventListener('mouseenter', () => {
@@ -8217,15 +8367,39 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       cardTargetContact.addEventListener('click', () => openTargetSetupModal(false));
     }
 
+    const btnSkipPlansStep = document.getElementById('btn-skip-plans-step');
+
+    function completeAndDismissOnboarding(skipped = true) {
+      if (currentUser) {
+        localStorage.setItem('cortex_target_configured_' + currentUser.id, 'true');
+        localStorage.setItem('cortex_onboarding_completed_' + currentUser.id, 'true');
+      }
+      const modal = getTargetSetupModal();
+      if (modal) modal.hide();
+      if (skipped) {
+        showToast("Default 'Free Trial' plan active. You can set up your notification target anytime from your dashboard.", "info");
+      }
+    }
+
+    if (btnSkipPlansStep) {
+      btnSkipPlansStep.addEventListener('click', () => {
+        completeAndDismissOnboarding(true);
+      });
+    }
+
     if (btnSkipTargetModal) {
       btnSkipTargetModal.addEventListener('click', () => {
-        if (currentUser) {
+        completeAndDismissOnboarding(true);
+      });
+    }
+
+    // Also if the user dismisses the onboarding modal using the top-right 'X' close button during first time onboarding
+    if (modalTargetSetupEl) {
+      modalTargetSetupEl.addEventListener('hidden.bs.modal', () => {
+        if (isFirstTimeOnboarding && currentUser) {
           localStorage.setItem('cortex_target_configured_' + currentUser.id, 'true');
           localStorage.setItem('cortex_onboarding_completed_' + currentUser.id, 'true');
         }
-        const modal = getTargetSetupModal();
-        if (modal) modal.hide();
-        showToast("Notification Target skipped. You can configure it anytime from your dashboard.", "info");
       });
     }
 
@@ -8989,24 +9163,306 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
         });
         const data = await res.json();
         if (data.success && data.notifications && data.notifications.length > 0) {
-          list.innerHTML = data.notifications.map(n => `
-            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-              <div>
-                <span class="badge ${n.type === 'error' ? 'text-bg-danger' : (n.type === 'success' ? 'text-bg-success' : 'text-bg-primary')} me-2">
+          list.innerHTML = data.notifications.map(n => {
+            const hasSub = n.text && n.text.includes('ACTIVE SUBSCRIPTION');
+            let formattedText = escapeHtml(n.text);
+            if (hasSub) {
+              formattedText = formattedText.replace(
+                /ACTIVE SUBSCRIPTION: ([^<]+)/g,
+                '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 ms-1 fw-bold"><i class="bi bi-patch-check-fill me-1"></i>ACTIVE SUBSCRIPTION: $1</span>'
+              );
+            }
+            return `
+            <div class="list-group-item d-flex justify-content-between align-items-center py-3 border-bottom">
+              <div class="d-flex align-items-center flex-wrap gap-2">
+                <span class="badge ${n.type === 'error' ? 'text-bg-danger' : (n.type === 'success' ? 'text-bg-success' : 'text-bg-primary')} px-2 py-1">
                   ${n.type.toUpperCase()}
                 </span>
-                <span class="text-dark">${n.text}</span>
+                <span class="text-dark">${formattedText}</span>
               </div>
-              <small class="text-muted">${n.time}</small>
+              <small class="text-muted text-nowrap ms-2 font-monospace">${n.time}</small>
             </div>
-          `).join('');
+            `;
+          }).join('');
         } else {
-          list.innerHTML = '<div class="text-muted text-center py-4">No recent notifications logged.</div>';
+          list.innerHTML = '<div class="text-muted text-center py-4">No recent administrator notifications logged.</div>';
         }
       } catch (e) {
         list.innerHTML = '<div class="text-danger text-center py-4">Could not load notifications.</div>';
       }
     }
+
+    // 7. CORTEX AI INTERACTIVE ASSISTANT & ADMIN SETTINGS
+    let aiConversationHistory = [];
+
+    // Load active AI status on init
+    async function loadAiStatus() {
+      try {
+        const res = await fetch('/api/ai/status', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        const modelBadge = document.getElementById('ai-active-model-name');
+        const connDot = document.getElementById('ai-connection-dot');
+        const connText = document.getElementById('ai-connection-text');
+        
+        if (data.success && data.selectedModel) {
+          if (modelBadge) modelBadge.innerText = data.selectedModel;
+          if (connDot) { connDot.className = 'status-dot status-on'; }
+          if (connText) connText.innerText = `Online • ${data.selectedModel}`;
+        } else {
+          if (modelBadge) modelBadge.innerText = 'No Model Set';
+          if (connDot) { connDot.className = 'status-dot status-off'; }
+          if (connText) connText.innerText = 'Awaiting Admin Model Configuration in Settings';
+        }
+      } catch (e) {
+        console.error("Error loading AI status:", e);
+      }
+    }
+
+    // Admin: Scan available AI models from Cortex AI server
+    async function adminScanAiModels() {
+      const btn = document.getElementById('btn-ai-fetch-models');
+      const select = document.getElementById('select-ai-model');
+      const statusDot = document.getElementById('admin-ai-status-dot');
+      const statusText = document.getElementById('admin-ai-status-text');
+      const activeText = document.getElementById('admin-ai-model-active-text');
+      const urlInput = document.getElementById('input-ai-base-url');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Scanning...';
+      }
+      if (statusText) statusText.innerText = 'Connecting to AI server...';
+
+      try {
+        const res = await fetch('/api/admin/ai/models', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (urlInput && data.baseUrl) urlInput.value = data.baseUrl;
+          if (select) {
+            select.innerHTML = '';
+            if (data.models && data.models.length > 0) {
+              const defaultOpt = document.createElement('option');
+              defaultOpt.value = '';
+              defaultOpt.innerText = `-- Choose an AI Model (${data.models.length} available) --`;
+              select.appendChild(defaultOpt);
+
+              data.models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = m;
+                if (data.selectedModel && data.selectedModel === m) {
+                  opt.selected = true;
+                }
+                select.appendChild(opt);
+              });
+            } else {
+              select.innerHTML = '<option value="">-- No models found on server. Ensure model is downloaded or check URL --</option>';
+            }
+          }
+
+          if (statusDot) statusDot.className = data.models && data.models.length > 0 ? 'status-dot status-on' : 'status-dot status-warn';
+          if (statusText) statusText.innerText = data.models && data.models.length > 0 
+            ? `Connected • ${data.models.length} model(s) discovered` 
+            : 'Server reached, but no models found.';
+          if (activeText) activeText.innerText = `Active Model: ${data.selectedModel || 'None'}`;
+        } else {
+          if (statusDot) statusDot.className = 'status-dot status-off';
+          if (statusText) statusText.innerText = data.error || 'Failed to scan models.';
+        }
+      } catch (err) {
+        if (statusDot) statusDot.className = 'status-dot status-off';
+        if (statusText) statusText.innerText = 'Could not connect to Cortex AI endpoint. Ensure Cortex AI is running.';
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Scan Models';
+        }
+      }
+    }
+
+    // Admin: Save AI settings form
+    document.getElementById('form-admin-ai-settings')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const baseUrl = document.getElementById('input-ai-base-url')?.value.trim();
+      const apiKey = document.getElementById('input-ai-api-key')?.value.trim();
+      const selectedModel = document.getElementById('select-ai-model')?.value.trim();
+      const btn = document.getElementById('btn-save-ai-settings');
+
+      if (!selectedModel) {
+        showToast('Please select an active AI model first.', 'warning');
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+      }
+
+      try {
+        const res = await fetch('/api/admin/ai/settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ baseUrl, apiKey, selectedModel })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Cortex AI Model set to '${selectedModel}' for all users!`, 'success');
+          loadAiStatus();
+          const activeText = document.getElementById('admin-ai-model-active-text');
+          if (activeText) activeText.innerText = `Active Model: ${selectedModel}`;
+        } else {
+          showToast(data.error || 'Failed to save AI configuration.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error saving AI settings.', 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Save AI Model Settings';
+        }
+      }
+    });
+
+    document.getElementById('btn-ai-fetch-models')?.addEventListener('click', adminScanAiModels);
+
+    // AI Chat Messaging Logic
+    function appendAiMessage(role, text) {
+      const container = document.getElementById('ai-messages-container');
+      if (!container) return;
+
+      const row = document.createElement('div');
+      row.className = `d-flex gap-3 mb-4 ai-msg-row ${role === 'user' ? 'justify-content-end ai-msg-user' : 'ai-msg-bot'}`;
+
+      const avatarHtml = role === 'user' 
+        ? `<div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #2563eb; font-size: 1rem;"><i class="bi bi-person-fill"></i></div>`
+        : `<div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #9333ea; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.25);"><i class="bi bi-robot"></i></div>`;
+
+      // Formatted text with basic markdown formatting
+      let formattedText = escapeHtml(text)
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code class="bg-light px-1 py-0.5 rounded text-dark">$1</code>')
+        .replace(/\n/g, '<br>');
+
+      const bubbleHtml = role === 'user'
+        ? `<div class="p-3 rounded-4 shadow-sm text-white" style="max-width: 80%; background: #2563eb; border-top-right-radius: 4px !important;"><div class="small">${formattedText}</div></div>`
+        : `<div class="p-3 rounded-4 bg-white shadow-sm border text-dark" style="max-width: 80%; border-top-left-radius: 4px !important;"><div class="small">${formattedText}</div></div>`;
+
+      if (role === 'user') {
+        row.innerHTML = bubbleHtml + avatarHtml;
+      } else {
+        row.innerHTML = avatarHtml + bubbleHtml;
+      }
+
+      container.appendChild(row);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendAiPrompt(text) {
+      if (!text || !text.trim()) return;
+      const input = document.getElementById('ai-chat-input');
+      const btn = document.getElementById('btn-ai-send');
+      const container = document.getElementById('ai-messages-container');
+
+      const userText = text.trim();
+      appendAiMessage('user', userText);
+      aiConversationHistory.push({ role: 'user', content: userText });
+
+      if (input) input.value = '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      }
+
+      // Add typing indicator
+      const typingIndicator = document.createElement('div');
+      typingIndicator.id = 'ai-typing-indicator';
+      typingIndicator.className = 'd-flex gap-3 mb-4';
+      typingIndicator.innerHTML = `
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #9333ea; font-size: 1.1rem;"><i class="bi bi-robot"></i></div>
+        <div class="p-3 rounded-4 bg-white shadow-sm border text-muted small d-flex align-items-center gap-2">
+          <span class="spinner-grow spinner-grow-sm text-purple" role="status"></span>
+          <span>Cortex AI is thinking...</span>
+        </div>
+      `;
+      if (container) {
+        container.appendChild(typingIndicator);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      try {
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            message: userText,
+            conversationHistory: aiConversationHistory
+          })
+        });
+
+        document.getElementById('ai-typing-indicator')?.remove();
+
+        const data = await res.json();
+        if (data.success && data.reply) {
+          appendAiMessage('assistant', data.reply);
+          aiConversationHistory.push({ role: 'assistant', content: data.reply });
+        } else {
+          appendAiMessage('assistant', `⚠️ ${data.error || 'Could not reach AI assistant.'}`);
+        }
+      } catch (err) {
+        document.getElementById('ai-typing-indicator')?.remove();
+        appendAiMessage('assistant', '⚠️ Network error communicating with Cortex AI server. Ensure Cortex AI is active.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>Send</span> <i class="bi bi-send-fill"></i>';
+        }
+      }
+    }
+
+    document.getElementById('ai-chat-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('ai-chat-input');
+      if (input && input.value) {
+        sendAiPrompt(input.value);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      const quickBtn = e.target.closest('.ai-quick-prompt');
+      if (quickBtn) {
+        const prompt = quickBtn.getAttribute('data-prompt');
+        if (prompt) sendAiPrompt(prompt);
+      }
+    });
+
+    document.getElementById('btn-clear-ai-chat')?.addEventListener('click', () => {
+      const container = document.getElementById('ai-messages-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="d-flex gap-3 mb-4 ai-msg-row ai-msg-bot">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 38px; height: 38px; background: #9333ea; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.25);">
+              <i class="bi bi-robot"></i>
+            </div>
+            <div class="p-3 rounded-4 bg-white shadow-sm border" style="max-width: 80%; border-top-left-radius: 4px !important;">
+              <p class="mb-2 fw-semibold text-dark">Chat cleared! How can I assist you with Cortex WhatsApp templates today?</p>
+              <p class="mb-0 text-muted small"><i class="bi bi-info-circle me-1"></i> Responses are focused strictly on templates, auto-sharing, and campaign automations.</p>
+            </div>
+          </div>
+        `;
+      }
+      aiConversationHistory = [];
+    });
 
     // Hook sheet switches to load respective data
     const origSwitchSheet = switchSheet;
@@ -9017,11 +9473,14 @@ This is the <strong>LIVE ONE PAGER</strong> report for <strong>Parts</strong> as
       if (sheet === 'groups-manager') loadGroupsList();
       if (sheet === 'system-monitor') loadSysMon();
       if (sheet === 'notifications-center') loadNotifications();
+      if (sheet === 'mcp-claude') loadAiStatus();
+      if (sheet === 'database-overview') adminScanAiModels();
     };
 
-    // Initialize polling & templates
+    // Initialize polling, templates & AI
     fetchStatus();
     loadMessageTemplates();
+    loadAiStatus();
     setInterval(fetchStatus, 2500);
   </script>
 </body>

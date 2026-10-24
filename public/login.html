@@ -118,7 +118,7 @@
 
           <div class="input-field-wrap mb-2">
             <i class="bi bi-shield-lock field-icon"></i>
-            <input type="text" id="input-signup-otp-code" class="text-center font-monospace fs-4 letter-spacing-2" placeholder="123456" maxlength="6" required />
+            <input type="text" id="input-signup-otp-code" class="text-center font-monospace fs-4 letter-spacing-2" placeholder="------" maxlength="6" autocomplete="off" required />
           </div>
           <small class="text-muted mb-3" style="font-size: 0.72rem;">Check your inbox or spam folder</small>
 
@@ -342,11 +342,15 @@
       setTimeout(() => { toast.classList.add('hidden'); }, 4500);
     }
 
-    function saveAuthAndRedirect(data) {
+    function saveAuthAndRedirect(data, isSignup = false) {
       if (data && data.token) {
         localStorage.setItem('cortex_token', data.token);
         localStorage.setItem('cortex_user', JSON.stringify(data.user));
-        sessionStorage.setItem('cortex_new_user_onboarding', 'true');
+        if (isSignup || data.isNewUser) {
+          sessionStorage.setItem('cortex_new_user_onboarding', 'true');
+        } else {
+          sessionStorage.removeItem('cortex_new_user_onboarding');
+        }
         showToast("Authentication successful! Redirecting...", "success");
         setTimeout(() => {
           window.location.href = `database.html?uid=${data.user.id}`;
@@ -513,10 +517,10 @@
             signupStepFormDetails.classList.add('d-none');
             signupStepFormOtp.classList.remove('d-none');
             if (signupOtpTargetEmail) signupOtpTargetEmail.innerText = email;
-            if (data.demoOtp && inputSignupOtpCode) {
-              inputSignupOtpCode.value = data.demoOtp;
+            if (inputSignupOtpCode) {
+              inputSignupOtpCode.value = '';
+              inputSignupOtpCode.focus();
             }
-            if (inputSignupOtpCode) inputSignupOtpCode.focus();
           } else {
             showToast(data.error || "Failed to send OTP.", "error");
           }
@@ -555,7 +559,7 @@
           const data = await res.json();
           if (data.success) {
             showToast("Account successfully verified and created!", "success");
-            saveAuthAndRedirect(data);
+            saveAuthAndRedirect(data, true);
           } else {
             showToast(data.error || "Invalid verification code.", "error");
           }
@@ -594,8 +598,9 @@
           const data = await res.json();
           if (data.success) {
             showToast("Fresh OTP sent to your email!", "success");
-            if (data.demoOtp && inputSignupOtpCode) {
-              inputSignupOtpCode.value = data.demoOtp;
+            if (inputSignupOtpCode) {
+              inputSignupOtpCode.value = '';
+              inputSignupOtpCode.focus();
             }
           } else {
             showToast(data.error || "Failed to resend OTP.", "error");
@@ -624,19 +629,7 @@
 
         const data = await res.json();
         if (data.success) {
-          if (data.isNewUser || !data.hasPassword) {
-            pendingGoogleAuthData = data;
-            if (!modalGooglePassword && modalGooglePasswordEl && window.bootstrap) {
-              modalGooglePassword = new bootstrap.Modal(modalGooglePasswordEl);
-            }
-            if (modalGooglePassword) {
-              modalGooglePassword.show();
-            } else {
-              saveAuthAndRedirect(data);
-            }
-          } else {
-            saveAuthAndRedirect(data);
-          }
+          saveAuthAndRedirect(data);
         } else {
           showToast(data.error || "Google login failed.", "error");
         }
